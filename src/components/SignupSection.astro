@@ -1,0 +1,47 @@
+---
+import { waitlistForm } from '../data/site.js';
+---
+
+<section class="px-8 pb-20 pt-0 md:px-16 md:pb-28" aria-labelledby="signup-heading">
+    <div class="mx-auto w-full max-w-[82rem] border-y border-[#181818] py-8 md:py-10 2xl:max-w-[104rem]">
+        <div class="mx-auto grid w-full grid-cols-1 items-center gap-7 md:grid-cols-[0.9fr_1fr] md:gap-10 lg:max-w-[74rem] lg:gap-12 xl:max-w-[76rem] 2xl:max-w-[76rem] 2xl:gap-14">
+            <div class="space-y-3">
+                <h2 id="signup-heading" class="text-[2.15rem] font-bold leading-[1.04] tracking-tight sm:text-[2.65rem] md:text-[2.7rem] lg:text-[2.95rem]">
+                    <span class="block text-white" data-i18n="signup.heading1">Stay in the loop.</span>
+                    <span class="block text-[#777777]" data-i18n="signup.heading2">Sign up now.</span>
+                </h2>
+                <p class="max-w-[30rem] text-sm leading-relaxed text-gray-500 md:text-[0.95rem]" data-i18n="signup.description">
+                    Receive occasional updates on prototypes, demonstrations and opportunities to collaborate.
+                </p>
+            </div>
+
+            <form id="signup-form" action={waitlistForm.action} method="POST"
+                  data-success-message="Connection established. You're on the list."
+                  data-error-message="We couldn't submit that. Email info@felyalabs.com and we'll add you manually."
+                  data-i18n-data-success-message="signup.success"
+                  data-i18n-data-error-message="signup.error"
+                  class="grid w-full max-w-[34rem] grid-cols-1 gap-3 md:justify-self-start lg:max-w-[36rem]">
+                <label for="signup-email" class="sr-only" data-i18n="signup.emailLabel">Email address</label>
+                <input id="signup-email" type="email" name="email" required autocomplete="email" inputmode="email"
+                       placeholder="Email" aria-describedby="signup-consent signup-status"
+                       data-i18n-placeholder="signup.placeholder"
+                       class="min-h-14 rounded-[1rem] border border-[#282828] bg-[#151515] px-5 py-4 text-base text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-400">
+
+                <button type="submit"
+                        data-label="Sign up"
+                        data-i18n="signup.button"
+                        data-i18n-data-label="signup.button"
+                        class="min-h-14 rounded-[1rem] bg-white px-8 py-4 text-base font-semibold text-black transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:bg-gray-600 disabled:text-gray-300">
+                    Sign up
+                </button>
+
+                <p id="signup-consent" class="text-pretty text-left text-[0.72rem] leading-[1.65] text-gray-600 md:w-full" data-i18n="signup.consent">
+                    By signing up, you agree to Formspark processing your email and technical data for your waitlist registration. You can withdraw consent at any time. See our <a href="privacy.html" class="whitespace-nowrap text-gray-300 underline-offset-4 hover:text-white hover:underline">Privacy Policy</a>.
+                </p>
+
+                <p id="signup-status" role="status" aria-live="polite"
+                   class="min-h-5 text-sm text-gray-500 data-[state=error]:text-red-300 data-[state=success]:text-green-400 md:col-span-2"></p>
+            </form>
+        </div>
+    </div>
+</section>

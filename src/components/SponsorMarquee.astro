@@ -1,0 +1,34 @@
+---
+import { sponsors } from '../data/site.js';
+
+const sponsorGroups = [sponsors, sponsors];
+const baseLogoClass = 'sponsor-logo';
+---
+
+<section class="relative z-10 px-8 pb-20 md:px-16 md:pb-24" aria-labelledby="supporters-heading">
+    <div class="sponsor-panel surface-panel mx-auto flex w-full max-w-[82rem] items-center gap-8 overflow-hidden px-6 py-5 md:gap-10 md:px-10 md:py-5 2xl:max-w-[104rem]">
+        <span id="supporters-heading" data-i18n="support.supportedBy" class="shrink-0 whitespace-nowrap text-sm font-medium text-gray-400 md:text-[0.95rem]">Supported by</span>
+        <span class="sr-only">igus, Innovation Hub, KNIPEX, coco, Gateway TH Köln, Wurth, Fidlock, TH Köln, and Solingen.</span>
+
+        <div class="sponsor-marquee">
+            <div class="sponsor-marquee__track" aria-hidden="true">
+                {sponsorGroups.map((group) => (
+                    <div class="sponsor-marquee__group">
+                        {group.map((sponsor) => (
+                            <span class={`sponsor-logo-frame ${sponsor.frameClass}`}>
+                                <img src={sponsor.darkDefaultSrc} width={sponsor.width} height={sponsor.height} alt="" loading="lazy" decoding="async"
+                                     class={`${baseLogoClass} sponsor-logo--dark-default`}>
+                                <img src={sponsor.src} width={sponsor.width} height={sponsor.height} alt="" loading="lazy" decoding="async"
+                                     class={`${baseLogoClass} sponsor-logo--dark-hover`}>
+                                <img src={sponsor.lightDefaultSrc} width={sponsor.width} height={sponsor.height} alt="" loading="lazy" decoding="async"
+                                     class={`${baseLogoClass} sponsor-logo--light-default`}>
+                                <img src={sponsor.lightHoverSrc} width={sponsor.width} height={sponsor.height} alt="" loading="lazy" decoding="async"
+                                     class={`${baseLogoClass} sponsor-logo--light-hover`}>
+                            </span>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+</section>

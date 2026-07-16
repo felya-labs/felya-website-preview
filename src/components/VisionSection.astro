@@ -1,0 +1,61 @@
+---
+import { visionSlides } from '../data/site.js';
+
+const toSrcset = (srcset) => srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                         ');
+---
+
+<section id="vision" class="px-8 md:px-16 pb-20 flex flex-col items-center" aria-labelledby="vision-heading">
+    <div class="mb-12 flex max-w-[760px] flex-col items-center gap-5 text-center">
+        <h2 id="vision-heading" class="text-2xl font-bold tracking-tight text-white md:text-3xl">
+            <span data-i18n="vision.heading">Where human skill needs to reach further.</span>
+        </h2>
+        <p class="text-base leading-relaxed text-gray-500 md:text-lg" data-i18n="vision.description">
+            These sketches explore where human skill could act and feel remotely, from robotic arms and hands to embodied teleoperation systems.
+        </p>
+    </div>
+
+    <div class="group relative mx-auto w-full max-w-[1100px] 2xl:max-w-[90rem]" role="region" aria-roledescription="carousel" aria-label="PATON use-case sketches" data-i18n-aria-label="vision.carouselAria">
+
+        <button id="prevBtn" type="button" aria-label="Show previous use-case sketch" data-i18n-aria-label="vision.previous"
+                class="absolute left-4 top-1/2 -translate-y-1/2 bg-[#111111]/80 hover:bg-white hover:text-black border border-[#222] text-white p-4 rounded-full z-10 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-white">
+            <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+        </button>
+
+        <div data-carousel-viewport class="surface-corners relative overflow-hidden bg-transparent" title="Click left or right side to browse sketches" data-i18n-title="vision.browseTitle">
+            <div id="carouselTrack" class="flex transition-transform duration-500 ease-in-out">
+                {visionSlides.map((slide) => (
+                    <img src={slide.src} srcset={toSrcset(slide.srcset)} sizes={slide.sizes}
+                         width={slide.width} height={slide.height} alt={slide.alt} loading="lazy" decoding="async"
+                         class="w-full shrink-0 aspect-video object-cover object-center">
+                ))}
+            </div>
+            <span class="vision-click-zone vision-click-zone--previous" aria-hidden="true"></span>
+            <span class="vision-click-zone vision-click-zone--next" aria-hidden="true"></span>
+        </div>
+
+        <button id="nextBtn" type="button" aria-label="Show next use-case sketch" data-i18n-aria-label="vision.next"
+                class="absolute right-4 top-1/2 -translate-y-1/2 bg-[#111111]/80 hover:bg-white hover:text-black border border-[#222] text-white p-4 rounded-full z-10 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-white">
+            <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="m9 18 6-6-6-6"/>
+            </svg>
+        </button>
+    </div>
+
+    <nav class="vision-dots-bar surface-panel mx-auto mt-6 flex w-max max-w-full items-center justify-center gap-1 px-5 py-3"
+         aria-label="Choose use-case sketch" data-i18n-aria-label="vision.dotsAria">
+        {visionSlides.map((_, index) => (
+            <button
+                    type="button"
+                    data-carousel-dot={index}
+                    data-active={index === 0 ? 'true' : 'false'}
+                    aria-label={`Show use-case sketch ${index + 1}`}
+                    data-i18n-aria-label={`vision.dot.${index}`}
+                    aria-current={index === 0 ? 'true' : 'false'}
+                    class="carousel-dot flex h-8 w-10 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                <span class="carousel-dot__marker h-2 rounded-full" aria-hidden="true"></span>
+            </button>
+        ))}
+    </nav>
+</section>

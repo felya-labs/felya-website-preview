@@ -1,0 +1,90 @@
+---
+import { waitlistForm } from '../data/site.js';
+import '../styles/global.css';
+
+const {
+  title,
+  lang = 'en',
+  htmlClass = '',
+  bodyClass = 'antialiased',
+  includeSiteScript = false,
+  includeOrganizationSchema = false,
+  description = 'FELYA LABS develops PATON, a wearable bilateral teleoperation system for natural robotic control and physical feedback.'
+} = Astro.props;
+
+const siteOrigin = 'https://www.felyalabs.com';
+const canonicalPath = Astro.url.pathname === '/index.html' ? '/' : Astro.url.pathname;
+const canonicalUrl = new URL(canonicalPath, siteOrigin).toString();
+const socialImageUrl = new URL('/assets/brand/felya-labs-social-preview-1200x630.jpg', siteOrigin).toString();
+const organizationLogoUrl = new URL('/assets/brand/felya-labs-logo-square-512.png', siteOrigin).toString();
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'FELYA LABS',
+  url: siteOrigin,
+  logo: organizationLogoUrl,
+  email: 'info@felyalabs.com',
+  sameAs: [
+    'https://linkedin.com/company/felya-labs',
+    'https://instagram.com/felya_labs/',
+    'https://github.com/felyalabs/'
+  ]
+};
+
+const styleSrc = import.meta.env.DEV ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'";
+const scriptSrc = import.meta.env.DEV ? "script-src 'self' 'unsafe-inline'" : "script-src 'self'";
+const connectSrc = import.meta.env.DEV
+  ? `connect-src 'self' ${waitlistForm.origin}`
+  : `connect-src ${waitlistForm.origin}`;
+const contentSecurityPolicy = `default-src 'self'; base-uri 'none'; object-src 'none'; ${scriptSrc}; script-src-attr 'none'; ${styleSrc}; font-src 'self'; img-src 'self'; media-src 'self'; manifest-src 'self'; ${connectSrc}; form-action ${waitlistForm.origin}; frame-src 'none'; upgrade-insecure-requests`;
+---
+
+<!DOCTYPE html>
+<html lang={lang} class={htmlClass || undefined} data-theme="dark" data-language={lang}>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content={contentSecurityPolicy}>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+
+    <meta name="description" content={description}>
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href={canonicalUrl}>
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="FELYA LABS">
+    <meta property="og:locale" content={lang === 'de' ? 'de_DE' : 'en_US'}>
+    <meta property="og:title" content={title}>
+    <meta property="og:description" content={description}>
+    <meta property="og:url" content={canonicalUrl}>
+    <meta property="og:image" content={socialImageUrl}>
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="FELYA LABS PATON wearable teleoperation glove and the claim Your hands. Your arms. Anywhere.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content={title}>
+    <meta name="twitter:description" content={description}>
+    <meta name="twitter:image" content={socialImageUrl}>
+    <meta name="twitter:image:alt" content="FELYA LABS PATON wearable teleoperation glove.">
+
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111111">
+
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="/assets/favicon/site.webmanifest">
+
+    {includeOrganizationSchema && (
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(organizationSchema)}></script>
+    )}
+</head>
+<body class={bodyClass}>
+    <slot />
+    {includeSiteScript && <script type="module" src="assets/js/site.js"></script>}
+</body>
+</html>
