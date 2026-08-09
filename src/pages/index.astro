@@ -1,35 +1,17 @@
 ---
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import HeroSection from '../components/HeroSection.astro';
-import IterationSection from '../components/IterationSection.astro';
-import SignupSection from '../components/SignupSection.astro';
-import SponsorMarquee from '../components/SponsorMarquee.astro';
-import TeamSection from '../components/TeamSection.astro';
-import ValuePropsSection from '../components/ValuePropsSection.astro';
-import VisionSection from '../components/VisionSection.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { browserLocaleAliases, languageStorageKey, locales } from '../i18n/config';
 ---
 
-<BaseLayout
-    title="FELYA LABS - Real-Time Robotic Teleoperation"
-    lang="en"
-    htmlClass="scroll-smooth"
-    bodyClass="antialiased overflow-x-hidden"
-    includeSiteScript
-    includeOrganizationSchema
->
-    <Header />
-
-    <main id="main">
-        <HeroSection />
-        <SponsorMarquee />
-        <ValuePropsSection />
-        <SignupSection />
-        <TeamSection />
-        <IterationSection />
-        <VisionSection />
+<BaseLayout locale="en" robots="noindex, follow" title="FELYA" description="Choose your language to enter FELYA.">
+    <main
+        class="locale-entry"
+        data-locale-entry
+        data-locales={JSON.stringify(locales)}
+        data-locale-aliases={JSON.stringify(browserLocaleAliases)}
+        data-storage-key={languageStorageKey}
+    >
+        <a href="/en/">Continue to FELYA</a>
     </main>
-
-    <Footer />
+    <script type="module" src="/assets/js/locale-redirect.js"></script>
 </BaseLayout>

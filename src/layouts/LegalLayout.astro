@@ -1,40 +1,38 @@
 ---
-import { brand } from '../data/site.js';
+import Header from '../components/Header.astro';
+import { localePath, resolveLocale } from '../i18n/config';
 import BaseLayout from './BaseLayout.astro';
 
 const { page } = Astro.props;
+const locale = resolveLocale(page.lang);
+const contentBlocks = page.body
+    .split(/\r?\n\r?\n/)
+    .map((content) => content.trim())
+    .filter(Boolean)
+    .map((content) => ({
+        content,
+        type: /^\d+\.\s/.test(content) && !content.includes('\n') ? 'heading' : 'paragraph',
+        isMeta: /^(Last updated:|Information pursuant)/.test(content)
+    }));
 ---
 
-<BaseLayout title={page.pageTitle} lang={page.lang} bodyClass="legal-page antialiased">
-    <main class="legal-shell">
-        <nav class="legal-nav" aria-label="Legal page">
-            <a href="index.html" class="legal-brand" aria-label="FELYA LABS home">
-                <img src={brand.logo.src} width={brand.logo.width} height={brand.logo.height} alt="">
-            </a>
-            <a href="index.html" class="legal-back">&larr; Back to website</a>
-        </nav>
+<BaseLayout title={page.pageTitle} lang={page.lang} bodyClass="legal-page antialiased" includeSiteScript={true}>
+    <Header locale={locale} navigationBase={localePath(locale)} showLanguageSelector={false} />
 
-        <article class="legal-document surface-panel">
-            <h1 class="legal-title">{page.title}</h1>
-            <div class="legal-copy" set:html={page.body} />
-        </article>
-    </main>
+    <div class="legal-shell">
+        <main id="main" class="legal-main">
+            <article class="legal-document surface-panel">
+                <header class="legal-document-header">
+                    <p class="legal-eyebrow">FELYA</p>
+                    <h1 class="legal-title">{page.title}</h1>
+                </header>
+                <div class="legal-copy">
+                    {contentBlocks.map((block) => block.type === 'heading'
+                        ? <h2 set:html={block.content} />
+                        : <p class:list={{ 'legal-meta': block.isMeta }} set:html={block.content.replace(/\r?\n/g, '<br>')} />
+                    )}
+                </div>
+            </article>
+        </main>
+    </div>
 </BaseLayout>
-
-<style is:global>
-    .legal-copy {
-        text-align: justify;
-        text-justify: inter-word;
-        white-space: pre-wrap; 
-        line-height: 1.6;
-    }
-
-    .legal-copy a {
-        color: #3b82f6; 
-        text-decoration: underline;
-        transition: color 0.2s ease;
-    }
-    .legal-copy a:hover {
-        color: #1d4ed8; 
-    }
-</style>

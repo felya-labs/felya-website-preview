@@ -17,8 +17,7 @@ function legalPage(slug, lang, pageTitle, rawContent) {
 }
 
 export const legalPages = {
-  terms: legalPage('terms', 'en', 'Terms & Conditions - FELYA LABS', termsRaw),
-  privacy: legalPage('privacy', 'de', 'Privacy Policy - FELYA LABS', privacyRaw),
-  impressum: legalPage('impressum', 'de', 'Impressum - FELYA LABS', impressumRaw)
+  terms: legalPage('terms', 'en', 'FELYA', termsRaw),
+  privacy: legalPage('privacy', 'en', 'FELYA', privacyRaw),
+  impressum: legalPage('impressum', 'en', 'FELYA', impressumRaw)
 };
-

@@ -22,8 +22,8 @@ Authoritative manifests:
 | --- | --- | --- |
 | GitHub Pages | Serves the site and its access logs | `.github/workflows/deploy.yml`, `public/CNAME` |
 | Manrope font files | Same-origin font load from `/fonts/` | `public/fonts/license.md` |
-| Formspark `submit-form.com` | Only after the waitlist form is submitted | Endpoint in `src/data/site.js`; form in `src/components/HeroSection.astro`; submit handler in `public/assets/js/site.js` |
-| Local prototype video files | Only after the play cover is selected | `src/components/VideoSection.astro`; `public/assets/js/site.js` |
+| Formspark `submit-form.com` | Only after the development-updates form is submitted | Endpoint in `src/data/site.js`; form in `src/components/DevelopmentUpdatesSection.astro`; submit handler in `src/scripts/site.js` |
+| Local prototype video files | Only after the play cover is selected | `src/components/PrototypesSection.astro`; `src/scripts/site.js` |
 | External profile links | Only after a normal outbound link click | `src/data/site.js` |
 
 The site does not use analytics, remote fonts, external scripts, or initial-load embeds.
@@ -35,6 +35,7 @@ The site does not use analytics, remote fonts, external scripts, or initial-load
 | `astro` | dev dependency | Static site build, routing, layouts, and endpoints |
 | `tailwindcss` | dev dependency | Build-time utility CSS generation for existing Tailwind classes |
 | `@tailwindcss/vite` | dev dependency | Tailwind integration for Astro's Vite build |
+| `sharp` | dev dependency | Deterministic local generation and optimization of image assets |
 
 ## Generated And Local Files
 
@@ -46,4 +47,4 @@ Ignored local/build output:
 | `dist/` | `bun run build` |
 | `.astro/` | Astro tooling |
 
-Static assets that must ship with the site live under `public/assets/` and `public/fonts/`. Astro copies them into `dist/assets/` and `dist/fonts/`.
+Static assets that must ship with the site live under `public/assets/` and `public/fonts/`. Astro copies them into `dist/assets/` and `dist/fonts/`. Original sketches, legacy blueprints, masks, and other working files live under `assets-source/` and are deliberately excluded from the production build.

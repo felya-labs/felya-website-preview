@@ -1,53 +1,35 @@
 ---
-import { legalLinks, socialLinks } from '../data/site.js';
+import { brand, legalLinks, socialLinks } from '../data/site.js';
 import SocialIcon from './SocialIcon.astro';
+import type { Locale } from '../i18n/config';
+import { localePath } from '../i18n/config';
+import { t, type TranslationKey } from '../i18n/translations';
+
+const { locale } = Astro.props as { locale: Locale };
 ---
 
-<footer id="contact" class="px-8 md:px-16 pt-24 pb-12 bg-black border-t border-[#111]">
-
-    <div class="mx-auto mb-20 flex max-w-[980px] flex-col items-center justify-center gap-5 text-center">
-        <h2 class="text-2xl font-bold tracking-tight text-white md:text-3xl" data-i18n="footer.contactHeading">
-            Collaborate on the next interface for robotic work.
-        </h2>
-        <p class="max-w-[900px] text-base leading-relaxed text-gray-500 md:text-lg" data-i18n="footer.contactDescription">
-            We are looking for research partners, robotics teams, pilot environments and industry collaborators.
-        </p>
-        <div class="pt-2">
-            <a href="mailto:info@felyalabs.com"
-               class="group surface-panel inline-flex min-h-14 flex-col items-center justify-center gap-1 px-7 py-4 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white md:min-h-16 md:flex-row md:gap-5 md:px-8">
-                <span class="text-xs font-semibold uppercase tracking-[0.22em] text-gray-500 transition-colors" data-i18n="footer.contactButton">
-                    Contact us
-                </span>
-                <span class="text-base font-semibold text-white md:text-xl">
-                    info@felyalabs.com
-                </span>
-            </a>
-        </div>
-    </div>
-    <div class="surface-panel mx-auto grid max-w-[82rem] grid-cols-1 items-center gap-10 px-6 py-8 md:px-10 lg:grid-cols-[minmax(0,1fr)_max-content_minmax(0,1fr)] lg:gap-12 2xl:max-w-[104rem]">
-        <div class="flex flex-col items-center justify-end gap-5 lg:items-start">
-            <div class="flex flex-wrap justify-center gap-3 text-gray-500 lg:justify-start">
+<footer class="site-footer section-shell">
+    <div class="section-inner">
+        <div class="footer-bar">
+            <div class="footer-identity">
+                <a href={`${localePath(locale)}#paton`} class="footer-brand" aria-label={t(locale, 'brand.home')}>
+                    <img src={brand.logo.src} width={brand.logo.width} height={brand.logo.height} alt="FELYA" loading="lazy" decoding="async" fetchpriority="low">
+                </a>
+                <p class="footer-copyright" data-i18n="footer.copyright">{t(locale, 'footer.copyright')}</p>
+            </div>
+            <div class="footer-socials">
                 {socialLinks.map((link) => (
-                    <a href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label}
-                       class="flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                    <a href={link.href} target="_blank" rel="noopener noreferrer" aria-label={t(locale, `footer.${link.id}` as TranslationKey)}>
                         <SocialIcon id={link.id} />
                     </a>
                 ))}
             </div>
-            <p class="text-gray-400 text-sm" data-i18n="footer.copyright">© FELYA LABS 2026.</p>
-        </div>
-
-        <div class="flex min-w-0 flex-col items-center text-center">
-            <h2 class="text-[clamp(1.65rem,6.8vw,2.75rem)] font-bold leading-none tracking-tight lg:text-[clamp(2rem,2.7vw,2.75rem)]">
-                <span class="block whitespace-nowrap text-white" data-i18n="footer.claim1">Shape the future.</span>
-                <span class="block whitespace-nowrap text-[#777777]" data-i18n="footer.claim2">With FELYA LABS.</span>
-            </h2>
-        </div>
-
-        <div class="flex flex-col items-center gap-1 text-sm font-medium text-gray-400 lg:items-end">
-            {legalLinks.map((link) => (
-                <a href={link.href} target="_blank" data-i18n={`legal.${link.key}`} class="rounded-full px-4 py-3 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white">{link.label}</a>
-            ))}
+            <nav class="footer-legal" aria-label={t(locale, 'footer.legalAria')}>
+                {legalLinks.map((link) => (
+                    <a href={link.href} data-i18n={`legal.${link.key}`}>{t(locale, `legal.${link.key}` as TranslationKey)}</a>
+                ))}
+                <a href="https://brand.felya.com" target="_blank" rel="noopener noreferrer">Brand Guide</a>
+            </nav>
         </div>
     </div>
 </footer>
