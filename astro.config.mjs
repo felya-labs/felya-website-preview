@@ -2,8 +2,8 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://felyalabs.github.io/felya-labs-landing-preview',
-  base: '/felya-labs-landing-preview/',
+  site: 'https://felya-labs.github.io/felya-website-preview',
+  base: '/felya-website-preview/',
   output: 'static',
   vite: {
     plugins: [tailwindcss()]
