@@ -1693,12 +1693,14 @@ html[data-theme="light"] .hero-section::after {
     opacity: 1;
 }
 
-/* Hero earth — a faint horizon-line backdrop behind the hero copy, not a focal element. A single
-   duotone Earth texture (grayscale NASA Blue Marble, tinted --accent, derived from three-globe's
-   MIT-licensed bundled assets) sits on a circle so large that only a shallow arc — a few rem tall,
-   spanning the full section width — pokes above the section's bottom edge. Two near-invisible SVG
-   arcs skim just above that horizon with slow signal pulses. Purely supportive of the "Anywhere on
-   Earth" headline; must never compete with it or the product image for attention. */
+/* Hero earth — a faint horizon-line backdrop behind the hero copy, not a focal element. A curated
+   equatorial band of a real Earth texture (grayscale NASA Blue Marble, duotone-tinted per theme so
+   contrast survives compositing in both dark and light mode; derived from three-globe's MIT-licensed
+   bundled assets) sits on a wide strip whose top edge is curved via clip-path — a shallow arc, a few
+   rem tall, spanning the full section width. A drop-shadow glow traces that exact curve (the primary
+   "this is a planet" cue). Two near-invisible SVG arcs skim just above it with slow signal pulses.
+   Purely supportive of the "Anywhere on Earth" headline; must never compete with it or the product
+   image for attention. */
 .hero-earth {
     position: absolute;
     inset: 0;
@@ -1709,43 +1711,33 @@ html[data-theme="light"] .hero-section::after {
 
 .hero-earth__orb {
     position: absolute;
-    left: 50%;
-    --orb-d: clamp(90rem, 220vw, 200rem);
-    --orb-reveal: 7rem;
-    width: var(--orb-d);
-    height: var(--orb-d);
-    bottom: calc(-1 * var(--orb-d) + var(--orb-reveal));
-    transform: translateX(-50%);
-    border-radius: 50%;
-    background-image: url('/assets/images/hero/earth/earth-duotone-2400.webp');
-    background-size: 180%;
-    background-position: 50% 20%;
-    background-repeat: no-repeat;
-    box-shadow: 0 0 5rem 0 var(--accent-soft);
-    opacity: 0.4;
-    animation: hero-earth-drift 100s linear infinite;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: clamp(9rem, 15vw, 16rem);
+    clip-path: ellipse(62% 100% at 50% 100%);
+    background-image: url('/assets/images/hero/earth/earth-band-dark.webp');
+    background-size: auto 100%;
+    background-position: 0 0;
+    background-repeat: repeat-x;
+    filter: drop-shadow(0 -0.35rem 2.5rem var(--accent-soft));
+    opacity: 0.55;
+    animation: hero-earth-drift 110s ease-in-out infinite alternate;
     transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
 }
 
 html[data-theme="light"] .hero-earth__orb {
-    opacity: 0.16;
+    background-image: url('/assets/images/hero/earth/earth-band-light.webp');
+    opacity: 0.5;
 }
 
 @keyframes hero-earth-drift {
-    from { background-position: 50% 20%; }
-    to   { background-position: 8% 20%; }
-}
-
-@media (min-width: 640px) {
-    .hero-earth__orb { --orb-reveal: 8.5rem; }
+    from { background-position-x: 0; }
+    to   { background-position-x: -640px; }
 }
 
 @media (min-width: 1024px) {
-    .hero-earth__orb { --orb-reveal: 11rem; }
-}
-
-@media (min-width: 1440px) {
-    .hero-earth__orb { --orb-reveal: 13rem; }
+    .hero-earth__orb { height: clamp(11rem, 13vw, 17rem); }
 }
 
 .hero-earth__arcs {
