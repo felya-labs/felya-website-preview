@@ -9,6 +9,10 @@ import {
   priorityHeroLanguages,
   secondaryHeroLanguages
 } from './hero-headline-translations.js';
+import {
+  heroEarthSegments,
+  heroEarthRotationParams
+} from '../data/hero-earth-coastline.js';
 
 export {
   colorTheme,
@@ -1053,6 +1057,91 @@ export function initHeroMobileGloveScroll({ root = document } = {}) {
   reduceMotion.addEventListener?.('change', requestUpdate);
 }
 
+export function initHeroEarthRotation({ root = document } = {}) {
+  const container = root.querySelector('.hero-earth');
+  const path = root.querySelector('.hero-earth__coastline path');
+  if (!container || !path) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (reduceMotion.matches) return; // leave the server-rendered static frame in place
+
+  const { R, maxDlon, coscMin } = heroEarthRotationParams;
+  const D2R = Math.PI / 180;
+
+  // West-to-east planetary rotation reads, for a fixed external viewer, as features drifting
+  // left-to-right on screen -- so the sub-viewer longitude drifts west (decreases) over time.
+  // Same true-orthographic math as the build script that generated the static frame (sub-viewer
+  // on the equator), just re-evaluated every frame instead of baked once.
+  const PERIOD_MS = 120000; // one full 360deg turn every 2 minutes -- legible within seconds, calm over a whole viewing
+  const UPDATE_INTERVAL_MS = 80; // ~12fps redraw; motion this slow doesn't need more
+
+  function project(lon, lat, lon0) {
+    const dlon = ((lon - lon0 + 540) % 360) - 180;
+    if (Math.abs(dlon) > maxDlon) return null;
+    const latR = lat * D2R, dlonR = dlon * D2R;
+    const cosc = Math.cos(latR) * Math.cos(dlonR);
+    if (cosc < coscMin) return null;
+    const x = R * Math.cos(latR) * Math.sin(dlonR);
+    const y = R * Math.sin(latR);
+    return `${x.toFixed(2)},${(-y).toFixed(2)}`;
+  }
+
+  function buildPath(lon0) {
+    const parts = [];
+    for (const run of heroEarthSegments) {
+      let segment = [];
+      for (const [lon, lat] of run) {
+        const p = project(lon, lat, lon0);
+        if (p) {
+          segment.push(p);
+        } else {
+          if (segment.length > 1) parts.push(`M ${segment.join(' L ')}`);
+          segment = [];
+        }
+      }
+      if (segment.length > 1) parts.push(`M ${segment.join(' L ')}`);
+    }
+    return parts.join(' ');
+  }
+
+  let frame = null;
+  let lastUpdate = 0;
+  let visible = true;
+
+  function tick(now) {
+    frame = window.requestAnimationFrame(tick);
+    if (!visible || now - lastUpdate < UPDATE_INTERVAL_MS) return;
+    lastUpdate = now;
+    const lon0 = -((now / PERIOD_MS) % 1) * 360;
+    path.setAttribute('d', buildPath(lon0));
+  }
+
+  const start = () => {
+    if (frame === null) frame = window.requestAnimationFrame(tick);
+  };
+  const stop = () => {
+    if (frame !== null) window.cancelAnimationFrame(frame);
+    frame = null;
+    path.setAttribute('d', buildPath(0));
+  };
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.target === container) visible = entry.isIntersecting;
+      });
+    }, { threshold: 0.01 });
+    observer.observe(container);
+  }
+
+  reduceMotion.addEventListener?.('change', () => {
+    if (reduceMotion.matches) stop();
+    else start();
+  });
+
+  start();
+}
+
 export function initPatonSystemDemonstration({ root = document } = {}) {
   const demonstrations = Array.from(root.querySelectorAll('[data-system-demonstration]'));
   if (!demonstrations.length) return;
@@ -2088,6 +2177,7 @@ export function initSite(root = document) {
   initPrototypeVideoCover({ root });
   initPrototypeFilmViewport({ root });
   initHeroMobileGloveScroll({ root });
+  initHeroEarthRotation({ root });
   initPatonSystemDemonstration({ root });
   initSectionReveals({ root });
   initSectionNavigation({ root });
