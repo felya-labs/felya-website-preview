@@ -1693,20 +1693,44 @@ html[data-theme="light"] .hero-section::after {
     opacity: 1;
 }
 
-/* Hero earth — a faint horizon-line backdrop behind the hero copy, not a focal element. A curated
-   equatorial band of a real Earth texture (grayscale NASA Blue Marble, duotone-tinted per theme so
-   contrast survives compositing in both dark and light mode; derived from three-globe's MIT-licensed
-   bundled assets) sits on a wide strip whose top edge is curved via clip-path — a shallow arc, a few
-   rem tall, spanning the full section width. A drop-shadow glow traces that exact curve (the primary
-   "this is a planet" cue). Two near-invisible SVG arcs skim just above it with slow signal pulses.
-   Purely supportive of the "Anywhere on Earth" headline; must never compete with it or the product
-   image for attention. */
+/* Hero earth — a faint horizon-line backdrop behind the hero copy, not a focal element. Real
+   coastline geometry (Natural Earth land-110m vector data, equirectangular, no raster photo)
+   is drawn as glowing outlines only — no filled landmass — on a wide strip whose top edge is
+   curved via clip-path: a shallow arc spanning the full section width. Three copies of the
+   coastline path sit side by side so panning by exactly one world-width loops perfectly with
+   no seam. A drop-shadow glow traces the exact curved silhouette (the primary "this is a
+   planet" cue), plus a separate soft atmosphere-rim layer just behind it. Two near-invisible
+   SVG arcs skim just above the horizon with slow signal pulses. Purely supportive of the
+   "Anywhere on Earth" headline; must never compete with it or the product image for attention. */
 .hero-earth {
     position: absolute;
     inset: 0;
     z-index: 1;
     overflow: hidden;
     pointer-events: none;
+    --earth-h: clamp(9rem, 15vw, 16rem);
+}
+
+.hero-earth__horizon {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: var(--earth-h);
+    overflow: visible;
+}
+
+.hero-earth__horizon path {
+    fill: none;
+    stroke: var(--accent-strong);
+    stroke-width: 2.5px;
+    vector-effect: non-scaling-stroke;
+    filter: blur(2px) drop-shadow(0 0 6px var(--accent-strong));
+    opacity: 0.6;
+}
+
+html[data-theme="light"] .hero-earth__horizon path {
+    opacity: 0.4;
 }
 
 .hero-earth__orb {
@@ -1714,30 +1738,41 @@ html[data-theme="light"] .hero-section::after {
     left: 0;
     right: 0;
     bottom: 0;
-    height: clamp(9rem, 15vw, 16rem);
+    height: var(--earth-h);
     clip-path: ellipse(62% 100% at 50% 100%);
-    background-image: url('/assets/images/hero/earth/earth-band-dark.webp');
-    background-size: auto 100%;
-    background-position: 0 0;
-    background-repeat: repeat-x;
-    filter: drop-shadow(0 -0.35rem 2.5rem var(--accent-soft));
-    opacity: 0.55;
-    animation: hero-earth-drift 110s ease-in-out infinite alternate;
+    filter: drop-shadow(0 -0.2rem 1.5rem var(--accent-soft));
+    opacity: 0.7;
     transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
 }
 
 html[data-theme="light"] .hero-earth__orb {
-    background-image: url('/assets/images/hero/earth/earth-band-light.webp');
-    opacity: 0.5;
+    opacity: 0.55;
+}
+
+.hero-earth__coastline {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.hero-earth__coastline-track {
+    animation: hero-earth-drift 3600s linear infinite;
+}
+
+.hero-earth__coastline-track path {
+    fill: none;
+    stroke: var(--accent-strong);
+    stroke-width: 1.1px;
+    vector-effect: non-scaling-stroke;
 }
 
 @keyframes hero-earth-drift {
-    from { background-position-x: 0; }
-    to   { background-position-x: -640px; }
+    from { transform: translateX(0); }
+    to   { transform: translateX(360px); }
 }
 
 @media (min-width: 1024px) {
-    .hero-earth__orb { height: clamp(11rem, 13vw, 17rem); }
+    .hero-earth { --earth-h: clamp(11rem, 13vw, 17rem); }
 }
 
 .hero-earth__arcs {
@@ -4342,7 +4377,7 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-product-stage {
         animation: none;
     }
-    .hero-earth__orb {
+    .hero-earth__coastline-track {
         animation: none;
     }
     .hero-earth__pulse {
