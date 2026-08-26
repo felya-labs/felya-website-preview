@@ -1,6 +1,6 @@
 ---
 import { gloveLightImage, gloveDarkImage } from '../data/site.js';
-import { heroEarthFrames, heroEarthViewBox } from '../data/hero-earth-coastline.js';
+import { heroEarthPath, heroEarthLimbPath, heroEarthClipPath, heroEarthViewBox } from '../data/hero-earth-coastline.js';
 import type { Locale } from '../i18n/config';
 import { t } from '../i18n/translations';
 
@@ -12,14 +12,17 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
 
 <section id="paton" class="hero-reveal hero-section">
     <div class="hero-earth" aria-hidden="true">
-        <svg class="hero-earth__horizon" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path d="M -2,100 A 52,100 0 1 1 102,100 A 52,100 0 1 1 -2,100" />
+        <svg class="hero-earth__horizon" viewBox={heroEarthViewBox} preserveAspectRatio="xMidYMin slice">
+            <defs>
+                <clipPath id="hero-earth-clip" clipPathUnits="userSpaceOnUse">
+                    <path d={heroEarthClipPath} />
+                </clipPath>
+            </defs>
+            <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
         </svg>
         <div class="hero-earth__orb">
-            <svg class="hero-earth__coastline" viewBox={heroEarthViewBox} preserveAspectRatio="xMidYMid slice">
-                {heroEarthFrames.map((d, i) => (
-                    <path class="hero-earth__coastline-frame" data-frame={i} d={d} />
-                ))}
+            <svg class="hero-earth__coastline" viewBox={heroEarthViewBox} preserveAspectRatio="xMidYMin slice">
+                <path d={heroEarthPath} clip-path="url(#hero-earth-clip)" />
             </svg>
         </div>
     </div>
