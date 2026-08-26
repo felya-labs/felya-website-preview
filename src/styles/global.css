@@ -1693,10 +1693,12 @@ html[data-theme="light"] .hero-section::after {
     opacity: 1;
 }
 
-/* Hero earth — large background orb built from a real Earth texture (NASA Blue Marble day map +
-   night-lights map, MIT-licensed via three-globe's bundled example assets), cropped to a partial
-   curve seen "from orbit" behind the hero content. No 3D engine — a huge circle mostly pushed
-   below the section, plus two near-invisible SVG arcs carrying slow signal pulses. */
+/* Hero earth — a faint horizon-line backdrop behind the hero copy, not a focal element. A single
+   duotone Earth texture (grayscale NASA Blue Marble, tinted --accent, derived from three-globe's
+   MIT-licensed bundled assets) sits on a circle so large that only a shallow arc — a few rem tall,
+   spanning the full section width — pokes above the section's bottom edge. Two near-invisible SVG
+   arcs skim just above that horizon with slow signal pulses. Purely supportive of the "Anywhere on
+   Earth" headline; must never compete with it or the product image for attention. */
 .hero-earth {
     position: absolute;
     inset: 0;
@@ -1708,53 +1710,42 @@ html[data-theme="light"] .hero-section::after {
 .hero-earth__orb {
     position: absolute;
     left: 50%;
-    bottom: -26rem;
+    --orb-d: clamp(90rem, 220vw, 200rem);
+    --orb-reveal: 7rem;
+    width: var(--orb-d);
+    height: var(--orb-d);
+    bottom: calc(-1 * var(--orb-d) + var(--orb-reveal));
     transform: translateX(-50%);
-    width: clamp(46rem, 78vw, 84rem);
-    height: clamp(46rem, 78vw, 84rem);
     border-radius: 50%;
-    background-image: url('/assets/images/hero/earth/earth-night-2000.webp'), url('/assets/images/hero/earth/earth-day-2000.webp');
-    background-size: 230% 230%, 230% 230%;
-    background-position: 42% 30%, 42% 30%;
-    background-repeat: no-repeat, no-repeat;
-    background-blend-mode: screen, normal;
-    box-shadow:
-        inset -6rem -6rem 12rem rgba(0, 0, 0, 0.6),
-        0 0 8rem 0.5rem var(--accent-soft);
-    filter: saturate(0.85) brightness(0.9);
-    opacity: 0.55;
-    animation: hero-earth-drift 220s linear infinite;
-    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1), filter 560ms cubic-bezier(.4, 0, .2, 1);
-}
-
-.hero-earth__orb::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: radial-gradient(circle at 36% 26%, rgba(255, 255, 255, 0.12), transparent 42%);
-    mix-blend-mode: screen;
+    background-image: url('/assets/images/hero/earth/earth-duotone-2400.webp');
+    background-size: 180%;
+    background-position: 50% 20%;
+    background-repeat: no-repeat;
+    box-shadow: 0 0 5rem 0 var(--accent-soft);
+    opacity: 0.4;
+    animation: hero-earth-drift 100s linear infinite;
+    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
 }
 
 html[data-theme="light"] .hero-earth__orb {
-    opacity: 0.42;
-    filter: saturate(0.95) brightness(1.04) contrast(0.96);
-    box-shadow:
-        inset -4rem -4rem 9rem rgba(255, 255, 255, 0.32),
-        0 0 6rem 0.5rem var(--accent-soft);
+    opacity: 0.16;
 }
 
 @keyframes hero-earth-drift {
-    from { background-position: 42% 30%, 42% 30%; }
-    to   { background-position: 2% 30%, 2% 30%; }
+    from { background-position: 50% 20%; }
+    to   { background-position: 8% 20%; }
+}
+
+@media (min-width: 640px) {
+    .hero-earth__orb { --orb-reveal: 8.5rem; }
 }
 
 @media (min-width: 1024px) {
-    .hero-earth__orb {
-        bottom: -30rem;
-        width: clamp(52rem, 70vw, 90rem);
-        height: clamp(52rem, 70vw, 90rem);
-    }
+    .hero-earth__orb { --orb-reveal: 11rem; }
+}
+
+@media (min-width: 1440px) {
+    .hero-earth__orb { --orb-reveal: 13rem; }
 }
 
 .hero-earth__arcs {
