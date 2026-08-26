@@ -1722,17 +1722,60 @@ html[data-theme="light"] .hero-section::after {
     overflow: visible;
 }
 
+/* Glow via stacked, wider, more transparent strokes instead of blur()/drop-shadow(): a CSS
+   filter here measured as a major source of the rotation's frame stutter even though this path
+   never changes -- in software rendering it still forces a full repaint of the filtered region
+   whenever the sibling animated coastline mutates. Stacked strokes are just more vector geometry,
+   which the renderer can composite without ever re-rasterizing a blur. */
 .hero-earth__horizon path {
     fill: none;
     stroke: var(--accent-strong);
-    stroke-width: 2.5px;
+    stroke-width: 1.5px;
     vector-effect: non-scaling-stroke;
-    filter: blur(2px) drop-shadow(0 0 6px var(--accent-strong));
     opacity: 0.6;
+}
+
+.hero-earth__horizon path.hero-earth__horizon-glow {
+    stroke-width: 4px;
+    opacity: 0.22;
+}
+
+.hero-earth__horizon path.hero-earth__horizon-glow--soft {
+    stroke-width: 8px;
+    opacity: 0.1;
 }
 
 html[data-theme="light"] .hero-earth__horizon path {
     opacity: 0.4;
+}
+
+html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow {
+    opacity: 0.16;
+}
+
+html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow--soft {
+    opacity: 0.08;
+}
+
+/* A static gradient stand-in for the ambient glow that used to be a drop-shadow on
+   .hero-earth__orb. That filter re-rasterized a blur across the whole (animated, ~3000-point)
+   coastline on every rotation frame -- measured at 100+ ms of extra paint per update, which is
+   exactly the stutter this was reported as. A gradient never needs to repaint when the
+   coastline's `d` changes, so the rotation stays smooth; only the crisp coastline stroke still
+   tracks the sphere's edge precisely, via .hero-earth__horizon above. */
+.hero-earth__glow {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--earth-h);
+    background: radial-gradient(ellipse 60% 85% at 50% 100%, var(--accent-soft), transparent 70%);
+    opacity: 0.7;
+    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
+}
+
+html[data-theme="light"] .hero-earth__glow {
+    opacity: 0.55;
 }
 
 .hero-earth__orb {
@@ -1741,7 +1784,6 @@ html[data-theme="light"] .hero-earth__horizon path {
     right: 0;
     bottom: 0;
     height: var(--earth-h);
-    filter: drop-shadow(0 -0.2rem 1.5rem var(--accent-soft));
     opacity: 0.7;
     transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
 }

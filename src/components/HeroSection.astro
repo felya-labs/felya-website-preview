@@ -12,12 +12,15 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
 
 <section id="paton" class="hero-reveal hero-section">
     <div class="hero-earth" aria-hidden="true">
+        <div class="hero-earth__glow"></div>
         <svg class="hero-earth__horizon" viewBox={heroEarthViewBox} preserveAspectRatio="xMidYMin slice">
             <defs>
                 <clipPath id="hero-earth-clip" clipPathUnits="userSpaceOnUse">
                     <path d={heroEarthClipPath} />
                 </clipPath>
             </defs>
+            <path class="hero-earth__horizon-glow" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
+            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--soft" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
             <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
         </svg>
         <div class="hero-earth__orb">
