@@ -1073,7 +1073,12 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // Same true-orthographic math as the build script that generated the static frame (sub-viewer
   // on the equator), just re-evaluated every frame instead of baked once.
   const PERIOD_MS = 120000; // one full 360deg turn every 2 minutes -- legible within seconds, calm over a whole viewing
-  const UPDATE_INTERVAL_MS = 80; // ~12fps redraw; motion this slow doesn't need more
+  // 12fps (throttled) was the actual remaining cause of the reported stutter: consistent timing
+  // isn't the same as smooth motion, and 12fps reads as discrete steps rather than a continuous
+  // turn no matter how evenly spaced. Now that a frame costs ~2ms (post filter-removal), there's
+  // no reason to throttle below the display's own refresh rate; this just caps redundant work on
+  // very high-refresh-rate displays without any perceptible smoothness cost.
+  const UPDATE_INTERVAL_MS = 16;
 
   function project(lon, lat, lon0) {
     const dlon = ((lon - lon0 + 540) % 360) - 180;
@@ -1083,7 +1088,9 @@ export function initHeroEarthRotation({ root = document } = {}) {
     if (cosc < coscMin) return null;
     const x = R * Math.cos(latR) * Math.sin(dlonR);
     const y = R * Math.sin(latR);
-    return `${x.toFixed(2)},${(-y).toFixed(2)}`;
+    // Math.round beats toFixed here (called ~7000x/frame) -- sub-pixel precision either way,
+    // path data doesn't need a fixed decimal count.
+    return `${Math.round(x * 100) / 100},${Math.round(-y * 100) / 100}`;
   }
 
   function buildPath(lon0) {
