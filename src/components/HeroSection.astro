@@ -10,6 +10,43 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
 ---
 
 <section id="paton" class="hero-reveal hero-section">
+    <div class="hero-globe" data-globe="a" aria-hidden="true">
+        <div class="hero-globe__stage">
+            <div class="hero-globe__sphere">
+                <span class="hero-globe__meridian" style="--n:0"></span>
+                <span class="hero-globe__meridian" style="--n:1"></span>
+                <span class="hero-globe__meridian" style="--n:2"></span>
+                <span class="hero-globe__meridian" style="--n:3"></span>
+                <span class="hero-globe__meridian" style="--n:4"></span>
+                <span class="hero-globe__meridian" style="--n:5"></span>
+                <span class="hero-globe__meridian" style="--n:6"></span>
+                <span class="hero-globe__parallel" style="--offset:1"></span>
+                <span class="hero-globe__parallel" style="--offset:2"></span>
+                <span class="hero-globe__parallel" style="--offset:-1"></span>
+                <span class="hero-globe__parallel" style="--offset:-2"></span>
+            </div>
+            <svg class="hero-globe__pulses" viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet">
+                <path id="hero-globe-pulse-path-1" d="M -170 0 A 170 60 0 1 1 170 0 A 170 60 0 1 1 -170 0 Z"></path>
+                <path id="hero-globe-pulse-path-2" d="M 0 -170 A 92 170 0 1 1 0 170 A 92 170 0 1 1 0 -170 Z"></path>
+                <path id="hero-globe-pulse-path-3" d="M -170 0 A 170 108 0 1 1 170 0 A 170 108 0 1 1 -170 0 Z"></path>
+                <circle class="hero-globe__pulse" r="2.6">
+                    <animateMotion dur="6.5s" repeatCount="indefinite" rotate="auto">
+                        <mpath href="#hero-globe-pulse-path-1"></mpath>
+                    </animateMotion>
+                </circle>
+                <circle class="hero-globe__pulse" r="2.6">
+                    <animateMotion dur="8s" begin="-3s" repeatCount="indefinite" rotate="auto">
+                        <mpath href="#hero-globe-pulse-path-2"></mpath>
+                    </animateMotion>
+                </circle>
+                <circle class="hero-globe__pulse hero-globe__pulse--gold" r="3.2">
+                    <animateMotion dur="9s" begin="-5s" repeatCount="indefinite" rotate="auto">
+                        <mpath href="#hero-globe-pulse-path-3"></mpath>
+                    </animateMotion>
+                </circle>
+            </svg>
+        </div>
+    </div>
     <div class="hero-composition">
         <div class="hero-copy">
             <p class="hero-product-name" data-i18n="hero.product">{t(locale, 'hero.product')}</p>
@@ -45,4 +82,41 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
             </div>
         </div>
     </div>
+
+    {/* TEMP: preview-comparison switcher — remove before merging this redesign to main */}
+    <div class="hero-globe-switcher" data-hero-globe-switcher aria-label="Hero-Globus-Variante (Vergleich)">
+        <button type="button" data-globe-option="a">A · Blueprint</button>
+        <button type="button" data-globe-option="b">B · Signalnetz</button>
+        <button type="button" data-globe-option="c">C · Subliminal</button>
+        <button type="button" data-globe-option="off">Aus</button>
+    </div>
 </section>
+
+<script>
+    const STORAGE_KEY = 'felya-hero-globe-variant';
+    const globe = document.querySelector<HTMLElement>('.hero-globe');
+    const switcher = document.querySelector<HTMLElement>('[data-hero-globe-switcher]');
+
+    if (globe && switcher) {
+        const applyVariant = (variant: string) => {
+            if (variant === 'off') {
+                globe.setAttribute('data-globe', 'off');
+            } else {
+                globe.setAttribute('data-globe', variant);
+            }
+            switcher.querySelectorAll<HTMLButtonElement>('button').forEach((btn) => {
+                btn.setAttribute('aria-pressed', String(btn.dataset.globeOption === variant));
+            });
+        };
+
+        const stored = localStorage.getItem(STORAGE_KEY) ?? 'a';
+        applyVariant(stored);
+
+        switcher.addEventListener('click', (event) => {
+            const target = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-globe-option]');
+            if (!target?.dataset.globeOption) return;
+            localStorage.setItem(STORAGE_KEY, target.dataset.globeOption);
+            applyVariant(target.dataset.globeOption);
+        });
+    }
+</script>

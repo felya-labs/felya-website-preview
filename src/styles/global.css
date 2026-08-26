@@ -1693,6 +1693,175 @@ html[data-theme="light"] .hero-section::after {
     opacity: 1;
 }
 
+/* Hero globe — CSS-only 3D wireframe, three comparable variants via [data-globe]. */
+.hero-globe {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: var(--globe-opacity-dark, 0.22);
+    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
+    --globe-r: 9rem;
+    --globe-count: 7;
+    --globe-spin: 130s;
+    --globe-opacity-dark: 0.22;
+    --globe-opacity-light: 0.16;
+}
+
+html[data-theme="light"] .hero-globe {
+    opacity: var(--globe-opacity-light, 0.16);
+}
+
+.hero-globe[data-globe="off"] {
+    display: none;
+}
+
+.hero-globe[data-globe="b"] {
+    --globe-count: 3;
+    --globe-spin: 110s;
+    --globe-opacity-dark: 0.30;
+    --globe-opacity-light: 0.20;
+}
+
+.hero-globe[data-globe="c"] {
+    --globe-count: 2;
+    --globe-spin: 340s;
+    --globe-opacity-dark: 0.09;
+    --globe-opacity-light: 0.06;
+}
+
+@media (min-width: 640px) {
+    .hero-globe { --globe-r: 12rem; }
+}
+
+@media (min-width: 1024px) {
+    .hero-globe { --globe-r: 15rem; justify-content: flex-end; padding-right: clamp(0rem, 6vw, 7rem); }
+}
+
+@media (min-width: 1440px) {
+    .hero-globe { --globe-r: 17rem; }
+}
+
+.hero-globe__stage {
+    position: relative;
+    width: calc(var(--globe-r) * 2);
+    height: calc(var(--globe-r) * 2);
+    perspective: calc(var(--globe-r) * 8);
+}
+
+.hero-globe__sphere {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: rotateX(-14deg);
+    animation: hero-globe-spin var(--globe-spin) linear infinite;
+}
+
+@keyframes hero-globe-spin {
+    from { transform: rotateX(-14deg) rotateY(0deg); }
+    to   { transform: rotateX(-14deg) rotateY(360deg); }
+}
+
+.hero-globe__meridian,
+.hero-globe__parallel {
+    position: absolute;
+    inset: 0;
+    display: block;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+}
+
+.hero-globe__meridian {
+    transform: rotateY(calc(var(--n) * 180deg / var(--globe-count)));
+}
+
+.hero-globe__meridian:nth-child(even) {
+    border-color: var(--accent-strong);
+}
+
+.hero-globe__meridian:nth-child(n + 4) {
+    display: none;
+}
+
+.hero-globe[data-globe="a"] .hero-globe__meridian {
+    display: block;
+}
+
+.hero-globe[data-globe="c"] .hero-globe__meridian:nth-child(n + 3) {
+    display: none;
+}
+
+.hero-globe__parallel {
+    --lat: calc(var(--offset) * 26deg);
+    transform: translateY(calc(var(--globe-r) * -1 * sin(var(--lat)))) rotateX(90deg) scale(cos(var(--lat)));
+}
+
+.hero-globe[data-globe="b"] .hero-globe__parallel,
+.hero-globe[data-globe="c"] .hero-globe__parallel {
+    display: none;
+}
+
+.hero-globe__pulses {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    fill: none;
+}
+
+.hero-globe__pulses path {
+    fill: none;
+    stroke: none;
+}
+
+.hero-globe[data-globe="b"] .hero-globe__pulses {
+    display: block;
+}
+
+.hero-globe__pulse {
+    fill: var(--accent-strong);
+}
+
+.hero-globe__pulse--gold {
+    fill: var(--signal-gold);
+    filter: drop-shadow(0 0 4px var(--signal-gold-glow));
+}
+
+.hero-globe-switcher {
+    position: fixed;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 60;
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.4rem;
+    border-radius: 0.6rem;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(6px);
+}
+
+.hero-globe-switcher button {
+    font-size: 0.68rem;
+    line-height: 1;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.72);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.hero-globe-switcher button[aria-pressed="true"] {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
 .hero-composition {
     position: relative;
     z-index: 2;
@@ -4269,6 +4438,13 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-copy,
     .hero-product-stage {
         animation: none;
+    }
+    .hero-globe__sphere {
+        animation: none;
+        transform: rotateX(-14deg) rotateY(20deg);
+    }
+    .hero-globe__pulses {
+        display: none !important;
     }
     .hero-product-image {
         transition: none;
