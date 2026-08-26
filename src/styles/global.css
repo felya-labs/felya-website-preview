@@ -1693,173 +1693,93 @@ html[data-theme="light"] .hero-section::after {
     opacity: 1;
 }
 
-/* Hero globe — CSS-only 3D wireframe, three comparable variants via [data-globe]. */
-.hero-globe {
+/* Hero earth — large background orb built from a real Earth texture (NASA Blue Marble day map +
+   night-lights map, MIT-licensed via three-globe's bundled example assets), cropped to a partial
+   curve seen "from orbit" behind the hero content. No 3D engine — a huge circle mostly pushed
+   below the section, plus two near-invisible SVG arcs carrying slow signal pulses. */
+.hero-earth {
     position: absolute;
     inset: 0;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow: hidden;
     pointer-events: none;
-    opacity: var(--globe-opacity-dark, 0.22);
-    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
-    --globe-r: 9rem;
-    --globe-count: 7;
-    --globe-spin: 130s;
-    --globe-opacity-dark: 0.22;
-    --globe-opacity-light: 0.16;
 }
 
-html[data-theme="light"] .hero-globe {
-    opacity: var(--globe-opacity-light, 0.16);
+.hero-earth__orb {
+    position: absolute;
+    left: 50%;
+    bottom: -26rem;
+    transform: translateX(-50%);
+    width: clamp(46rem, 78vw, 84rem);
+    height: clamp(46rem, 78vw, 84rem);
+    border-radius: 50%;
+    background-image: url('/assets/images/hero/earth/earth-night-2000.webp'), url('/assets/images/hero/earth/earth-day-2000.webp');
+    background-size: 230% 230%, 230% 230%;
+    background-position: 42% 30%, 42% 30%;
+    background-repeat: no-repeat, no-repeat;
+    background-blend-mode: screen, normal;
+    box-shadow:
+        inset -6rem -6rem 12rem rgba(0, 0, 0, 0.6),
+        0 0 8rem 0.5rem var(--accent-soft);
+    filter: saturate(0.85) brightness(0.9);
+    opacity: 0.55;
+    animation: hero-earth-drift 220s linear infinite;
+    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1), filter 560ms cubic-bezier(.4, 0, .2, 1);
 }
 
-.hero-globe[data-globe="off"] {
-    display: none;
+.hero-earth__orb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 36% 26%, rgba(255, 255, 255, 0.12), transparent 42%);
+    mix-blend-mode: screen;
 }
 
-.hero-globe[data-globe="b"] {
-    --globe-count: 3;
-    --globe-spin: 110s;
-    --globe-opacity-dark: 0.30;
-    --globe-opacity-light: 0.20;
+html[data-theme="light"] .hero-earth__orb {
+    opacity: 0.42;
+    filter: saturate(0.95) brightness(1.04) contrast(0.96);
+    box-shadow:
+        inset -4rem -4rem 9rem rgba(255, 255, 255, 0.32),
+        0 0 6rem 0.5rem var(--accent-soft);
 }
 
-.hero-globe[data-globe="c"] {
-    --globe-count: 2;
-    --globe-spin: 340s;
-    --globe-opacity-dark: 0.09;
-    --globe-opacity-light: 0.06;
-}
-
-@media (min-width: 640px) {
-    .hero-globe { --globe-r: 12rem; }
+@keyframes hero-earth-drift {
+    from { background-position: 42% 30%, 42% 30%; }
+    to   { background-position: 2% 30%, 2% 30%; }
 }
 
 @media (min-width: 1024px) {
-    .hero-globe { --globe-r: 15rem; justify-content: flex-end; padding-right: clamp(0rem, 6vw, 7rem); }
+    .hero-earth__orb {
+        bottom: -30rem;
+        width: clamp(52rem, 70vw, 90rem);
+        height: clamp(52rem, 70vw, 90rem);
+    }
 }
 
-@media (min-width: 1440px) {
-    .hero-globe { --globe-r: 17rem; }
-}
-
-.hero-globe__stage {
-    position: relative;
-    width: calc(var(--globe-r) * 2);
-    height: calc(var(--globe-r) * 2);
-    perspective: calc(var(--globe-r) * 8);
-}
-
-.hero-globe__sphere {
-    position: absolute;
-    inset: 0;
-    transform-style: preserve-3d;
-    transform: rotateX(-14deg);
-    animation: hero-globe-spin var(--globe-spin) linear infinite;
-}
-
-@keyframes hero-globe-spin {
-    from { transform: rotateX(-14deg) rotateY(0deg); }
-    to   { transform: rotateX(-14deg) rotateY(360deg); }
-}
-
-.hero-globe__meridian,
-.hero-globe__parallel {
-    position: absolute;
-    inset: 0;
-    display: block;
-    border-radius: 50%;
-    border: 1px solid var(--accent);
-}
-
-.hero-globe__meridian {
-    transform: rotateY(calc(var(--n) * 180deg / var(--globe-count)));
-}
-
-.hero-globe__meridian:nth-child(even) {
-    border-color: var(--accent-strong);
-}
-
-.hero-globe__meridian:nth-child(n + 4) {
-    display: none;
-}
-
-.hero-globe[data-globe="a"] .hero-globe__meridian {
-    display: block;
-}
-
-.hero-globe[data-globe="c"] .hero-globe__meridian:nth-child(n + 3) {
-    display: none;
-}
-
-.hero-globe__parallel {
-    --lat: calc(var(--offset) * 26deg);
-    transform: translateY(calc(var(--globe-r) * -1 * sin(var(--lat)))) rotateX(90deg) scale(cos(var(--lat)));
-}
-
-.hero-globe[data-globe="b"] .hero-globe__parallel,
-.hero-globe[data-globe="c"] .hero-globe__parallel {
-    display: none;
-}
-
-.hero-globe__pulses {
+.hero-earth__arcs {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    display: none;
     fill: none;
 }
 
-.hero-globe__pulses path {
+.hero-earth__arc-path {
     fill: none;
-    stroke: none;
+    stroke: var(--accent);
+    stroke-width: 1;
+    opacity: 0.16;
 }
 
-.hero-globe[data-globe="b"] .hero-globe__pulses {
-    display: block;
-}
-
-.hero-globe__pulse {
+.hero-earth__pulse {
     fill: var(--accent-strong);
+    filter: drop-shadow(0 0 3px var(--accent-strong));
 }
 
-.hero-globe__pulse--gold {
+.hero-earth__pulse--gold {
     fill: var(--signal-gold);
     filter: drop-shadow(0 0 4px var(--signal-gold-glow));
-}
-
-.hero-globe-switcher {
-    position: fixed;
-    left: 1rem;
-    bottom: 1rem;
-    z-index: 60;
-    display: flex;
-    gap: 0.4rem;
-    padding: 0.4rem;
-    border-radius: 0.6rem;
-    background: rgba(0, 0, 0, 0.72);
-    backdrop-filter: blur(6px);
-}
-
-.hero-globe-switcher button {
-    font-size: 0.68rem;
-    line-height: 1;
-    padding: 0.45rem 0.6rem;
-    border-radius: 0.4rem;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.72);
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.hero-globe-switcher button[aria-pressed="true"] {
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.4);
 }
 
 .hero-composition {
@@ -4439,11 +4359,10 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-product-stage {
         animation: none;
     }
-    .hero-globe__sphere {
+    .hero-earth__orb {
         animation: none;
-        transform: rotateX(-14deg) rotateY(20deg);
     }
-    .hero-globe__pulses {
+    .hero-earth__pulse {
         display: none !important;
     }
     .hero-product-image {
