@@ -1,11 +1,8 @@
 ---
 import { gloveLightImage, gloveDarkImage } from '../data/site.js';
-import { heroEarthCoastline } from '../data/hero-earth-coastline.js';
+import { heroEarthFrames, heroEarthViewBox } from '../data/hero-earth-coastline.js';
 import type { Locale } from '../i18n/config';
 import { t } from '../i18n/translations';
-
-const { viewBox, path: coastlinePath } = heroEarthCoastline;
-const coastlineViewBox = `${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`;
 
 const { locale } = Astro.props as { locale: Locale };
 
@@ -16,31 +13,15 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
 <section id="paton" class="hero-reveal hero-section">
     <div class="hero-earth" aria-hidden="true">
         <svg class="hero-earth__horizon" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path d="M -12,100 A 62,100 0 1 1 112,100 A 62,100 0 1 1 -12,100" />
+            <path d="M -2,100 A 52,100 0 1 1 102,100 A 52,100 0 1 1 -2,100" />
         </svg>
         <div class="hero-earth__orb">
-            <svg class="hero-earth__coastline" viewBox={coastlineViewBox} preserveAspectRatio="xMidYMid slice">
-                <g class="hero-earth__coastline-track">
-                    <path d={coastlinePath} transform={`translate(${-viewBox.width} 0)`} />
-                    <path d={coastlinePath} />
-                    <path d={coastlinePath} transform={`translate(${viewBox.width} 0)`} />
-                </g>
+            <svg class="hero-earth__coastline" viewBox={heroEarthViewBox} preserveAspectRatio="xMidYMid slice">
+                {heroEarthFrames.map((d, i) => (
+                    <path class="hero-earth__coastline-frame" data-frame={i} d={d} />
+                ))}
             </svg>
         </div>
-        <svg class="hero-earth__arcs" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">
-            <path id="hero-earth-arc-1" class="hero-earth__arc-path" d="M 40,880 A 2200,2200 0 0 1 960,840" />
-            <path id="hero-earth-arc-2" class="hero-earth__arc-path" d="M 90,950 A 2600,2600 0 0 1 980,930" />
-            <circle class="hero-earth__pulse" r="4">
-                <animateMotion dur="11s" repeatCount="indefinite">
-                    <mpath href="#hero-earth-arc-1"></mpath>
-                </animateMotion>
-            </circle>
-            <circle class="hero-earth__pulse hero-earth__pulse--gold" r="4.5">
-                <animateMotion dur="14s" begin="-6s" repeatCount="indefinite">
-                    <mpath href="#hero-earth-arc-2"></mpath>
-                </animateMotion>
-            </circle>
-        </svg>
     </div>
     <div class="hero-composition">
         <div class="hero-copy">

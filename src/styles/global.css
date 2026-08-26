@@ -1694,14 +1694,17 @@ html[data-theme="light"] .hero-section::after {
 }
 
 /* Hero earth — a faint horizon-line backdrop behind the hero copy, not a focal element. Real
-   coastline geometry (Natural Earth land-110m vector data, equirectangular, no raster photo)
-   is drawn as glowing outlines only — no filled landmass — on a wide strip whose top edge is
-   curved via clip-path: a shallow arc spanning the full section width. Three copies of the
-   coastline path sit side by side so panning by exactly one world-width loops perfectly with
-   no seam. A drop-shadow glow traces the exact curved silhouette (the primary "this is a
-   planet" cue), plus a separate soft atmosphere-rim layer just behind it. Two near-invisible
-   SVG arcs skim just above the horizon with slow signal pulses. Purely supportive of the
-   "Anywhere on Earth" headline; must never compete with it or the product image for attention. */
+   coastline geometry (Natural Earth land-110m vector data), drawn as glowing outlines only — no
+   filled landmass — using a true orthographic projection (the actual geometry of looking at a
+   sphere from outside, sub-viewer at 9N), not a flat map crop: meridians correctly compress
+   toward the limb, so it reads as curved surface rather than a flat strip under a curved mask.
+   8 frames spaced 45deg apart crossfade in sequence to simulate rotation (a static per-frame
+   projection can't be faked by panning — the compression pattern has to stay fixed relative to
+   the viewer while the content underneath changes, so each "frame" is a fresh projection at its
+   own longitude). The visible strip itself is still framed by a curved clip-path + a drawn
+   horizon-glow arc, so the frame's own edges read as "the edge of a sphere" too. Purely
+   supportive of the "Anywhere on Earth" headline; must never compete with it or the product
+   image for attention. */
 .hero-earth {
     position: absolute;
     inset: 0;
@@ -1739,7 +1742,7 @@ html[data-theme="light"] .hero-earth__horizon path {
     right: 0;
     bottom: 0;
     height: var(--earth-h);
-    clip-path: ellipse(62% 100% at 50% 100%);
+    clip-path: ellipse(52% 100% at 50% 100%);
     filter: drop-shadow(0 -0.2rem 1.5rem var(--accent-soft));
     opacity: 0.7;
     transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
@@ -1755,49 +1758,33 @@ html[data-theme="light"] .hero-earth__orb {
     height: 100%;
 }
 
-.hero-earth__coastline-track {
-    animation: hero-earth-drift 3600s linear infinite;
-}
-
-.hero-earth__coastline-track path {
+.hero-earth__coastline-frame {
     fill: none;
     stroke: var(--accent-strong);
     stroke-width: 1.1px;
     vector-effect: non-scaling-stroke;
+    opacity: 0;
+    animation: hero-earth-frame 120s linear infinite;
 }
 
-@keyframes hero-earth-drift {
-    from { transform: translateX(0); }
-    to   { transform: translateX(360px); }
+@keyframes hero-earth-frame {
+    0%, 100% { opacity: 0; }
+    2% { opacity: 1; }
+    10.5% { opacity: 1; }
+    12.5% { opacity: 0; }
 }
+
+.hero-earth__coastline-frame:nth-of-type(1) { animation-delay: 0s; }
+.hero-earth__coastline-frame:nth-of-type(2) { animation-delay: 15s; }
+.hero-earth__coastline-frame:nth-of-type(3) { animation-delay: 30s; }
+.hero-earth__coastline-frame:nth-of-type(4) { animation-delay: 45s; }
+.hero-earth__coastline-frame:nth-of-type(5) { animation-delay: 60s; }
+.hero-earth__coastline-frame:nth-of-type(6) { animation-delay: 75s; }
+.hero-earth__coastline-frame:nth-of-type(7) { animation-delay: 90s; }
+.hero-earth__coastline-frame:nth-of-type(8) { animation-delay: 105s; }
 
 @media (min-width: 1024px) {
     .hero-earth { --earth-h: clamp(11rem, 13vw, 17rem); }
-}
-
-.hero-earth__arcs {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    fill: none;
-}
-
-.hero-earth__arc-path {
-    fill: none;
-    stroke: var(--accent);
-    stroke-width: 1;
-    opacity: 0.16;
-}
-
-.hero-earth__pulse {
-    fill: var(--accent-strong);
-    filter: drop-shadow(0 0 3px var(--accent-strong));
-}
-
-.hero-earth__pulse--gold {
-    fill: var(--signal-gold);
-    filter: drop-shadow(0 0 4px var(--signal-gold-glow));
 }
 
 .hero-composition {
@@ -4377,11 +4364,12 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-product-stage {
         animation: none;
     }
-    .hero-earth__coastline-track {
+    .hero-earth__coastline-frame {
         animation: none;
+        opacity: 0;
     }
-    .hero-earth__pulse {
-        display: none !important;
+    .hero-earth__coastline-frame:nth-of-type(1) {
+        opacity: 1;
     }
     .hero-product-image {
         transition: none;
