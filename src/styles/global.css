@@ -3679,12 +3679,11 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     }
     .hero-section {
         display: flex;
-        /* Not min-height:100vh anymore -- forcing the section to always fill the viewport,
-           regardless of how much content there actually was, was the root cause of the excess
-           top whitespace: hero-copy centered inside that oversized band left huge empty margins
-           above AND below it. A modest floor keeps the hero feeling substantial on ordinary
-           screens without manufacturing empty space to fill an artificial height. */
-        min-height: clamp(30rem, 74vh, 42rem);
+        /* Must always fill the viewport on load, on every screen size -- non-negotiable, this is
+           what makes it a hero. (A previous pass here dropped this to fix excess top whitespace,
+           which instead broke the next section into view on large screens -- wrong trade.) */
+        min-height: 100vh;
+        min-height: 100svh;
         padding: clamp(5.5rem, 8vh, 7rem) 4rem clamp(2.75rem, 5vh, 4rem);
     }
     .hero-composition {
@@ -3694,13 +3693,14 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     }
     .hero-copy {
         padding-top: 0;
-        /* Matches .hero-product-stage's own reserved-bottom-clearance margin below. Centering
-           two items with DIFFERENT bottom margins in the same row centers their boxes, not their
-           visible content -- the glove's margin-only-at-the-bottom box means its visible content
-           sits above the row's true center, while the headline (no such margin) centers on it
-           exactly, so the two drift apart by half the glove's margin. Giving the headline the
-           same reservation keeps both boxes shaped the same way, so centering lines up their
-           visible centers with each other instead of just with an arbitrary row midpoint. */
+        /* Bottom-anchored with the same reserved clearance as .hero-product-stage below (rather
+           than the container's default centering) so their relationship stays fixed regardless
+           of how tall the viewport is. Plain centering would only match their visible centers
+           when the row's height happens to equal the glove's own box height -- true when the row
+           sized itself to content, but never true once the section is forced to fill the full
+           viewport, where the leftover height grows with the screen and drags the headline's
+           centered position away from the glove's by an amount that scales with viewport height. */
+        align-self: end;
         margin-bottom: calc(var(--earth-h) + 1rem);
     }
     .hero-title { font-size: clamp(3.55rem, 5.2vw, 5.1rem); }
