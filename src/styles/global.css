@@ -1816,7 +1816,11 @@ html[data-theme="light"] .hero-earth__orb {
     z-index: 2;
     display: grid;
     width: 100%;
-    max-width: 104rem;
+    /* Was 104rem: that was the actual bottleneck behind the language-cycling headline's
+       horizontal squeeze (scaleX, see .hero-headline-language-text) at ordinary desktop sizes
+       too, not just the large-viewport tier below -- widening .hero-copy/.hero-title alone
+       didn't help since the grid itself was narrower than either of those caps. */
+    max-width: 116rem;
     min-height: auto;
     margin-inline: auto;
     align-items: center;
@@ -3693,6 +3697,15 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     }
     .hero-copy {
         padding-top: 0;
+        /* Wider than the 48rem mobile/tablet cap: that width was fine for the German/English
+           headline it was tuned against, but the language-cycling second line (.hero-headline-
+           language-text) can be dramatically longer in other languages, and gets squeezed
+           horizontally (scaleX, see .hero-headline-language-text below) to fit inside whatever
+           width it's given. Measured this directly: at 48rem, even the English reference text
+           was already being compressed to ~0.80 scale at the larger sizing tier, and real
+           translations as low as ~0.35-0.54 -- visibly squashed. .hero-lead keeps its own
+           narrower 38rem cap below for readability, so widening this doesn't lengthen its lines. */
+        max-width: 64rem;
         /* Bottom-anchored with the same reserved clearance as .hero-product-stage below (rather
            than the container's default centering) so their relationship stays fixed regardless
            of how tall the viewport is. Plain centering would only match their visible centers
@@ -3710,7 +3723,10 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
        scales with viewport height. On a separate wrapper, not .hero-copy itself, because
        .hero-copy already owns `transform` for its entrance animation. */
     .hero-copy-align { transform: translateY(var(--hero-copy-align-shift, 0px)); }
-    .hero-title { font-size: clamp(3.55rem, 5.2vw, 5.1rem); }
+    .hero-title {
+        max-width: 64rem; /* matches .hero-copy's widened cap above -- see comment there */
+        font-size: clamp(3.55rem, 5.2vw, 5.1rem);
+    }
     .hero-title span { white-space: nowrap; }
     .hero-product-stage {
         /* Reduced from the original clamp(28rem, 60vh, 42rem): that was sized before the earth
@@ -3739,13 +3755,21 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .contact-title { font-size: 5rem; }
 }
 
-/* Large/tall viewports (big monitors, 1440p+, ultrawide at full height): the vw/vh clamps above
-   were already hitting their ceiling here, so headline, glove and earth all rendered at their
-   SMALLEST relative size right where there's the MOST room -- exactly backwards. Give the
-   ceilings more room to grow instead of manufacturing empty space around content that stayed
-   small. Gated on min-height too (not just width) so a short ultrawide like 2560x1080, which
-   already looked right-sized, doesn't get pushed bigger than it needs. */
-@media (min-width: 1024px) and (min-height: 1100px) {
+/* Large/tall viewports (big monitors, 1440p+) and ultrawide screens (21:9, however tall): the
+   vw/vh clamps above were already hitting their ceiling here, so headline, glove and earth all
+   rendered at their SMALLEST relative size right where there's the MOST room -- exactly
+   backwards. Give the ceilings more room to grow instead of manufacturing empty space (on tall
+   screens) or leaving everything undersized against the canvas (on wide ones). Two triggers:
+   min-height for tall 16:9/16:10 screens, min-aspect-ratio for ultrawide -- a short ultrawide
+   like 2560x1080 doesn't clear the height bar but reads just as undersized as a tall one does,
+   so it needs the bump too, on its own condition rather than height. */
+@media (min-width: 1024px) and (min-height: 1100px),
+       (min-width: 1024px) and (min-aspect-ratio: 2/1) {
+    /* .hero-composition's own 104rem cap (set above, at the base rule) was the actual bottleneck
+       for the language-cycling text's squeeze, tighter than .hero-copy/.hero-title's 64rem --
+       widening only those two did nothing here since the grid itself was already narrower.
+       130rem gives the English reference text room to sit at its natural, unsqueezed width. */
+    .hero-composition { max-width: 130rem; }
     .hero-title { font-size: clamp(3.55rem, 5.2vw, 6.4rem); }
     .hero-lead { font-size: clamp(1.2rem, 1vw, 1.4rem); }
     .hero-product-stage { height: clamp(24rem, 50vh, 44rem); }
