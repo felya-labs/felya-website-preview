@@ -1816,11 +1816,14 @@ html[data-theme="light"] .hero-earth__orb {
     z-index: 2;
     display: grid;
     width: 100%;
-    /* Was 104rem: that was the actual bottleneck behind the language-cycling headline's
-       horizontal squeeze (scaleX, see .hero-headline-language-text) at ordinary desktop sizes
-       too, not just the large-viewport tier below -- widening .hero-copy/.hero-title alone
-       didn't help since the grid itself was narrower than either of those caps. */
-    max-width: 116rem;
+    /* Was 104rem, then 116rem: 104rem was the actual bottleneck behind the language-cycling
+       headline's horizontal squeeze (scaleX, see .hero-headline-language-text) at ordinary
+       desktop sizes too, not just the large-viewport tier below. 116rem fixed the squeeze but
+       overshot -- wider than the text ever needs (capped at .hero-copy's own 64rem), so the
+       excess just became dead space that pushed the product image toward the far edge instead
+       of toward the headline. 106rem keeps the text column just wide enough to stay unsquashed
+       while pulling the whole composition back into a centered, cohesive group. */
+    max-width: 106rem;
     min-height: auto;
     margin-inline: auto;
     align-items: center;
@@ -3693,7 +3696,10 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-composition {
         flex: 1;
         grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
-        gap: clamp(2rem, 4vw, 4.5rem);
+        /* Tighter than the original clamp(2rem, 4vw, 4.5rem): that gap plus the wide max-width
+           above spread text and product image toward opposite edges instead of reading as one
+           composed group. */
+        gap: clamp(1.5rem, 3vw, 3.5rem);
     }
     .hero-copy {
         padding-top: 0;
@@ -3725,14 +3731,16 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-copy-align { transform: translateY(var(--hero-copy-align-shift, 0px)); }
     .hero-title {
         max-width: 64rem; /* matches .hero-copy's widened cap above -- see comment there */
-        font-size: clamp(3.55rem, 5.2vw, 5.1rem);
+        /* 5.2vw ran too large at the low end of this tier (e.g. 1366px wide) -- 4.2vw keeps the
+           headline readable without crowding the product image at smaller desktop widths, while
+           still reaching the same 5.1rem ceiling by ~1930px wide where it was already capping. */
+        font-size: clamp(3.55rem, 4.2vw, 5.1rem);
     }
     .hero-title span { white-space: nowrap; }
     .hero-product-stage {
-        /* Reduced from the original clamp(28rem, 60vh, 42rem): that was sized before the earth
-           strip existed and needed its own reserved clearance below. A smaller glove needs less
-           reserved space, which keeps the row shorter and the glove closer to the headline. */
-        height: clamp(22rem, 46vh, 32rem);
+        /* Bigger than the original clamp(22rem, 46vh, 32rem): the glove was reading small
+           relative to the headline at every desktop size once measured side by side. */
+        height: clamp(25rem, 52vh, 34rem);
         margin-top: 0;
         padding-right: clamp(0.5rem, 1.5vw, 1.5rem);
         justify-content: flex-end;
@@ -3747,7 +3755,7 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
 
 @media (min-width: 1280px) {
     .hero-product-stage {
-        height: clamp(24rem, 50vh, 36rem);
+        height: clamp(27rem, 56vh, 38rem);
         transform: translateX(clamp(0.5rem, 1vw, 1rem));
     }
     .section-title { font-size: 5rem; }
@@ -3765,15 +3773,36 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
    so it needs the bump too, on its own condition rather than height. */
 @media (min-width: 1024px) and (min-height: 1100px),
        (min-width: 1024px) and (min-aspect-ratio: 2/1) {
-    /* .hero-composition's own 104rem cap (set above, at the base rule) was the actual bottleneck
-       for the language-cycling text's squeeze, tighter than .hero-copy/.hero-title's 64rem --
-       widening only those two did nothing here since the grid itself was already narrower.
-       130rem gives the English reference text room to sit at its natural, unsqueezed width. */
-    .hero-composition { max-width: 130rem; }
-    .hero-title { font-size: clamp(3.55rem, 5.2vw, 6.4rem); }
+    /* Was 130rem: like the base tier above, that gave the headline room to stay unsqueezed but
+       overshot what the text (capped at .hero-copy's 64rem) ever uses, so the leftover became
+       dead space pushing the glove toward the far edge instead of toward the headline. 120rem
+       keeps that same unsqueezed room while pulling text and glove back into a tighter group. */
+    .hero-composition { max-width: 120rem; }
+    /* min(..., 9vh) alongside the vw term: a short-but-wide screen (e.g. 2560x1080) and a
+       tall one at the same width (e.g. 2560x1440) previously got identical vw-driven sizing even
+       though the short one visibly has less vertical room to grow into. Capping by viewport
+       height too makes shallower ultrawide screens size down relative to taller ones at the same
+       width, instead of both maxing out identically. */
+    .hero-title { font-size: clamp(3.55rem, min(5.2vw, 9vh), 6.4rem); }
     .hero-lead { font-size: clamp(1.2rem, 1vw, 1.4rem); }
-    .hero-product-stage { height: clamp(24rem, 50vh, 44rem); }
-    .hero-section { --earth-h: clamp(11rem, 13vw, 22rem); }
+    .hero-product-stage { height: clamp(27rem, 56vh, 48rem); }
+    .hero-section { --earth-h: clamp(11rem, min(13vw, 22vh), 22rem); }
+}
+
+/* Very wide monitors (3440px+ ultrawide): even the tier above still reads undersized against
+   this much width, since its own ceilings were tuned for 2560-wide screens. Scoped by min-width
+   (not min-aspect-ratio) so it doesn't also inflate the 2560-wide tiers above, which weren't
+   asking to grow further. */
+@media (min-width: 3200px) {
+    .hero-composition { max-width: 140rem; }
+    /* .hero-copy/.hero-title's 64rem cap (set at the 1024px tier above) was tuned for the
+       6.4rem ceiling there -- the bigger 7.4rem ceiling here needs a wider cap too, or the
+       English reference text gets squeezed (scaleX) against that now-too-narrow cap. Measured:
+       72rem keeps it at scale 1.0. */
+    .hero-copy, .hero-title { max-width: 72rem; }
+    .hero-title { font-size: clamp(3.55rem, min(5.2vw, 9vh), 7.4rem); }
+    .hero-product-stage { height: clamp(27rem, 56vh, 54rem); }
+    .hero-section { --earth-h: clamp(11rem, min(13vw, 26vh), 24rem); }
 }
 
 @media (min-width: 1536px) {
