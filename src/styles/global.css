@@ -3695,7 +3695,17 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     }
     .hero-composition {
         flex: 1;
-        grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+        /* Was fr-based (minmax(0, 1.08fr) minmax(22rem, 0.92fr)): fr tracks split whatever width
+           the container has, but neither column's actual content scales with that width -- the
+           text is capped at a fixed 64/72rem and the glove's rendered width follows its own
+           height clamp, not the column. So on any screen wider than those two together need, fr
+           handed the leftover to both columns as internal slack, which showed up as extra empty
+           space between the headline and the image (worst on 3440px+, ~280px of dead air).
+           max-content-based columns instead size each track to exactly what its content needs;
+           justify-content below then centers that tight two-column cluster as a group, so any
+           leftover container width becomes a balanced outer margin instead of an internal gap. */
+        grid-template-columns: minmax(0, max-content) minmax(22rem, max-content);
+        justify-content: center;
         /* Tighter than the original clamp(2rem, 4vw, 4.5rem): that gap plus the wide max-width
            above spread text and product image toward opposite edges instead of reading as one
            composed group. */
@@ -3742,8 +3752,14 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
            relative to the headline at every desktop size once measured side by side. */
         height: clamp(25rem, 52vh, 34rem);
         margin-top: 0;
-        padding-right: clamp(0.5rem, 1.5vw, 1.5rem);
-        justify-content: flex-end;
+        /* flex-start, not flex-end: this column's own minmax(22rem, 0.92fr) track is
+           consistently wider than the glove image actually renders (measured up to ~150px of
+           slack at some sizes), and flex-end was pushing the image across that entire slack to
+           the column's far-right edge -- putting empty space between the headline and the image
+           instead of at the outer edge where it's harmless. Anchoring to the column's start puts
+           the image right after the grid gap, next to the text, and pushes the leftover slack out
+           to the section's right margin instead. */
+        justify-content: flex-start;
         /* Bottom-anchor within the grid row instead of the container's default vertical
            centering: centering would only give half of any added margin-bottom back as real
            clearance (the rest goes to the top, which doesn't need it). Anchoring to the bottom
