@@ -1057,6 +1057,55 @@ export function initHeroMobileGloveScroll({ root = document } = {}) {
   reduceMotion.addEventListener?.('change', requestUpdate);
 }
 
+export function initHeroCopyAlignment({ root = document } = {}) {
+  const wrap = root.querySelector('.hero-copy-align');
+  const glove = root.querySelector('.hero-product-composite');
+  const line = root.querySelector('.hero-headline-language-hitbox');
+  if (!wrap || !glove || !line) return;
+
+  // Measured on the source photo: the web between the thumb and index finger sits at ~50% of
+  // the image's own height. Only meaningful in the desktop two-column layout (glove and headline
+  // are stacked, not side by side, below 1024px, so there's no "level with the glove" to keep).
+  const GLOVE_THUMB_INDEX_GAP_FRACTION = 0.5;
+  const desktopQuery = window.matchMedia('(min-width: 1024px)');
+
+  let frame = null;
+
+  function align() {
+    frame = null;
+    if (!desktopQuery.matches) {
+      wrap.style.removeProperty('--hero-copy-align-shift');
+      return;
+    }
+    // Reset first and force a fresh layout read -- otherwise a previously-applied shift would be
+    // baked into the rects below, and the delta would compound on every resize instead of being
+    // measured against the true unshifted position each time.
+    wrap.style.setProperty('--hero-copy-align-shift', '0px');
+    const gloveRect = glove.getBoundingClientRect();
+    const lineRect = line.getBoundingClientRect();
+    if (!gloveRect.height || !lineRect.height) return; // image not laid out/decoded yet
+    const targetY = gloveRect.top + gloveRect.height * GLOVE_THUMB_INDEX_GAP_FRACTION;
+    const lineCenterY = lineRect.top + lineRect.height / 2;
+    wrap.style.setProperty('--hero-copy-align-shift', `${(targetY - lineCenterY).toFixed(1)}px`);
+  }
+
+  const requestAlign = () => {
+    if (frame !== null) return;
+    frame = window.requestAnimationFrame(align);
+  };
+
+  align();
+  // Glove images load async (eager, but not guaranteed ready before first layout); re-align once
+  // they actually have dimensions, and again on anything that can move the text or the image.
+  root.querySelectorAll('.hero-product-image').forEach((img) => {
+    if (img.complete) return;
+    img.addEventListener('load', requestAlign, { once: true });
+  });
+  document.fonts?.ready?.then(requestAlign);
+  window.addEventListener('resize', requestAlign);
+  desktopQuery.addEventListener?.('change', requestAlign);
+}
+
 export function initHeroEarthRotation({ root = document } = {}) {
   const container = root.querySelector('.hero-earth');
   const path = root.querySelector('.hero-earth__coastline path');
@@ -2184,6 +2233,7 @@ export function initSite(root = document) {
   initPrototypeVideoCover({ root });
   initPrototypeFilmViewport({ root });
   initHeroMobileGloveScroll({ root });
+  initHeroCopyAlignment({ root });
   initHeroEarthRotation({ root });
   initPatonSystemDemonstration({ root });
   initSectionReveals({ root });

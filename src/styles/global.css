@@ -3703,6 +3703,13 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
         align-self: end;
         margin-bottom: calc(var(--earth-h) + 1rem);
     }
+    /* JS-driven fine positioning (initHeroCopyAlignment in scripts/site.js): keeps the headline's
+       second line level with the gap between the glove's thumb and index finger, measured against
+       the actual rendered glove image so it holds at any viewport size -- not something a static
+       CSS offset could do, since the glove's height (and therefore where that gap lands) itself
+       scales with viewport height. On a separate wrapper, not .hero-copy itself, because
+       .hero-copy already owns `transform` for its entrance animation. */
+    .hero-copy-align { transform: translateY(var(--hero-copy-align-shift, 0px)); }
     .hero-title { font-size: clamp(3.55rem, 5.2vw, 5.1rem); }
     .hero-title span { white-space: nowrap; }
     .hero-product-stage {
@@ -3730,6 +3737,19 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .section-title { font-size: 5rem; }
     .point-of-view-title,
     .contact-title { font-size: 5rem; }
+}
+
+/* Large/tall viewports (big monitors, 1440p+, ultrawide at full height): the vw/vh clamps above
+   were already hitting their ceiling here, so headline, glove and earth all rendered at their
+   SMALLEST relative size right where there's the MOST room -- exactly backwards. Give the
+   ceilings more room to grow instead of manufacturing empty space around content that stayed
+   small. Gated on min-height too (not just width) so a short ultrawide like 2560x1080, which
+   already looked right-sized, doesn't get pushed bigger than it needs. */
+@media (min-width: 1024px) and (min-height: 1100px) {
+    .hero-title { font-size: clamp(3.55rem, 5.2vw, 6.4rem); }
+    .hero-lead { font-size: clamp(1.2rem, 1vw, 1.4rem); }
+    .hero-product-stage { height: clamp(24rem, 50vh, 44rem); }
+    .hero-section { --earth-h: clamp(11rem, 13vw, 22rem); }
 }
 
 @media (min-width: 1536px) {
