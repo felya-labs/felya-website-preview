@@ -1673,6 +1673,9 @@ html[data-theme="light"] .mobile-nav-toggle {
     overflow: hidden;
     background: #000000;
     padding: clamp(7rem, 12vh, 8.5rem) 1.5rem clamp(2.75rem, 5vh, 4rem);
+    /* Declared here (not on .hero-earth) so .hero-product-stage can also read it below --
+       the product image needs to know how tall the earth strip is to reserve clearance above it. */
+    --earth-h: clamp(9rem, 15vw, 16rem);
 }
 
 .hero-section::after {
@@ -1710,7 +1713,6 @@ html[data-theme="light"] .hero-section::after {
     z-index: 1;
     overflow: hidden;
     pointer-events: none;
-    --earth-h: clamp(9rem, 15vw, 16rem);
 }
 
 .hero-earth__horizon {
@@ -1806,7 +1808,7 @@ html[data-theme="light"] .hero-earth__orb {
 }
 
 @media (min-width: 1024px) {
-    .hero-earth { --earth-h: clamp(11rem, 13vw, 17rem); }
+    .hero-section { --earth-h: clamp(11rem, 13vw, 17rem); }
 }
 
 .hero-composition {
@@ -1965,6 +1967,10 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     width: 100%;
     height: clamp(18rem, 78vw, 24rem);
     margin-top: 1.75rem;
+    /* Reserve clearance for the earth strip below so the glove's cuff never sits on top of the
+       coastline art (it did, at every breakpoint -- measured, not a guess: the two heights were
+       previously computed independently of each other, with nothing keeping them apart). */
+    margin-bottom: calc(var(--earth-h) + 1rem);
     align-items: center;
     justify-content: center;
     animation: hero-product-in 900ms 120ms cubic-bezier(.22,.75,.25,1) both;
@@ -3694,6 +3700,11 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
         margin-top: 0;
         padding-right: clamp(0.5rem, 1.5vw, 1.5rem);
         justify-content: flex-end;
+        /* Bottom-anchor within the grid row instead of the container's default vertical
+           centering: centering would only give half of any added margin-bottom back as real
+           clearance (the rest goes to the top, which doesn't need it). Anchoring to the bottom
+           makes the reserved earth clearance above exact, not approximate. */
+        align-self: end;
     }
     .hero-product-image { max-width: none; }
 }
