@@ -1123,9 +1123,10 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // on the equator), just re-evaluated every frame instead of baked once.
   const PERIOD_MS = 120000; // one full 360deg turn every 2 minutes -- legible within seconds, calm over a whole viewing
   // Sub-viewer longitude the rotation starts from. 0 (Greenwich) read as starting over Europe;
-  // 100 starts over Asia instead, then drifts west through it into Europe ~33s into the loop
-  // (matches the static heroEarthPath default below, which is baked at this same longitude).
-  const LON_START = 100;
+  // 100 (over Asia) then read as starting too far east. 50 sits between the two (roughly the
+  // Urals), then drifts west into Europe ~17s into the loop (matches the static heroEarthPath
+  // default below, which is baked at this same longitude).
+  const LON_START = 50;
   // 12fps (throttled) was the actual remaining cause of the reported stutter: consistent timing
   // isn't the same as smooth motion, and 12fps reads as discrete steps rather than a continuous
   // turn no matter how evenly spaced. Now that a frame costs ~2ms (post filter-removal), there's
