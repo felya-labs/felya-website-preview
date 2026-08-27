@@ -3679,24 +3679,37 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     }
     .hero-section {
         display: flex;
-        min-height: 100vh;
-        min-height: 100svh;
-        padding: clamp(7.5rem, 12vh, 9rem) 4rem clamp(2.75rem, 5vh, 4rem);
+        /* Not min-height:100vh anymore -- forcing the section to always fill the viewport,
+           regardless of how much content there actually was, was the root cause of the excess
+           top whitespace: hero-copy centered inside that oversized band left huge empty margins
+           above AND below it. A modest floor keeps the hero feeling substantial on ordinary
+           screens without manufacturing empty space to fill an artificial height. */
+        min-height: clamp(30rem, 74vh, 42rem);
+        padding: clamp(5.5rem, 8vh, 7rem) 4rem clamp(2.75rem, 5vh, 4rem);
     }
     .hero-composition {
         flex: 1;
         grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
         gap: clamp(2rem, 4vw, 4.5rem);
-        min-height: clamp(34rem, calc(100svh - 12rem), 46rem);
     }
     .hero-copy {
         padding-top: 0;
-        transform: translateY(-0.75rem);
+        /* Matches .hero-product-stage's own reserved-bottom-clearance margin below. Centering
+           two items with DIFFERENT bottom margins in the same row centers their boxes, not their
+           visible content -- the glove's margin-only-at-the-bottom box means its visible content
+           sits above the row's true center, while the headline (no such margin) centers on it
+           exactly, so the two drift apart by half the glove's margin. Giving the headline the
+           same reservation keeps both boxes shaped the same way, so centering lines up their
+           visible centers with each other instead of just with an arbitrary row midpoint. */
+        margin-bottom: calc(var(--earth-h) + 1rem);
     }
     .hero-title { font-size: clamp(3.55rem, 5.2vw, 5.1rem); }
     .hero-title span { white-space: nowrap; }
     .hero-product-stage {
-        height: clamp(28rem, 60vh, 42rem);
+        /* Reduced from the original clamp(28rem, 60vh, 42rem): that was sized before the earth
+           strip existed and needed its own reserved clearance below. A smaller glove needs less
+           reserved space, which keeps the row shorter and the glove closer to the headline. */
+        height: clamp(22rem, 46vh, 32rem);
         margin-top: 0;
         padding-right: clamp(0.5rem, 1.5vw, 1.5rem);
         justify-content: flex-end;
@@ -3711,7 +3724,7 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
 
 @media (min-width: 1280px) {
     .hero-product-stage {
-        height: clamp(31rem, 66vh, 46rem);
+        height: clamp(24rem, 50vh, 36rem);
         transform: translateX(clamp(0.5rem, 1vw, 1rem));
     }
     .section-title { font-size: 5rem; }
