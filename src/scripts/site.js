@@ -1121,7 +1121,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // left-to-right on screen -- so the sub-viewer longitude drifts west (decreases) over time.
   // Same true-orthographic math as the build script that generated the static frame (sub-viewer
   // on the equator), just re-evaluated every frame instead of baked once.
-  const PERIOD_MS = 120000; // one full 360deg turn every 2 minutes -- legible within seconds, calm over a whole viewing
+  const PERIOD_MS = 150000; // one full 360deg turn every 2.5 minutes -- was 2 minutes, slowed down further for a calmer drift
   // Sub-viewer longitude the rotation starts from. 0 (Greenwich) read as starting over Europe;
   // 100 (over Asia) then read as starting too far east. 50 sits between the two (roughly the
   // Urals), then drifts west into Europe ~17s into the loop (matches the static heroEarthPath
