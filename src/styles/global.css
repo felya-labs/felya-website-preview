@@ -1809,49 +1809,16 @@ html[data-theme="dark"] .hero-starfield {
     opacity: 0.65;
 }
 
-/* Four stacked, progressively wider and more transparent strokes (painted widest-first, see
-   HeroSection.astro) instead of one or two -- a single glow layer read as a thin outline with a
-   faint halo, not an atmosphere. More layers approximate the soft gaussian falloff of a real
-   atmospheric limb glow while staying stroke-based (still no blur()/drop-shadow(): see the
-   perf note above on .hero-earth__horizon-glow -- that's still what keeps the rotation smooth). */
-.hero-earth__horizon path.hero-earth__horizon-glow {
-    stroke-width: 5px;
-    opacity: 0.3;
-}
-
-.hero-earth__horizon path.hero-earth__horizon-glow--soft {
-    stroke-width: 11px;
-    opacity: 0.16;
-}
-
-.hero-earth__horizon path.hero-earth__horizon-glow--wide {
-    stroke-width: 20px;
-    opacity: 0.08;
-}
-
-.hero-earth__horizon path.hero-earth__horizon-glow--diffuse {
-    stroke-width: 34px;
-    opacity: 0.04;
-}
-
 html[data-theme="light"] .hero-earth__horizon path {
     opacity: 0.42;
 }
 
-html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow {
-    opacity: 0.2;
-}
-
-html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow--soft {
-    opacity: 0.11;
-}
-
-html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow--wide {
-    opacity: 0.055;
-}
-
-html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow--diffuse {
-    opacity: 0.028;
+/* The 8 glow-layer paths (heroAtmosphereLayers, see HeroSection.astro) each set their own
+   stroke-width/opacity via inline style -- dims via the group's own opacity instead of
+   per-layer overrides, since a CSS rule can't win against an inline style anyway. Nested
+   opacity multiplies with each path's own, so this scales all 8 layers together. */
+html[data-theme="light"] .hero-earth__horizon-glow-group {
+    opacity: 0.55;
 }
 
 /* A static gradient stand-in for the ambient glow that used to be a drop-shadow on
@@ -1866,16 +1833,18 @@ html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow--dif
     right: 0;
     bottom: 0;
     height: var(--earth-h);
-    /* Wider and slightly brighter than before, to read as an atmospheric bloom sitting behind
-       the stroke-based horizon glow above, rather than a narrow smudge under just the crisp
-       line. */
     background: radial-gradient(ellipse 70% 92% at 50% 100%, var(--accent-soft), transparent 72%);
-    opacity: 0.82;
+    /* Was 0.82/0.62: centered at the box's bottom (deep on the "surface" side, away from the
+       limb), this was reading as a second, uncontrolled source of glow bleeding onto the
+       landmass -- the actual atmosphere is the outward-clipped stroke stack in
+       .hero-earth__horizon-glow-group above; this is now just a faint ambient darkening behind
+       it, not a competing "glow on the planet". */
+    opacity: 0.22;
     transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
 }
 
 html[data-theme="light"] .hero-earth__glow {
-    opacity: 0.62;
+    opacity: 0.16;
 }
 
 .hero-earth__orb {

@@ -8,6 +8,22 @@ const { locale } = Astro.props as { locale: Locale };
 
 const gloveSrcset = gloveDarkImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
 const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
+
+// Atmosphere glow: 8 stacked strokes (widest/faintest first, painted back-to-front) instead of a
+// true gradient -- see the comment where this is used for why a linearGradient paint doesn't
+// work against a curve with this much y-range. Geometric progression in both width and opacity
+// approximates a smooth falloff; more layers than this reads the same at typical viewing sizes
+// but costs more DOM/paint for no visible benefit, fewer (the original 4) visibly banded.
+const heroAtmosphereLayers = [
+    { width: 46, opacity: 0.012 },
+    { width: 34, opacity: 0.022 },
+    { width: 25, opacity: 0.038 },
+    { width: 18, opacity: 0.06 },
+    { width: 13, opacity: 0.09 },
+    { width: 9, opacity: 0.14 },
+    { width: 6, opacity: 0.2 },
+    { width: 3.5, opacity: 0.32 },
+];
 ---
 
 <section id="paton" class="hero-reveal hero-section">
@@ -23,10 +39,21 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
                     <path d={heroEarthOuterClipPath} />
                 </clipPath>
             </defs>
-            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--diffuse" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)" />
-            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--wide" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)" />
-            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--soft" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)" />
-            <path class="hero-earth__horizon-glow" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)" />
+            <!-- A real linearGradient paint (tried first) doesn't work here: it fades against
+                 fixed absolute y-coordinates, but the limb curve's own y ranges from -70 (edges)
+                 to -100 (pole) -- far wider than any one fade distance -- so large stretches of
+                 the curve rendered outside the gradient's y1/y2 span just clamp to a flat
+                 stop color instead of fading, producing a hard-edged band rather than a soft
+                 glow. Many finely-graduated flat-opacity strokes (geometric width/opacity
+                 progression) sidesteps that: each is clip-independent of position along the
+                 curve, and enough of them (8, vs. the original 4) makes the steps between
+                 layers small enough to read as a continuous falloff rather than visible bands. -->
+            <g class="hero-earth__horizon-glow-group">
+                {heroAtmosphereLayers.map(({ width, opacity }) => (
+                    <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)"
+                          style={`stroke-width:${width}px; opacity:${opacity};`} />
+                ))}
+            </g>
             <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
         </svg>
         <div class="hero-earth__orb">
