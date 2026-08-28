@@ -1800,17 +1800,16 @@ html[data-theme="dark"] .hero-starfield {
    filter here measured as a major source of the rotation's frame stutter even though this path
    never changes -- in software rendering it still forces a full repaint of the filtered region
    whenever the sibling animated coastline mutates. Stacked strokes are just more vector geometry,
-   which the renderer can composite without ever re-rasterizing a blur. */
+   which the renderer can composite without ever re-rasterizing a blur.
+   There used to be a 7th, un-clipped path here drawing a crisp, always-visible line at the
+   sphere's silhouette -- removed so there's no hard boundary between "ocean" and "space" left
+   once the mask above fades the glow group to nothing; only the coastline outlines on the
+   visible landmass (.hero-earth__coastline) still mark the sphere. Width/opacity are set inline
+   per glow layer (see heroAtmosphereLayers), so only the paint properties live here. */
 .hero-earth__horizon path {
     fill: none;
     stroke: var(--accent-strong);
-    stroke-width: 1.5px;
     vector-effect: non-scaling-stroke;
-    opacity: 0.65;
-}
-
-html[data-theme="light"] .hero-earth__horizon path {
-    opacity: 0.42;
 }
 
 /* The 6 glow-layer paths (heroAtmosphereLayers, see HeroSection.astro) each set their own
@@ -1843,8 +1842,7 @@ html[data-theme="light"] .hero-earth__horizon-glow-group.is-static {
    .hero-earth__orb. That filter re-rasterized a blur across the whole (animated, ~3000-point)
    coastline on every rotation frame -- measured at 100+ ms of extra paint per update, which is
    exactly the stutter this was reported as. A gradient never needs to repaint when the
-   coastline's `d` changes, so the rotation stays smooth; only the crisp coastline stroke still
-   tracks the sphere's edge precisely, via .hero-earth__horizon above. */
+   coastline's `d` changes, so the rotation stays smooth. */
 .hero-earth__glow {
     position: absolute;
     left: 0;

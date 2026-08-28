@@ -1167,11 +1167,12 @@ export function initHeroAtmosphereHotspot({ root = document } = {}) {
   const IDLE_X = 0;
   const EASE = 0.16; // per-frame pull toward the target -- a slow drift, not a 1:1 follow
 
-  // Two gradient radii, not one: with a mouse to chase, the spotlight is deliberately tight
-  // (STATIC_R would make it obvious at a glance instead of something to find by moving the
-  // cursor). Devices with no cursor at all (touch, or reduced-motion) fall back to the wider
-  // radius centered on the horizon, which is what this looked like before the hotspot existed.
-  const ACTIVE_R = 42;
+  // Two gradient radii, not one: with a mouse to chase, the spotlight is still meant to be
+  // discovered by moving the cursor rather than obvious at a glance, so it stays narrower than
+  // STATIC_R even after widening. Devices with no cursor at all (touch, or reduced-motion) fall
+  // back to the wider radius centered on the horizon, which is what this looked like before the
+  // hotspot existed.
+  const ACTIVE_R = 68;
   const STATIC_R = 90;
 
   let targetX = IDLE_X;

@@ -15,18 +15,18 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
 // approximates a smooth falloff. Verify any future change to this at true page scale, not a
 // magnified crop -- an earlier pass at 46px read fine zoomed-in but was actually 15%+ of the
 // whole earth strip's height, looking like a bold ring rather than a haze.
-// These base numbers are intentionally modest: the hero-atmosphere-mask below (a cursor-linked
-// hotspot, see initHeroAtmosphereHotspot in site.js) fades the ring to fully invisible away
-// from the brightest point -- only a small neighborhood around the cursor ever reads at close
-// to full strength, and the whole group starts hidden until the cursor moves over the section
-// at all (see .hero-earth__horizon-glow-group in global.css).
+// These base numbers set the strength at the brightest point of the cursor-linked hotspot (see
+// initHeroAtmosphereHotspot in site.js): the hero-atmosphere-mask fades the ring to fully
+// invisible away from that point, and the whole group starts hidden until the cursor moves over
+// the section at all (see .hero-earth__horizon-glow-group in global.css) -- so raising these
+// doesn't make the glow more *present*, just more visible where it already shows.
 const heroAtmosphereLayers = [
-    { width: 8, opacity: 0.014 },
-    { width: 6, opacity: 0.032 },
-    { width: 4.2, opacity: 0.058 },
-    { width: 3, opacity: 0.095 },
-    { width: 2, opacity: 0.15 },
-    { width: 1.3, opacity: 0.23 },
+    { width: 10, opacity: 0.021 },
+    { width: 7.5, opacity: 0.048 },
+    { width: 5.25, opacity: 0.087 },
+    { width: 3.75, opacity: 0.143 },
+    { width: 2.5, opacity: 0.225 },
+    { width: 1.6, opacity: 0.345 },
 ];
 ---
 
@@ -80,7 +80,11 @@ const heroAtmosphereLayers = [
                           style={`stroke-width:${width}px; opacity:${opacity};`} />
                 ))}
             </g>
-            <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
+            <!-- No crisp limb stroke here on purpose: a hard line was the one thing still drawing a
+                 boundary between "ocean" and "space" regardless of the cursor, which is exactly what
+                 shouldn't exist -- only the soft, mask-gated glow above (and the coastline outlines
+                 on the visible landmass, drawn separately in .hero-earth__coastline below) mark the
+                 sphere at all now. -->
         </svg>
         <div class="hero-earth__orb">
             <svg class="hero-earth__coastline" viewBox={heroEarthViewBox} preserveAspectRatio="xMidYMin slice">
