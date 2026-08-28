@@ -1816,8 +1816,26 @@ html[data-theme="light"] .hero-earth__horizon path {
 /* The 6 glow-layer paths (heroAtmosphereLayers, see HeroSection.astro) each set their own
    stroke-width/opacity via inline style -- dims via the group's own opacity instead of
    per-layer overrides, since a CSS rule can't win against an inline style anyway. Nested
-   opacity multiplies with each path's own, so this scales all 6 layers together. */
-html[data-theme="light"] .hero-earth__horizon-glow-group {
+   opacity multiplies with each path's own, so this scales all 6 layers together.
+   Hidden by default: where the cursor isn't, there's no atmosphere at all. JS
+   (initHeroAtmosphereHotspot in site.js) adds is-active while the pointer is over the hero
+   section (fades the hotspot in, tracking the cursor) or is-static on devices with no cursor to
+   track (touch, reduced-motion) -- the old always-on, centered look. */
+.hero-earth__horizon-glow-group {
+    opacity: 0;
+    transition: opacity 320ms ease;
+}
+
+.hero-earth__horizon-glow-group.is-active {
+    opacity: 1;
+}
+
+.hero-earth__horizon-glow-group.is-static {
+    opacity: 1;
+}
+
+html[data-theme="light"] .hero-earth__horizon-glow-group.is-active,
+html[data-theme="light"] .hero-earth__horizon-glow-group.is-static {
     opacity: 0.55;
 }
 

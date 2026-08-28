@@ -1154,7 +1154,8 @@ export function initHeroAtmosphereHotspot({ root = document } = {}) {
   const section = root.querySelector('.hero-section');
   const horizon = root.querySelector('.hero-earth__horizon');
   const gradient = root.querySelector('#hero-atmosphere-hotspot');
-  if (!section || !horizon || !gradient) return;
+  const glowGroup = root.querySelector('.hero-earth__horizon-glow-group');
+  if (!section || !horizon || !gradient || !glowGroup) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const desktopHoverQuery = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)');
@@ -1164,7 +1165,14 @@ export function initHeroAtmosphereHotspot({ root = document } = {}) {
   const VB_W = 200;
   const VB_H = 30;
   const IDLE_X = 0;
-  const EASE = 0.1; // per-frame pull toward the target -- a slow drift, not a 1:1 follow
+  const EASE = 0.16; // per-frame pull toward the target -- a slow drift, not a 1:1 follow
+
+  // Two gradient radii, not one: with a mouse to chase, the spotlight is deliberately tight
+  // (STATIC_R would make it obvious at a glance instead of something to find by moving the
+  // cursor). Devices with no cursor at all (touch, or reduced-motion) fall back to the wider
+  // radius centered on the horizon, which is what this looked like before the hotspot existed.
+  const ACTIVE_R = 42;
+  const STATIC_R = 90;
 
   let targetX = IDLE_X;
   let currentX = IDLE_X;
@@ -1195,18 +1203,36 @@ export function initHeroAtmosphereHotspot({ root = document } = {}) {
   };
 
   const handlePointerMove = (event) => {
+    glowGroup.classList.add('is-active');
     targetX = worldX(event.clientX);
     requestTick();
   };
 
   const handlePointerLeave = () => {
+    // Hidden by CSS opacity (is-active removed) -- nothing to see where the cursor isn't, so
+    // there's no need to ease currentX back to center, just park it for the next entry.
+    glowGroup.classList.remove('is-active');
     targetX = IDLE_X;
-    requestTick();
+    currentX = IDLE_X;
+    gradient.setAttribute('cx', IDLE_X.toFixed(1));
+  };
+
+  // No cursor to chase (touch) or motion shouldn't be the point (reduced-motion): show the old
+  // always-on, centered glow instead of nothing.
+  const showStatic = () => {
+    glowGroup.classList.remove('is-active');
+    glowGroup.classList.add('is-static');
+    gradient.setAttribute('r', String(STATIC_R));
+    currentX = IDLE_X;
+    targetX = IDLE_X;
+    gradient.setAttribute('cx', IDLE_X.toFixed(1));
   };
 
   const start = () => {
     if (active) return;
     active = true;
+    glowGroup.classList.remove('is-static');
+    gradient.setAttribute('r', String(ACTIVE_R));
     section.addEventListener('pointermove', handlePointerMove, { passive: true });
     section.addEventListener('pointerleave', handlePointerLeave);
   };
@@ -1216,17 +1242,21 @@ export function initHeroAtmosphereHotspot({ root = document } = {}) {
     active = false;
     section.removeEventListener('pointermove', handlePointerMove);
     section.removeEventListener('pointerleave', handlePointerLeave);
-    targetX = IDLE_X;
-    requestTick();
+    glowGroup.classList.remove('is-active');
   };
 
   const syncActive = () => {
     if (reduceMotion.matches) {
       stop();
+      showStatic();
       return;
     }
-    if (desktopHoverQuery.matches) start();
-    else stop();
+    if (desktopHoverQuery.matches) {
+      start();
+    } else {
+      stop();
+      showStatic();
+    }
   };
 
   syncActive();

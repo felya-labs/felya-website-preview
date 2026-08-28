@@ -16,9 +16,10 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
 // magnified crop -- an earlier pass at 46px read fine zoomed-in but was actually 15%+ of the
 // whole earth strip's height, looking like a bold ring rather than a haze.
 // These base numbers are intentionally modest: the hero-atmosphere-mask below (a cursor-linked
-// hotspot, see initHeroAtmosphereHotspot in site.js) dims most of the ring well below these
-// values already -- only the brightest point along the horizon ever reads at close to full
-// strength, everywhere else is fainter still.
+// hotspot, see initHeroAtmosphereHotspot in site.js) fades the ring to fully invisible away
+// from the brightest point -- only a small neighborhood around the cursor ever reads at close
+// to full strength, and the whole group starts hidden until the cursor moves over the section
+// at all (see .hero-earth__horizon-glow-group in global.css).
 const heroAtmosphereLayers = [
     { width: 8, opacity: 0.014 },
     { width: 6, opacity: 0.032 },
@@ -41,17 +42,24 @@ const heroAtmosphereLayers = [
                 <clipPath id="hero-earth-clip-outer" clipPathUnits="userSpaceOnUse">
                     <path d={heroEarthOuterClipPath} />
                 </clipPath>
-                <!-- The atmosphere isn't uniformly bright around the limb -- it's brightest at one
-                     point along the horizon and fades from there, and that point drifts gently with
-                     the cursor (initHeroAtmosphereHotspot in site.js eases this gradient's cx toward
-                     the pointer's x, it doesn't snap to it). Plain white with only stop-opacity
-                     varying: against a luminance mask that makes the effective alpha exactly the
-                     stop-opacity value, with no tint-dependent luminance math to account for. -->
+                <!-- The atmosphere isn't uniformly bright around the limb -- it's a spotlight that
+                     only exists near the cursor and fades to fully transparent (stop-opacity 0,
+                     not just faint) a short distance away, so away from the cursor there's no
+                     atmosphere to see at all. That point drifts gently with the cursor
+                     (initHeroAtmosphereHotspot in site.js eases this gradient's cx toward the
+                     pointer's x, it doesn't snap to it) and its radius (the r attribute) is set
+                     by the same script -- tight while chasing the cursor so the extent has to be
+                     discovered by moving it, wider and centered on devices with no cursor to
+                     chase (touch, reduced-motion), where the whole group falls back to a static
+                     always-on look instead (see .hero-earth__horizon-glow-group in global.css).
+                     Plain white with only stop-opacity varying: against a luminance mask that
+                     makes the effective alpha exactly the stop-opacity value, with no
+                     tint-dependent luminance math to account for. -->
                 <radialGradient id="hero-atmosphere-hotspot" gradientUnits="userSpaceOnUse" cx="0" cy="-85" r="90">
                     <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
-                    <stop offset="45%" stop-color="#ffffff" stop-opacity="0.62" />
-                    <stop offset="75%" stop-color="#ffffff" stop-opacity="0.28" />
-                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1" />
+                    <stop offset="40%" stop-color="#ffffff" stop-opacity="0.55" />
+                    <stop offset="70%" stop-color="#ffffff" stop-opacity="0.18" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
                 </radialGradient>
                 <mask id="hero-atmosphere-mask" maskUnits="userSpaceOnUse" x="-100" y="-100" width="200" height="30">
                     <rect x="-100" y="-100" width="200" height="30" fill="url(#hero-atmosphere-hotspot)" />
