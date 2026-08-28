@@ -1813,10 +1813,10 @@ html[data-theme="light"] .hero-earth__horizon path {
     opacity: 0.42;
 }
 
-/* The 8 glow-layer paths (heroAtmosphereLayers, see HeroSection.astro) each set their own
+/* The 6 glow-layer paths (heroAtmosphereLayers, see HeroSection.astro) each set their own
    stroke-width/opacity via inline style -- dims via the group's own opacity instead of
    per-layer overrides, since a CSS rule can't win against an inline style anyway. Nested
-   opacity multiplies with each path's own, so this scales all 8 layers together. */
+   opacity multiplies with each path's own, so this scales all 6 layers together. */
 html[data-theme="light"] .hero-earth__horizon-glow-group {
     opacity: 0.55;
 }

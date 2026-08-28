@@ -9,20 +9,20 @@ const { locale } = Astro.props as { locale: Locale };
 const gloveSrcset = gloveDarkImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
 const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
 
-// Atmosphere glow: 8 stacked strokes (widest/faintest first, painted back-to-front) instead of a
+// Atmosphere glow: stacked strokes (widest/faintest first, painted back-to-front) instead of a
 // true gradient -- see the comment where this is used for why a linearGradient paint doesn't
 // work against a curve with this much y-range. Geometric progression in both width and opacity
-// approximates a smooth falloff; more layers than this reads the same at typical viewing sizes
-// but costs more DOM/paint for no visible benefit, fewer (the original 4) visibly banded.
+// approximates a smooth falloff. Total extent capped around 10px: an earlier pass went up to
+// 46px, which read fine in an artificially zoomed-and-upscaled test screenshot but was actually
+// 15%+ of the whole earth strip's height at real 1:1 size -- looked like a bold ring, not a
+// haze. Verify any future change to this at true page scale, not a magnified crop.
 const heroAtmosphereLayers = [
-    { width: 46, opacity: 0.012 },
-    { width: 34, opacity: 0.022 },
-    { width: 25, opacity: 0.038 },
-    { width: 18, opacity: 0.06 },
-    { width: 13, opacity: 0.09 },
-    { width: 9, opacity: 0.14 },
-    { width: 6, opacity: 0.2 },
-    { width: 3.5, opacity: 0.32 },
+    { width: 10, opacity: 0.02 },
+    { width: 7, opacity: 0.045 },
+    { width: 5, opacity: 0.08 },
+    { width: 3.5, opacity: 0.13 },
+    { width: 2.2, opacity: 0.2 },
+    { width: 1.4, opacity: 0.3 },
 ];
 ---
 
@@ -46,8 +46,8 @@ const heroAtmosphereLayers = [
                  stop color instead of fading, producing a hard-edged band rather than a soft
                  glow. Many finely-graduated flat-opacity strokes (geometric width/opacity
                  progression) sidesteps that: each is clip-independent of position along the
-                 curve, and enough of them (8, vs. the original 4) makes the steps between
-                 layers small enough to read as a continuous falloff rather than visible bands. -->
+                 curve, and enough of them (6 here) makes the steps between layers small
+                 enough to read as a continuous falloff rather than visible bands. -->
             <g class="hero-earth__horizon-glow-group">
                 {heroAtmosphereLayers.map(({ width, opacity }) => (
                     <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)"
