@@ -12,17 +12,20 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
 // Atmosphere glow: stacked strokes (widest/faintest first, painted back-to-front) instead of a
 // true gradient -- see the comment where this is used for why a linearGradient paint doesn't
 // work against a curve with this much y-range. Geometric progression in both width and opacity
-// approximates a smooth falloff. Total extent capped around 10px: an earlier pass went up to
-// 46px, which read fine in an artificially zoomed-and-upscaled test screenshot but was actually
-// 15%+ of the whole earth strip's height at real 1:1 size -- looked like a bold ring, not a
-// haze. Verify any future change to this at true page scale, not a magnified crop.
+// approximates a smooth falloff. Verify any future change to this at true page scale, not a
+// magnified crop -- an earlier pass at 46px read fine zoomed-in but was actually 15%+ of the
+// whole earth strip's height, looking like a bold ring rather than a haze.
+// These base numbers are intentionally modest: the hero-atmosphere-mask below (a cursor-linked
+// hotspot, see initHeroAtmosphereHotspot in site.js) dims most of the ring well below these
+// values already -- only the brightest point along the horizon ever reads at close to full
+// strength, everywhere else is fainter still.
 const heroAtmosphereLayers = [
-    { width: 10, opacity: 0.02 },
-    { width: 7, opacity: 0.045 },
-    { width: 5, opacity: 0.08 },
-    { width: 3.5, opacity: 0.13 },
-    { width: 2.2, opacity: 0.2 },
-    { width: 1.4, opacity: 0.3 },
+    { width: 8, opacity: 0.014 },
+    { width: 6, opacity: 0.032 },
+    { width: 4.2, opacity: 0.058 },
+    { width: 3, opacity: 0.095 },
+    { width: 2, opacity: 0.15 },
+    { width: 1.3, opacity: 0.23 },
 ];
 ---
 
@@ -38,6 +41,21 @@ const heroAtmosphereLayers = [
                 <clipPath id="hero-earth-clip-outer" clipPathUnits="userSpaceOnUse">
                     <path d={heroEarthOuterClipPath} />
                 </clipPath>
+                <!-- The atmosphere isn't uniformly bright around the limb -- it's brightest at one
+                     point along the horizon and fades from there, and that point drifts gently with
+                     the cursor (initHeroAtmosphereHotspot in site.js eases this gradient's cx toward
+                     the pointer's x, it doesn't snap to it). Plain white with only stop-opacity
+                     varying: against a luminance mask that makes the effective alpha exactly the
+                     stop-opacity value, with no tint-dependent luminance math to account for. -->
+                <radialGradient id="hero-atmosphere-hotspot" gradientUnits="userSpaceOnUse" cx="0" cy="-85" r="90">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+                    <stop offset="45%" stop-color="#ffffff" stop-opacity="0.62" />
+                    <stop offset="75%" stop-color="#ffffff" stop-opacity="0.28" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1" />
+                </radialGradient>
+                <mask id="hero-atmosphere-mask" maskUnits="userSpaceOnUse" x="-100" y="-100" width="200" height="30">
+                    <rect x="-100" y="-100" width="200" height="30" fill="url(#hero-atmosphere-hotspot)" />
+                </mask>
             </defs>
             <!-- A real linearGradient paint (tried first) doesn't work here: it fades against
                  fixed absolute y-coordinates, but the limb curve's own y ranges from -70 (edges)
@@ -48,7 +66,7 @@ const heroAtmosphereLayers = [
                  progression) sidesteps that: each is clip-independent of position along the
                  curve, and enough of them (6 here) makes the steps between layers small
                  enough to read as a continuous falloff rather than visible bands. -->
-            <g class="hero-earth__horizon-glow-group">
+            <g class="hero-earth__horizon-glow-group" mask="url(#hero-atmosphere-mask)">
                 {heroAtmosphereLayers.map(({ width, opacity }) => (
                     <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)"
                           style={`stroke-width:${width}px; opacity:${opacity};`} />

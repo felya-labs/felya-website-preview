@@ -1150,6 +1150,90 @@ export function initHeroProductLight({ root = document } = {}) {
   reduceMotion.addEventListener?.('change', syncActive);
 }
 
+export function initHeroAtmosphereHotspot({ root = document } = {}) {
+  const section = root.querySelector('.hero-section');
+  const horizon = root.querySelector('.hero-earth__horizon');
+  const gradient = root.querySelector('#hero-atmosphere-hotspot');
+  if (!section || !horizon || !gradient) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const desktopHoverQuery = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)');
+
+  // Same viewBox as heroEarthViewBox (hero-earth-coastline.js) -- cursor x maps into this space
+  // so the brightening hotspot slides along the same curve the glow layers are drawn in.
+  const VB_W = 200;
+  const VB_H = 30;
+  const IDLE_X = 0;
+  const EASE = 0.1; // per-frame pull toward the target -- a slow drift, not a 1:1 follow
+
+  let targetX = IDLE_X;
+  let currentX = IDLE_X;
+  let frame = null;
+  let active = false;
+
+  const worldX = (clientX) => {
+    const rect = horizon.getBoundingClientRect();
+    if (!rect.width || !rect.height) return IDLE_X;
+    // preserveAspectRatio="xMidYMin slice" scales by the larger of the two axis ratios and
+    // centers horizontally -- the same math as background-size: cover.
+    const scale = Math.max(rect.width / VB_W, rect.height / VB_H);
+    const x = (clientX - (rect.left + rect.width / 2)) / scale;
+    return Math.min(Math.max(x, -95), 95);
+  };
+
+  const tick = () => {
+    frame = null;
+    currentX += (targetX - currentX) * EASE;
+    if (Math.abs(targetX - currentX) < 0.05) currentX = targetX;
+    gradient.setAttribute('cx', currentX.toFixed(1));
+    if (currentX !== targetX) frame = window.requestAnimationFrame(tick);
+  };
+
+  const requestTick = () => {
+    if (frame !== null) return;
+    frame = window.requestAnimationFrame(tick);
+  };
+
+  const handlePointerMove = (event) => {
+    targetX = worldX(event.clientX);
+    requestTick();
+  };
+
+  const handlePointerLeave = () => {
+    targetX = IDLE_X;
+    requestTick();
+  };
+
+  const start = () => {
+    if (active) return;
+    active = true;
+    section.addEventListener('pointermove', handlePointerMove, { passive: true });
+    section.addEventListener('pointerleave', handlePointerLeave);
+  };
+
+  const stop = () => {
+    if (!active) return;
+    active = false;
+    section.removeEventListener('pointermove', handlePointerMove);
+    section.removeEventListener('pointerleave', handlePointerLeave);
+    targetX = IDLE_X;
+    requestTick();
+  };
+
+  const syncActive = () => {
+    if (reduceMotion.matches) {
+      stop();
+      return;
+    }
+    if (desktopHoverQuery.matches) start();
+    else stop();
+  };
+
+  syncActive();
+  desktopHoverQuery.addEventListener?.('change', syncActive);
+  reduceMotion.addEventListener?.('change', syncActive);
+}
+
 export function initHeroCopyAlignment({ root = document } = {}) {
   const wrap = root.querySelector('.hero-copy-align');
   const glove = root.querySelector('.hero-product-composite');
@@ -2334,6 +2418,7 @@ export function initSite(root = document) {
   initHeroProductLight({ root });
   initHeroCopyAlignment({ root });
   initHeroEarthRotation({ root });
+  initHeroAtmosphereHotspot({ root });
   initPatonSystemDemonstration({ root });
   initSectionReveals({ root });
   initSectionNavigation({ root });
