@@ -1,6 +1,6 @@
 ---
 import { gloveLightImage, gloveDarkImage } from '../data/site.js';
-import { heroEarthPath, heroEarthLimbPath, heroEarthClipPath, heroEarthViewBox } from '../data/hero-earth-coastline.js';
+import { heroEarthPath, heroEarthLimbPath, heroEarthClipPath, heroEarthOuterClipPath, heroEarthViewBox } from '../data/hero-earth-coastline.js';
 import type { Locale } from '../i18n/config';
 import { t } from '../i18n/translations';
 
@@ -19,11 +19,14 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
                 <clipPath id="hero-earth-clip" clipPathUnits="userSpaceOnUse">
                     <path d={heroEarthClipPath} />
                 </clipPath>
+                <clipPath id="hero-earth-clip-outer" clipPathUnits="userSpaceOnUse">
+                    <path d={heroEarthOuterClipPath} />
+                </clipPath>
             </defs>
-            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--diffuse" d={heroEarthLimbPath} />
-            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--wide" d={heroEarthLimbPath} />
-            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--soft" d={heroEarthLimbPath} />
-            <path class="hero-earth__horizon-glow" d={heroEarthLimbPath} />
+            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--diffuse" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)" />
+            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--wide" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)" />
+            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--soft" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)" />
+            <path class="hero-earth__horizon-glow" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)" />
             <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
         </svg>
         <div class="hero-earth__orb">
