@@ -335,15 +335,43 @@ html[data-theme="light"] .language-toggle:focus-visible {
     box-shadow: 0 0.9rem 1.9rem rgba(34, 45, 58, 0.16);
 }
 
+/* Sun rays scale up from the core rather than the icon just tinting yellow -- reads as the sun
+   "opening" (rays extending outward from center) instead of a flat color swap. transform-origin
+   center resolves to the <g>'s own bounding-box center, which for these 8 symmetric ray paths
+   lands close enough to the true (12,12) SVG center without needing to hardcode it. */
+.theme-toggle__sun-rays {
+    transform-origin: center;
+    transform: scale(0.5);
+    opacity: 0.4;
+    transition: transform 420ms cubic-bezier(.22, 1.15, .3, 1), opacity 380ms ease, color 160ms ease;
+}
+
+.theme-toggle__sun-core {
+    transition: transform 320ms cubic-bezier(.22, .9, .3, 1.2);
+    transform-origin: center;
+}
+
 @media (hover: hover) and (pointer: fine) {
     .theme-toggle:hover .theme-toggle__icon--sun {
         color: #d9bd78;
         filter: drop-shadow(0 0 0.3rem rgba(217, 189, 120, 0.2));
     }
 
+    .theme-toggle:hover .theme-toggle__sun-rays {
+        transform: scale(1);
+        opacity: 0.82;
+    }
+
+    .theme-toggle:hover .theme-toggle__sun-core {
+        transform: scale(1.12);
+    }
+
+    /* Slight rotation on hover instead of only a color/glow swap -- reads as the moon turning
+       toward the viewer rather than a static icon just changing tint. */
     html[data-theme="light"] .theme-toggle:hover .theme-toggle__icon--moon {
         color: var(--accent);
         filter: drop-shadow(0 0 0.4rem rgba(79, 112, 207, 0.32));
+        transform: rotate(18deg);
     }
 }
 
@@ -352,9 +380,19 @@ html[data-theme="light"] .language-toggle:focus-visible {
     filter: drop-shadow(0 0 0.3rem rgba(217, 189, 120, 0.2));
 }
 
+.theme-toggle:focus-visible .theme-toggle__sun-rays {
+    transform: scale(1);
+    opacity: 0.82;
+}
+
+.theme-toggle:focus-visible .theme-toggle__sun-core {
+    transform: scale(1.12);
+}
+
 html[data-theme="light"] .theme-toggle:focus-visible .theme-toggle__icon--moon {
     color: var(--accent);
     filter: drop-shadow(0 0 0.4rem rgba(79, 112, 207, 0.32));
+    transform: rotate(18deg);
 }
 
 html[data-theme="light"] .surface-panel {
