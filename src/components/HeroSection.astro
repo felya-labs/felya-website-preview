@@ -1,6 +1,6 @@
 ---
 import { gloveLightImage, gloveDarkImage } from '../data/site.js';
-import { heroEarthPath, heroEarthLimbPath, heroEarthClipPath, heroEarthOuterClipPath, heroEarthViewBox } from '../data/hero-earth-coastline.js';
+import { heroEarthPath, heroEarthLimbPath, heroEarthClipPath, heroEarthViewBox } from '../data/hero-earth-coastline.js';
 import type { Locale } from '../i18n/config';
 import { t } from '../i18n/translations';
 
@@ -8,30 +8,9 @@ const { locale } = Astro.props as { locale: Locale };
 
 const gloveSrcset = gloveDarkImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
 const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
-
-// Atmosphere glow: stacked strokes (widest/faintest first, painted back-to-front) instead of a
-// true gradient -- see the comment where this is used for why a linearGradient paint doesn't
-// work against a curve with this much y-range. Geometric progression in both width and opacity
-// approximates a smooth falloff. Verify any future change to this at true page scale, not a
-// magnified crop -- an earlier pass at 46px read fine zoomed-in but was actually 15%+ of the
-// whole earth strip's height, looking like a bold ring rather than a haze.
-// These base numbers set the strength at the brightest point of the cursor-linked hotspot (see
-// initHeroAtmosphereHotspot in site.js): the hero-atmosphere-mask fades the ring to fully
-// invisible away from that point, and the whole group starts hidden until the cursor moves over
-// the section at all (see .hero-earth__horizon-glow-group in global.css) -- so raising these
-// doesn't make the glow more *present*, just more visible where it already shows.
-const heroAtmosphereLayers = [
-    { width: 10, opacity: 0.021 },
-    { width: 7.5, opacity: 0.048 },
-    { width: 5.25, opacity: 0.087 },
-    { width: 3.75, opacity: 0.143 },
-    { width: 2.5, opacity: 0.225 },
-    { width: 1.6, opacity: 0.345 },
-];
 ---
 
 <section id="paton" class="hero-reveal hero-section">
-    <div class="hero-starfield" aria-hidden="true"></div>
     <div class="hero-earth" aria-hidden="true">
         <div class="hero-earth__glow"></div>
         <svg class="hero-earth__horizon" viewBox={heroEarthViewBox} preserveAspectRatio="xMidYMin slice">
@@ -39,52 +18,12 @@ const heroAtmosphereLayers = [
                 <clipPath id="hero-earth-clip" clipPathUnits="userSpaceOnUse">
                     <path d={heroEarthClipPath} />
                 </clipPath>
-                <clipPath id="hero-earth-clip-outer" clipPathUnits="userSpaceOnUse">
-                    <path d={heroEarthOuterClipPath} />
-                </clipPath>
-                <!-- The atmosphere isn't uniformly bright around the limb -- it's a spotlight that
-                     only exists near the cursor and fades to fully transparent (stop-opacity 0,
-                     not just faint) a short distance away, so away from the cursor there's no
-                     atmosphere to see at all. That point drifts gently with the cursor
-                     (initHeroAtmosphereHotspot in site.js eases this gradient's cx toward the
-                     pointer's x, it doesn't snap to it) and its radius (the r attribute) is set
-                     by the same script -- tight while chasing the cursor so the extent has to be
-                     discovered by moving it, wider and centered on devices with no cursor to
-                     chase (touch, reduced-motion), where the whole group falls back to a static
-                     always-on look instead (see .hero-earth__horizon-glow-group in global.css).
-                     Plain white with only stop-opacity varying: against a luminance mask that
-                     makes the effective alpha exactly the stop-opacity value, with no
-                     tint-dependent luminance math to account for. -->
-                <radialGradient id="hero-atmosphere-hotspot" gradientUnits="userSpaceOnUse" cx="0" cy="-85" r="90">
-                    <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
-                    <stop offset="40%" stop-color="#ffffff" stop-opacity="0.55" />
-                    <stop offset="70%" stop-color="#ffffff" stop-opacity="0.18" />
-                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
-                </radialGradient>
-                <mask id="hero-atmosphere-mask" maskUnits="userSpaceOnUse" x="-100" y="-100" width="200" height="30">
-                    <rect x="-100" y="-100" width="200" height="30" fill="url(#hero-atmosphere-hotspot)" />
-                </mask>
             </defs>
-            <!-- A real linearGradient paint (tried first) doesn't work here: it fades against
-                 fixed absolute y-coordinates, but the limb curve's own y ranges from -70 (edges)
-                 to -100 (pole) -- far wider than any one fade distance -- so large stretches of
-                 the curve rendered outside the gradient's y1/y2 span just clamp to a flat
-                 stop color instead of fading, producing a hard-edged band rather than a soft
-                 glow. Many finely-graduated flat-opacity strokes (geometric width/opacity
-                 progression) sidesteps that: each is clip-independent of position along the
-                 curve, and enough of them (6 here) makes the steps between layers small
-                 enough to read as a continuous falloff rather than visible bands. -->
-            <g class="hero-earth__horizon-glow-group" mask="url(#hero-atmosphere-mask)">
-                {heroAtmosphereLayers.map(({ width, opacity }) => (
-                    <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip-outer)"
-                          style={`stroke-width:${width}px; opacity:${opacity};`} />
-                ))}
-            </g>
-            <!-- No crisp limb stroke here on purpose: a hard line was the one thing still drawing a
-                 boundary between "ocean" and "space" regardless of the cursor, which is exactly what
-                 shouldn't exist -- only the soft, mask-gated glow above (and the coastline outlines
-                 on the visible landmass, drawn separately in .hero-earth__coastline below) mark the
-                 sphere at all now. -->
+            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--diffuse" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
+            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--wide" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
+            <path class="hero-earth__horizon-glow hero-earth__horizon-glow--soft" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
+            <path class="hero-earth__horizon-glow" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
+            <path d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
         </svg>
         <div class="hero-earth__orb">
             <svg class="hero-earth__coastline" viewBox={heroEarthViewBox} preserveAspectRatio="xMidYMin slice">
