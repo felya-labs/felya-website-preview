@@ -1057,26 +1057,22 @@ export function initHeroMobileGloveScroll({ root = document } = {}) {
   reduceMotion.addEventListener?.('change', requestUpdate);
 }
 
-/* Desktop-only cursor parallax on the product image: the glove leans subtly toward the pointer
-   as it moves anywhere over the hero section, normalized against the product stage's own box
-   (not the whole section) so the tilt magnitude stays tied to the object's own size rather than
-   however large the section happens to be at a given breakpoint. Writes --hero-tilt-x/y/rx/ry,
-   which .hero-product-composite's own transition (see global.css) smooths out -- this function
-   only ever writes the raw normalized values, no easing here. */
-export function initHeroProductTilt({ root = document } = {}) {
+/* Desktop-only cursor tracking for the rim-light glow (.hero-product-stage::before, see
+   global.css): the glow drifts subtly toward the pointer as it moves anywhere over the hero
+   section, normalized against the product stage's own box. Used to also tilt the product image
+   itself (rotateX/rotateY + translate) -- removed per feedback, the glove moving on mousemove
+   read as distracting rather than premium. Kept the pointer-tracking plumbing since the
+   rim-light still wants it. */
+export function initHeroProductLight({ root = document } = {}) {
   const section = root.querySelector('.hero-section');
   const stage = root.querySelector('.hero-product-stage');
-  const composite = root.querySelector('.hero-product-composite');
-  if (!section || !stage || !composite) return;
+  if (!section || !stage) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const desktopHoverQuery = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)');
 
-  const MAX_SHIFT = 6; // px
-  const MAX_ROTATE = 2.5; // deg
-  // How far the rim-light glow (.hero-product-stage::before, see global.css) can drift from its
-  // resting position. A `transform: translate()` offset, not a gradient-position percentage --
-  // see the comment on that rule for why.
+  // How far the rim-light glow can drift from its resting position. A `transform: translate()`
+  // offset, not a gradient-position percentage -- see the comment on that rule for why.
   const LIGHT_TRAVEL = 14; // px
 
   let frame = null;
@@ -1085,10 +1081,6 @@ export function initHeroProductTilt({ root = document } = {}) {
   let active = false;
 
   const reset = () => {
-    composite.style.removeProperty('--hero-tilt-x');
-    composite.style.removeProperty('--hero-tilt-y');
-    composite.style.removeProperty('--hero-tilt-rx');
-    composite.style.removeProperty('--hero-tilt-ry');
     stage.style.removeProperty('--hero-light-x');
     stage.style.removeProperty('--hero-light-y');
   };
@@ -1100,14 +1092,6 @@ export function initHeroProductTilt({ root = document } = {}) {
     if (!rect.width || !rect.height) return;
     const nx = Math.min(Math.max((pointerX - (rect.left + rect.width / 2)) / (rect.width / 2), -1), 1);
     const ny = Math.min(Math.max((pointerY - (rect.top + rect.height / 2)) / (rect.height / 2), -1), 1);
-    composite.style.setProperty('--hero-tilt-x', `${(nx * MAX_SHIFT).toFixed(2)}px`);
-    composite.style.setProperty('--hero-tilt-y', `${(ny * MAX_SHIFT).toFixed(2)}px`);
-    // rotateX sign flipped so the surface leans toward the cursor (top tilts up when the pointer
-    // is above center) rather than away from it.
-    composite.style.setProperty('--hero-tilt-rx', `${(-ny * MAX_ROTATE).toFixed(2)}deg`);
-    composite.style.setProperty('--hero-tilt-ry', `${(nx * MAX_ROTATE).toFixed(2)}deg`);
-    // Same nx/ny reused for the rim-light position -- the glow drifts toward the pointer too,
-    // reading as a light source that tracks it rather than two unrelated effects.
     stage.style.setProperty('--hero-light-x', `${(nx * LIGHT_TRAVEL).toFixed(2)}px`);
     stage.style.setProperty('--hero-light-y', `${(ny * LIGHT_TRAVEL).toFixed(2)}px`);
   };
@@ -2347,7 +2331,7 @@ export function initSite(root = document) {
   initPrototypeVideoCover({ root });
   initPrototypeFilmViewport({ root });
   initHeroMobileGloveScroll({ root });
-  initHeroProductTilt({ root });
+  initHeroProductLight({ root });
   initHeroCopyAlignment({ root });
   initHeroEarthRotation({ root });
   initPatonSystemDemonstration({ root });

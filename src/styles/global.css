@@ -107,7 +107,7 @@ html[data-theme="light"] .theme-brand-logo {
             radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.72) 55%, rgba(255, 255, 255, 0.22) 76%, transparent 88%);
     filter: blur(24px);
     opacity: 0;
-    /* The cursor-driven rim-light (initHeroProductTilt, --hero-light-x/y) moves this whole
+    /* The cursor-driven rim-light (initHeroProductLight, --hero-light-x/y) moves this whole
        layer via `transform` rather than shifting the gradient's own `at X% Y%` position --
        transform is compositor-only even under blur(), where repainting the gradient itself
        every frame was already identified elsewhere in this file as the expensive path that
@@ -118,10 +118,12 @@ html[data-theme="light"] .theme-brand-logo {
 
 /* Dark theme gets its own cooler, more atmospheric rim-light rather than reusing the light
    theme's white photography-backdrop gradient (which would just look like a stray white smudge
-   against a black background). Same element, same cursor-follow transform above. */
+   against a black background). Same element, same cursor-follow transform above. Positioned
+   well left of center (38% vs the light theme's 61%) and kept faint -- was centered and much
+   stronger (0.85 opacity / 0.22 gradient alpha) originally, read as too heavy a "fog". */
 html[data-theme="dark"] .hero-product-stage::before {
-    background: radial-gradient(circle at 60% 45%, rgba(140, 170, 255, 0.22), transparent 55%);
-    opacity: 0.85;
+    background: radial-gradient(circle at 38% 44%, rgba(140, 170, 255, 0.14), transparent 50%);
+    opacity: 0.45;
 }
 
 .hero-product-stage::after {
@@ -2041,18 +2043,12 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     animation: hero-product-in 900ms 120ms cubic-bezier(.22,.75,.25,1) both;
 }
 
-/* Registered so the browser can animate/transition each of these smoothly on its own -- lets a
-   CSS keyframe animation (--breathe-scale) and JS-driven, transitioned values (--hero-tilt-*,
-   --hero-glove-y) all feed the single static `transform` below without fighting over that
-   property directly (an `animation` and a `transition` targeting the same `transform` shorthand
-   at once produces undefined/glitchy interaction; transitioning the custom properties that feed
-   it instead sidesteps that entirely). Unsupported browsers just keep every term at its
-   initial-value, i.e. no tilt/breathe -- a static image, which is a fine fallback for a purely
+/* Registered so the browser can transition/animate each of these smoothly on its own -- lets a
+   CSS keyframe animation (--breathe-scale) and the JS-driven, transitioned rim-light position
+   (--hero-light-x/y, on .hero-product-stage::before, not this element) live independently
+   without fighting over a shared `transform` shorthand. Unsupported browsers just keep every
+   term at its initial-value, i.e. no breathe -- a static image, a fine fallback for a purely
    decorative effect. */
-@property --hero-tilt-x { syntax: '<length>'; inherits: false; initial-value: 0px; }
-@property --hero-tilt-y { syntax: '<length>'; inherits: false; initial-value: 0px; }
-@property --hero-tilt-rx { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-@property --hero-tilt-ry { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 @property --breathe-scale { syntax: '<number>'; inherits: false; initial-value: 1; }
 @property --hero-light-x { syntax: '<length>'; inherits: false; initial-value: 0px; }
 @property --hero-light-y { syntax: '<length>'; inherits: false; initial-value: 0px; }
@@ -2069,28 +2065,12 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     aspect-ratio: 1200 / 1343;
     transform-origin: 68% 72%;
     will-change: transform;
-    /* Single formula for every source of motion on this element: --hero-glove-y is the existing
-       mobile scroll-parallax offset (initHeroMobileGloveScroll, unchanged), --hero-tilt-* is the
-       new desktop cursor-tilt (initHeroProductTilt, only ever set at >=1024px with hover+fine
-       pointer), --breathe-scale is the ambient pulse below. Each stays at its neutral default
-       everywhere it doesn't apply, so this one rule is correct at every breakpoint without
-       per-breakpoint transform overrides fighting each other. */
-    transform:
-        translate3d(var(--hero-tilt-x, 0px), calc(var(--hero-glove-y, 0px) + var(--hero-tilt-y, 0px)), 0)
-        rotateX(var(--hero-tilt-rx, 0deg))
-        rotateY(var(--hero-tilt-ry, 0deg))
-        scale(var(--breathe-scale, 1));
-    transition:
-        --hero-tilt-x 550ms cubic-bezier(.22,.75,.25,1),
-        --hero-tilt-y 550ms cubic-bezier(.22,.75,.25,1),
-        --hero-tilt-rx 550ms cubic-bezier(.22,.75,.25,1),
-        --hero-tilt-ry 550ms cubic-bezier(.22,.75,.25,1);
+    /* --hero-glove-y is the existing mobile scroll-parallax offset (initHeroMobileGloveScroll,
+       unchanged); --breathe-scale is the ambient pulse below. A cursor-driven tilt used to live
+       here too (translate + rotateX/rotateY) but was removed per feedback -- the glove visibly
+       moving on mousemove read as distracting, not premium. */
+    transform: translate3d(0, var(--hero-glove-y, 0px), 0) scale(var(--breathe-scale, 1));
     animation: hero-product-breathe 8s ease-in-out infinite;
-}
-
-@media (min-width: 1024px) {
-    /* Perspective for the cursor-tilt below to read as a believable 3D lean rather than a skew. */
-    .hero-product-stage { perspective: 60rem; }
 }
 
 .hero-product-image {
