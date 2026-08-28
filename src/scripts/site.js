@@ -1057,6 +1057,115 @@ export function initHeroMobileGloveScroll({ root = document } = {}) {
   reduceMotion.addEventListener?.('change', requestUpdate);
 }
 
+/* Desktop-only cursor parallax on the product image: the glove leans subtly toward the pointer
+   as it moves anywhere over the hero section, normalized against the product stage's own box
+   (not the whole section) so the tilt magnitude stays tied to the object's own size rather than
+   however large the section happens to be at a given breakpoint. Writes --hero-tilt-x/y/rx/ry,
+   which .hero-product-composite's own transition (see global.css) smooths out -- this function
+   only ever writes the raw normalized values, no easing here. */
+export function initHeroProductTilt({ root = document } = {}) {
+  const section = root.querySelector('.hero-section');
+  const stage = root.querySelector('.hero-product-stage');
+  const composite = root.querySelector('.hero-product-composite');
+  if (!section || !stage || !composite) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const desktopHoverQuery = window.matchMedia('(min-width: 1024px) and (hover: hover) and (pointer: fine)');
+
+  const MAX_SHIFT = 6; // px
+  const MAX_ROTATE = 2.5; // deg
+  // How far the rim-light glow (.hero-product-stage::before, see global.css) can drift from its
+  // resting position. A `transform: translate()` offset, not a gradient-position percentage --
+  // see the comment on that rule for why.
+  const LIGHT_TRAVEL = 14; // px
+
+  let frame = null;
+  let pointerX = null;
+  let pointerY = null;
+  let active = false;
+
+  const reset = () => {
+    composite.style.removeProperty('--hero-tilt-x');
+    composite.style.removeProperty('--hero-tilt-y');
+    composite.style.removeProperty('--hero-tilt-rx');
+    composite.style.removeProperty('--hero-tilt-ry');
+    stage.style.removeProperty('--hero-light-x');
+    stage.style.removeProperty('--hero-light-y');
+  };
+
+  const apply = () => {
+    frame = null;
+    if (pointerX === null || pointerY === null) return;
+    const rect = stage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const nx = Math.min(Math.max((pointerX - (rect.left + rect.width / 2)) / (rect.width / 2), -1), 1);
+    const ny = Math.min(Math.max((pointerY - (rect.top + rect.height / 2)) / (rect.height / 2), -1), 1);
+    composite.style.setProperty('--hero-tilt-x', `${(nx * MAX_SHIFT).toFixed(2)}px`);
+    composite.style.setProperty('--hero-tilt-y', `${(ny * MAX_SHIFT).toFixed(2)}px`);
+    // rotateX sign flipped so the surface leans toward the cursor (top tilts up when the pointer
+    // is above center) rather than away from it.
+    composite.style.setProperty('--hero-tilt-rx', `${(-ny * MAX_ROTATE).toFixed(2)}deg`);
+    composite.style.setProperty('--hero-tilt-ry', `${(nx * MAX_ROTATE).toFixed(2)}deg`);
+    // Same nx/ny reused for the rim-light position -- the glow drifts toward the pointer too,
+    // reading as a light source that tracks it rather than two unrelated effects.
+    stage.style.setProperty('--hero-light-x', `${(nx * LIGHT_TRAVEL).toFixed(2)}px`);
+    stage.style.setProperty('--hero-light-y', `${(ny * LIGHT_TRAVEL).toFixed(2)}px`);
+  };
+
+  const requestApply = () => {
+    if (frame !== null) return;
+    frame = window.requestAnimationFrame(apply);
+  };
+
+  const handlePointerMove = (event) => {
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    requestApply();
+  };
+
+  const handlePointerLeave = () => {
+    pointerX = null;
+    pointerY = null;
+    if (frame !== null) {
+      window.cancelAnimationFrame(frame);
+      frame = null;
+    }
+    reset();
+  };
+
+  const start = () => {
+    if (active) return;
+    active = true;
+    section.addEventListener('pointermove', handlePointerMove, { passive: true });
+    section.addEventListener('pointerleave', handlePointerLeave);
+  };
+
+  const stop = () => {
+    if (!active) return;
+    active = false;
+    section.removeEventListener('pointermove', handlePointerMove);
+    section.removeEventListener('pointerleave', handlePointerLeave);
+    if (frame !== null) {
+      window.cancelAnimationFrame(frame);
+      frame = null;
+    }
+    reset();
+  };
+
+  const syncActive = () => {
+    if (reduceMotion.matches) {
+      stop();
+      return;
+    }
+    if (desktopHoverQuery.matches) start();
+    else stop();
+  };
+
+  syncActive();
+  desktopHoverQuery.addEventListener?.('change', syncActive);
+  reduceMotion.addEventListener?.('change', syncActive);
+}
+
 export function initHeroCopyAlignment({ root = document } = {}) {
   const wrap = root.querySelector('.hero-copy-align');
   const glove = root.querySelector('.hero-product-composite');
@@ -2238,6 +2347,7 @@ export function initSite(root = document) {
   initPrototypeVideoCover({ root });
   initPrototypeFilmViewport({ root });
   initHeroMobileGloveScroll({ root });
+  initHeroProductTilt({ root });
   initHeroCopyAlignment({ root });
   initHeroEarthRotation({ root });
   initPatonSystemDemonstration({ root });
