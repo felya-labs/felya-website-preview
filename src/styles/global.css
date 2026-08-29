@@ -1692,10 +1692,20 @@ html[data-theme="light"] .mobile-nav-toggle {
        min-height alone would just leave it as dead space at the bottom. */
     min-height: 100vh;
     min-height: 100svh;
-    padding: clamp(7rem, 12vh, 8.5rem) 1.5rem clamp(2.75rem, 5vh, 4rem);
+    /* Floors lowered from 7rem/2.75rem: those were a hard minimum regardless of how short the
+       viewport actually is, so on a short phone (iPhone SE at 667px tall, a rotated small
+       phone, ...) they alone could eat past 100% of the height, pushing the earth strip below
+       the fold entirely (see --earth-h below for the bigger piece of that). Still a real floor
+       for normal-height viewports -- the vh term already exceeds it there, so nothing changes. */
+    padding: clamp(4rem, 9vh, 8.5rem) 1.5rem clamp(1.5rem, 4.5vh, 4rem);
     /* Declared here (not on .hero-earth) so .hero-product-stage can also read it below --
-       the product image needs to know how tall the earth strip is to reserve clearance above it. */
-    --earth-h: clamp(9rem, 15vw, 16rem);
+       the product image needs to know how tall the earth strip is to reserve clearance above it.
+       min(15vw, 12vh), not plain 15vw: on a short-but-wide phone (a foldable's outer screen,
+       landscape phones) 15vw alone still floored at 9rem regardless of height, the single
+       biggest contributor to the same overflow-past-the-fold problem above. The 12vh term only
+       ever pulls this *down* below what 15vw would give -- on a normal-proportioned viewport 15vw
+       stays the smaller (binding) term, unchanged from before. */
+    --earth-h: clamp(5.5rem, min(15vw, 12vh), 16rem);
 }
 
 .hero-section::after {
@@ -1853,7 +1863,13 @@ html[data-theme="light"] .hero-earth__orb {
     vector-effect: non-scaling-stroke;
 }
 
-@media (min-width: 1024px) {
+/* min-aspect-ratio:4/3 alongside the width, here and on the matching block further down that
+   establishes the two-column desktop composition: width alone let a portrait tablet at exactly
+   1024px wide (iPad Pro 12.9" portrait is 1024x1366) through as if it were a landscape desktop.
+   See the comment on that block for the full story -- this half just keeps the two tiers'
+   --earth-h in sync (a portrait 1024px+ device should get the same earth-h as any other
+   sub-1024px portrait tablet, not this wider desktop-tuned value). */
+@media (min-width: 1024px) and (min-aspect-ratio: 4/3) {
     .hero-section { --earth-h: clamp(11rem, 13vw, 17rem); }
 }
 
@@ -1886,13 +1902,17 @@ html[data-theme="light"] .hero-earth__orb {
     z-index: 2;
     min-width: 0;
     max-width: 48rem;
-    padding-top: 1.75rem;
+    /* A fixed 1.75rem was one more small contributor (with .hero-title/.hero-lead's own margins
+       and .hero-product-stage's margin-top below) to the mobile-tier content overflowing a short
+       viewport's height and pushing the earth strip below the fold -- vh-clamped like the
+       section padding above, for the same reason. */
+    padding-top: clamp(0.5rem, 2.5vh, 1.75rem);
     animation: hero-copy-in 700ms cubic-bezier(.22,.75,.25,1) both;
 }
 
 .hero-title {
     max-width: 48rem;
-    margin: 1.05rem 0 0;
+    margin: clamp(0.4rem, 1.8vh, 1.05rem) 0 0;
     font-size: clamp(2.25rem, 8.7vw, 3.35rem);
     font-weight: 700;
     line-height: 0.96;
@@ -2014,7 +2034,7 @@ html[data-theme="light"] .hero-headline-language-hitbox {
 
 .hero-lead {
     max-width: 38rem;
-    margin: 1.4rem 0 0;
+    margin: clamp(0.6rem, 2.2vh, 1.4rem) 0 0;
     color: var(--text-soft);
     font-size: 1.06rem;
     font-weight: 520;
@@ -2024,8 +2044,14 @@ html[data-theme="light"] .hero-headline-language-hitbox {
 .hero-product-stage {
     display: flex;
     width: 100%;
-    height: clamp(18rem, 78vw, 24rem);
-    margin-top: 1.75rem;
+    /* min(78vw, 42vh), not plain 78vw: on a short-but-wide phone (landscape, or a small phone
+       that's unusually wide for its height) 78vw alone could still push this toward its own
+       24rem ceiling regardless of how little vertical room is actually left, which was the other
+       big contributor -- alongside --earth-h and the fixed margins here -- to mobile-tier
+       content overflowing a short viewport and pushing the earth strip off-screen. The 42vh term
+       only ever pulls the result *down*; a normal-proportioned phone stays 78vw-bound, unchanged. */
+    height: clamp(13rem, min(78vw, 42vh), 24rem);
+    margin-top: clamp(0.5rem, 2.5vh, 1.75rem);
     /* Reserve clearance for the earth strip below so the glove's cuff never sits on top of the
        coastline art (it did, at every breakpoint -- measured, not a guess: the two heights were
        previously computed independently of each other, with nothing keeping them apart). */
@@ -3716,7 +3742,15 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-section { padding-inline: 2rem; }
     .hero-title { font-size: clamp(3.5rem, 8.2vw, 5.2rem); }
     .hero-lead { font-size: 1.2rem; }
-    .hero-product-stage { height: clamp(21rem, 46vw, 27rem); }
+    /* max(46vw, 40vh), not plain 46vw, and a taller ceiling (34rem, not 27rem): a portrait
+       tablet in this tier (iPad Mini, Surface Pro 7, and -- since the min-aspect-ratio gate on
+       the 1024px+ desktop tier below -- iPad Pro 12.9" portrait too) typically has much more
+       spare vertical room than horizontal, and 46vw alone left the glove reading small and
+       disconnected against a much bigger headline (font-size grows with vw here too, but faster,
+       via .hero-title's own clamp) and a lot of empty canvas around it. The 40vh term lets it
+       grow to use that room instead; a wide-but-short viewport (already handled by the base
+       tier's own min(78vw, 42vh) below 640px) stays 46vw-bound here, unaffected. */
+    .hero-product-stage { height: clamp(21rem, max(46vw, 40vh), 34rem); }
     .partner-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
     .partner-grid .partner-logo-frame { grid-column: span 2; }
     .partner-grid .partner-logo-frame:nth-child(6) { grid-column: 2 / span 2; }
@@ -3736,6 +3770,21 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
         padding-top: 11rem;
         padding-bottom: 8rem;
     }
+}
+
+/* min-aspect-ratio:4/3 alongside the width: width alone let a *portrait* viewport at exactly
+   1024px wide through here as if it were a landscape desktop -- iPad Pro 12.9" portrait is
+   exactly 1024x1366. It got the two-column side-by-side composition below, sized for a wide
+   landscape screen, at a width with nowhere near the room for that: the product image (grown
+   via vh, so tall means big) ended up needing so much of the row's height that the whole
+   composition's align-self:end anchoring left a huge empty gap above the headline instead of the
+   headline sitting near the top. Below 4/3 (portrait, or close to square), it now falls through
+   to the base/mobile-tier rules instead -- the same single-column, vertically-centered,
+   stacked layout every *other* portrait tablet already used (iPad Air, Surface Pro 7, neither
+   was ever wide *and* short enough to reach this tier in the first place). Real desktop/laptop
+   screens this tier targets are always comfortably past 4/3 (even 4:3 monitors clear it exactly;
+   any wider clears it by more), so none of them fall through by this change. */
+@media (min-width: 1024px) and (min-aspect-ratio: 4/3) {
     .hero-section {
         /* display:flex and the viewport-filling min-height now live in the base rule above --
            they apply at every breakpoint, not just this one. Only the padding differs here. */
