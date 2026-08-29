@@ -88,6 +88,15 @@ html[data-theme="light"] .theme-brand-logo {
 }
 
 .hero-product-stage {
+    /* Containing block for ::before/::after below (both position:absolute): without this,
+       neither has any positioned ancestor of their own, so their right/bottom percentages
+       resolve against the next one up the tree instead -- .hero-composition, a much bigger box
+       spanning the whole headline+image area. The ::after contact shadow in particular was
+       floating wherever "5% from .hero-composition's bottom" happened to land rather than
+       actually sitting under the glove -- most visible now that .hero-composition can be taller
+       than its content (see its margin-block:auto), which moves that point further from the
+       image than before. */
+    position: relative;
     isolation: isolate;
 }
 
