@@ -1886,7 +1886,7 @@ html[data-theme="light"] .hero-earth__orb {
        its topmost sliver stayed visible) even though the strip itself wasn't actually small.
        Normal desktop/laptop screens (never this short relative to their width) stay 13vw-bound,
        unchanged. */
-    .hero-section { --earth-h: clamp(6rem, min(13vw, 22vh), 17rem); }
+    .hero-section { --earth-h: clamp(6rem, min(13vw, 20vh), 17rem); }
 }
 
 .hero-composition {
@@ -1929,7 +1929,7 @@ html[data-theme="light"] .hero-earth__orb {
 .hero-title {
     max-width: 48rem;
     margin: clamp(0.4rem, 1.8vh, 1.05rem) 0 0;
-    font-size: clamp(2.25rem, 8.7vw, 3.35rem);
+    font-size: clamp(2rem, 7.4vw, 2.85rem);
     font-weight: 700;
     line-height: 0.96;
     letter-spacing: 0;
@@ -2060,13 +2060,16 @@ html[data-theme="light"] .hero-headline-language-hitbox {
 .hero-product-stage {
     display: flex;
     width: 100%;
-    /* min(78vw, 34vh), not plain 78vw: on a short-but-wide phone (landscape, or a small phone
-       that's unusually wide for its height) 78vw alone could still push this toward its own
-       24rem ceiling regardless of how little vertical room is actually left, which was the other
-       big contributor -- alongside --earth-h and the fixed margins here -- to mobile-tier
-       content overflowing a short viewport and pushing the earth strip off-screen. The 34vh term
-       only ever pulls the result *down*; a normal-proportioned phone stays 78vw-bound, unchanged. */
-    height: clamp(13rem, min(78vw, 34vh), 24rem);
+    /* min(84vw, 38vh), not plain 84vw: on a short-but-wide phone (landscape, or a small phone
+       that's unusually wide for its height) the vw term alone could still push this toward its
+       own 26rem ceiling regardless of how little vertical room is actually left -- alongside
+       --earth-h and the fixed margins here, a contributor to mobile-tier content overflowing a
+       short viewport and pushing the earth strip off-screen. The vh term only ever pulls the
+       result *down*; a normal-proportioned phone stays vw-bound, unchanged. Coefficients raised
+       from 78vw/34vh (and the ceiling from 24rem): the headline shrank alongside this (see
+       .hero-title's font-size above), freeing enough room to let the glove read bigger without
+       reopening that overflow. */
+    height: clamp(13rem, min(84vw, 38vh), 26rem);
     margin-top: clamp(0.5rem, 2.5vh, 1.75rem);
     /* Reserve clearance for the earth strip below so the glove's cuff never sits on top of the
        coastline art (it did, at every breakpoint -- measured, not a guess: the two heights were
@@ -3803,8 +3806,12 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
 @media (min-width: 1024px) and (min-aspect-ratio: 4/3) {
     .hero-section {
         /* display:flex and the viewport-filling min-height now live in the base rule above --
-           they apply at every breakpoint, not just this one. Only the padding differs here. */
-        padding: clamp(5.5rem, 8vh, 7rem) 4rem clamp(2.75rem, 5vh, 4rem);
+           they apply at every breakpoint, not just this one. Only the padding differs here.
+           Top floor stays 5.5rem: the header is `absolute` (not fixed) at this width, but still
+           overlays the hero the same way, and 5.5rem is already the minimum that clears it at
+           any width in this tier -- lowering it would repeat the mobile-tier header-overlap bug.
+           Bottom floor lowered (2.75rem to 1.5rem) since nothing pins it to the header. */
+        padding: clamp(5.5rem, 8vh, 7rem) 4rem clamp(1.5rem, 5vh, 4rem);
     }
     .hero-composition {
         flex: 1;
@@ -3871,8 +3878,12 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
         max-width: 64rem; /* matches .hero-copy's widened cap above -- see comment there */
         /* 5.2vw ran too large at the low end of this tier (e.g. 1366px wide) -- 4.2vw keeps the
            headline readable without crowding the product image at smaller desktop widths, while
-           still reaching the same 5.1rem ceiling by ~1930px wide where it was already capping. */
-        font-size: clamp(3.55rem, 4.2vw, 5.1rem);
+           still reaching the same 5.1rem ceiling by ~1930px wide where it was already capping.
+           Floor lowered further, from 3.55rem: at the narrow end of this tier (~1024px wide,
+           where 4.2vw alone already sits below any floor this size) it was crowding the product
+           image, most noticeable on a short landscape viewport (1024x600) where the image had
+           the least room to begin with. */
+        font-size: clamp(3rem, 4.2vw, 5.1rem);
     }
     .hero-title span { white-space: nowrap; }
     .hero-product-stage {
@@ -3883,8 +3894,10 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
            there is only 312px, well under 400px, so the floor -- not 52vh -- was what pushed the
            section past the viewport height, the other half (with --earth-h above) of the earth
            strip ending up mostly clipped below the fold. Normal laptop/desktop heights stay
-           52vh-bound well above this floor, unaffected. */
-        height: clamp(16rem, 52vh, 34rem);
+           vh-bound well above this floor, unaffected. Coefficient and ceiling raised (52vh/34rem
+           to 58vh/36rem) alongside the headline shrinking above -- freeing enough room for the
+           glove to read bigger without reopening that same short-viewport overflow. */
+        height: clamp(16rem, 57vh, 36rem);
         margin-top: 0;
         /* flex-start, not flex-end: this column's own minmax(22rem, 0.92fr) track is
            consistently wider than the glove image actually renders (measured up to ~150px of
@@ -3970,8 +3983,15 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-product-stage { transform: translateX(1.5rem); }
 }
 
+/* This, not the plain .hero-title rule above, is what actually governs font-size below 640px --
+   same specificity, later in the cascade, so it wins for every width this reaches (there's no
+   width where the un-media-queried rule above is ever the one that applies: the min-width:640px
+   tier further down takes over immediately above this one's boundary). Lowered from
+   min(2.5rem, 9vw): shrinking the headline here is what gives .hero-product-stage's height
+   (below 640px, base rule above) room to grow without reopening the short-viewport overflow the
+   two were both tuned against together. */
 @media (max-width: 639px) {
-    .hero-title { font-size: min(2.5rem, 9vw); }
+    .hero-title { font-size: min(2.2rem, 7.8vw); }
 }
 
 @media (max-width: 1023px) {
