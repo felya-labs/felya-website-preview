@@ -1692,20 +1692,27 @@ html[data-theme="light"] .mobile-nav-toggle {
        min-height alone would just leave it as dead space at the bottom. */
     min-height: 100vh;
     min-height: 100svh;
-    /* Floors lowered from 7rem/2.75rem: those were a hard minimum regardless of how short the
-       viewport actually is, so on a short phone (iPhone SE at 667px tall, a rotated small
-       phone, ...) they alone could eat past 100% of the height, pushing the earth strip below
-       the fold entirely (see --earth-h below for the bigger piece of that). Still a real floor
-       for normal-height viewports -- the vh term already exceeds it there, so nothing changes. */
-    padding: clamp(4rem, 9vh, 8.5rem) 1.5rem clamp(1.5rem, 4.5vh, 4rem);
+    /* Bottom floor lowered from 2.75rem, but the top one only as far as 6.5rem (was 7rem): the
+       header (Header.astro) is `fixed` below the md breakpoint, floating over the hero
+       regardless of viewport height (its own padding is all rem-based, no vh) -- roughly 6.25rem
+       tall in practice. A top floor lower than that (an earlier pass here tried 4rem) let PATON
+       actually collide with the header on a short phone (iPhone SE, Surface Duo) once 9vh alone
+       no longer reached the old 7rem floor. 6.5rem keeps a small real gap under the header on
+       every phone this tier applies to (all of them share the same fixed-height header below
+       768px) while still shrinking from the original 7rem on merely-short-not-tiny viewports.
+       The overflow-vs-short-viewport problem this was originally added for (see --earth-h and
+       .hero-product-stage below for the rest of it) is still solved -- just not from this lever. */
+    padding: clamp(6.5rem, 9vh, 8.5rem) 1.5rem clamp(1.5rem, 4.5vh, 4rem);
     /* Declared here (not on .hero-earth) so .hero-product-stage can also read it below --
        the product image needs to know how tall the earth strip is to reserve clearance above it.
        min(15vw, 12vh), not plain 15vw: on a short-but-wide phone (a foldable's outer screen,
        landscape phones) 15vw alone still floored at 9rem regardless of height, the single
        biggest contributor to the same overflow-past-the-fold problem above. The 12vh term only
        ever pulls this *down* below what 15vw would give -- on a normal-proportioned viewport 15vw
-       stays the smaller (binding) term, unchanged from before. */
-    --earth-h: clamp(5.5rem, min(15vw, 12vh), 16rem);
+       stays the smaller (binding) term, unchanged from before. Floor lowered further (to 3.5rem,
+       from 5.5rem) to make room for the top padding floor above being less aggressive than
+       originally planned. */
+    --earth-h: clamp(3.5rem, min(15vw, 12vh), 16rem);
 }
 
 .hero-section::after {
@@ -1870,7 +1877,16 @@ html[data-theme="light"] .hero-earth__orb {
    --earth-h in sync (a portrait 1024px+ device should get the same earth-h as any other
    sub-1024px portrait tablet, not this wider desktop-tuned value). */
 @media (min-width: 1024px) and (min-aspect-ratio: 4/3) {
-    .hero-section { --earth-h: clamp(11rem, 13vw, 17rem); }
+    /* min(13vw, 22vh), not plain 13vw, and a lower floor (6rem, not 11rem): a landscape device
+       that's wide but short (a smart-display-class screen, a browser window resized short) could
+       still be pure-width-bound down to the 11rem floor regardless of how little vertical room
+       was actually left -- on a 1024x600 landscape screen the floor alone, plus this same value's
+       reuse as .hero-product-stage's margin-bottom below, pushed the section past the viewport
+       height and most of the earth strip below the fold, reading as "the earth is tiny" (only
+       its topmost sliver stayed visible) even though the strip itself wasn't actually small.
+       Normal desktop/laptop screens (never this short relative to their width) stay 13vw-bound,
+       unchanged. */
+    .hero-section { --earth-h: clamp(6rem, min(13vw, 22vh), 17rem); }
 }
 
 .hero-composition {
@@ -2044,13 +2060,13 @@ html[data-theme="light"] .hero-headline-language-hitbox {
 .hero-product-stage {
     display: flex;
     width: 100%;
-    /* min(78vw, 42vh), not plain 78vw: on a short-but-wide phone (landscape, or a small phone
+    /* min(78vw, 34vh), not plain 78vw: on a short-but-wide phone (landscape, or a small phone
        that's unusually wide for its height) 78vw alone could still push this toward its own
        24rem ceiling regardless of how little vertical room is actually left, which was the other
        big contributor -- alongside --earth-h and the fixed margins here -- to mobile-tier
-       content overflowing a short viewport and pushing the earth strip off-screen. The 42vh term
+       content overflowing a short viewport and pushing the earth strip off-screen. The 34vh term
        only ever pulls the result *down*; a normal-proportioned phone stays 78vw-bound, unchanged. */
-    height: clamp(13rem, min(78vw, 42vh), 24rem);
+    height: clamp(13rem, min(78vw, 34vh), 24rem);
     margin-top: clamp(0.5rem, 2.5vh, 1.75rem);
     /* Reserve clearance for the earth strip below so the glove's cuff never sits on top of the
        coastline art (it did, at every breakpoint -- measured, not a guess: the two heights were
@@ -3861,8 +3877,14 @@ html[data-theme="light"] .footer-brand img { filter: invert(1); }
     .hero-title span { white-space: nowrap; }
     .hero-product-stage {
         /* Bigger than the original clamp(22rem, 46vh, 32rem): the glove was reading small
-           relative to the headline at every desktop size once measured side by side. */
-        height: clamp(25rem, 52vh, 34rem);
+           relative to the headline at every desktop size once measured side by side. Floor
+           lowered further since (25rem, i.e. the *old* ceiling) turned out to still be a real
+           floor on a short landscape viewport (a 1024x600 smart-display-class screen): 52vh
+           there is only 312px, well under 400px, so the floor -- not 52vh -- was what pushed the
+           section past the viewport height, the other half (with --earth-h above) of the earth
+           strip ending up mostly clipped below the fold. Normal laptop/desktop heights stay
+           52vh-bound well above this floor, unaffected. */
+        height: clamp(16rem, 52vh, 34rem);
         margin-top: 0;
         /* flex-start, not flex-end: this column's own minmax(22rem, 0.92fr) track is
            consistently wider than the glove image actually renders (measured up to ~150px of
