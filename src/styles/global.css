@@ -15,85 +15,53 @@ body {
     transition: background-color 220ms ease, color 220ms ease;
 }
 
-/* Beyond Earth easter-egg theme switch (see initColorTheme's runBeyondEarthThemeWipe in site.js):
-   a fixed, full-viewport curtain that grows left-to-right over the still-light page via a
-   transform (cheap, GPU-composited -- no layout/paint cost per frame, consistent with every other
-   animation on this page). #000000 matches body's own dark background_color exactly, so once the
-   sweep finishes and the real theme flips underneath it, removing the overlay is imperceptible. */
-.theme-wipe-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 2147483647;
-    background: linear-gradient(to right, #000000 0%, #000000 92%, rgba(0, 0, 0, 0) 100%);
-    transform-origin: left center;
-    transform: scaleX(0);
-    pointer-events: none;
+/* Theme toggle wipe (see initColorTheme's runThemeWipe in site.js) -- used for both the manual
+   toggle and the Beyond Earth easter egg. Built on the View Transitions API rather than a hand-
+   rolled overlay: startViewTransition snapshots the page just before and just after the theme
+   flips into ::view-transition-old(root)/::view-transition-new(root), two live full-viewport
+   layers the browser composites for us. That's the piece an overlay approach can't get: text, the
+   earth and the product image stay visible and legible in both layers the whole time -- there's
+   never a moment where content is hidden behind a covering shape, only a clip-path boundary
+   sliding across revealing the new layer over the old one. Browsers without support (Firefox, at
+   least for now) just fall through to runThemeWipe's plain applyTheme() call, i.e. the same
+   220ms crossfade this page has always had for every *other* theme change (dark-to-light before
+   this, language switches, restoring a saved preference) -- not a regression, the previous
+   behavior everywhere.
+
+   Old stays fully opaque and unclipped the entire time (nothing animates it) -- it's the layer
+   showing through wherever new's clip-path hasn't reached yet. New is clipped via inset() from
+   one edge, so the invisible edge is a hard clip while the region already revealed is completely
+   normal, live content -- the wipe boundary is the only place the two layers are ever compared. */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }
 
-.theme-wipe-overlay.is-sweeping {
-    transition: transform 700ms cubic-bezier(.65, 0, .35, 1);
-    transform: scaleX(1);
+::view-transition-new(root) {
+    clip-path: inset(0 0 0 0);
 }
 
-/* Manual light-to-dark toggle (see initColorTheme's runNightfallTransition in site.js): a
-   reliable, fully-covering soft-edged sweep (__base) doing the actual work of guaranteeing the
-   page ends up completely dark, plus several blurred, dark blobs (__blob) drifting across in loose
-   sync with it purely for texture -- together reading as mist rolling in rather than the easter
-   egg's single hard-edged curtain above (deliberately a different technique: flat wipe read as too
-   mechanical for "night falling" on the everyday toggle). Exactly viewport-sized, not overscanned:
-   __base's gradient stops are percentages of *this* box, so enlarging it (as an earlier version
-   did, to keep a blurred blob's edge from clipping) silently pushed the gradient's "fully opaque"
-   point outside the visible area -- the sweep never actually reached full coverage at the right
-   edge. Nothing here clips overflow (no overflow:hidden), so the blobs' own negative `left` and
-   generous size already keep their blur from ever being cut off, without needing the container
-   itself enlarged. filter:blur() here is a one-off, ~2s transition triggered by an explicit click,
-   not a per-frame cost on a continuously animated element -- unlike .hero-earth's rotation (see
-   the perf notes over there), so it's fine. */
-.theme-nightfall-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 2147483647;
-    pointer-events: none;
-    opacity: 1;
+html[data-theme-wipe-direction="ltr"]::view-transition-new(root) {
+    animation: theme-wipe-reveal-ltr 600ms cubic-bezier(.4, 0, .2, 1);
 }
 
-.theme-nightfall-overlay.is-dissipating {
-    transition: opacity 550ms ease-out;
-    opacity: 0;
+html[data-theme-wipe-direction="rtl"]::view-transition-new(root) {
+    animation: theme-wipe-reveal-rtl 600ms cubic-bezier(.4, 0, .2, 1);
 }
 
-.theme-nightfall-overlay__base {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to right,
-        #000000 0%, #000000 58%,
-        rgba(0, 0, 0, 0.88) 72%,
-        rgba(0, 0, 0, 0.45) 86%,
-        rgba(0, 0, 0, 0) 100%);
-    transform-origin: left center;
-    transform: scaleX(0);
+/* inset(top right bottom left): shrinking the *right* inset from 100% to 0% grows the visible
+   region from the left edge outward -- reads as sweeping in left-to-right. */
+@keyframes theme-wipe-reveal-ltr {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0 0 0 0); }
 }
 
-.theme-nightfall-overlay.is-sweeping .theme-nightfall-overlay__base {
-    transition: transform 1650ms cubic-bezier(.32, .04, .28, 1);
-    transform: scaleX(1);
-}
-
-.theme-nightfall-overlay__blob {
-    position: absolute;
-    top: var(--top, 20%);
-    left: -60vw;
-    width: var(--w, 70vw);
-    height: var(--h, 65vh);
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.8) 42%, rgba(0, 0, 0, 0) 70%);
-    filter: blur(var(--blur, 56px));
-    transform: translateX(0);
-}
-
-.theme-nightfall-overlay.is-sweeping .theme-nightfall-overlay__blob {
-    transition: transform var(--dur, 1650ms) var(--delay, 0ms) cubic-bezier(.32, .04, .28, 1);
-    transform: translateX(var(--travel, 110vw));
+/* Mirror of the above: shrinking the *left* inset instead grows the visible region from the right
+   edge outward -- sweeping in right-to-left, for dark-to-light. */
+@keyframes theme-wipe-reveal-rtl {
+    from { clip-path: inset(0 0 0 100%); }
+    to { clip-path: inset(0 0 0 0); }
 }
 
 html:lang(ko) body {

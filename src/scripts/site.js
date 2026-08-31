@@ -93,61 +93,33 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
 
   applyTheme(readStoredTheme(), false);
 
-  // Manual light-to-dark toggle: a soft, misty left-to-right sweep instead of the plain
-  // background-color crossfade body{} still handles for every other theme change (dark-to-light,
-  // language switches, restoring a saved preference on load). See the .theme-nightfall-overlay
-  // CSS for why this is built from a reliably-covering base layer plus decorative blurred blobs,
-  // and why it deliberately doesn't reuse runBeyondEarthThemeWipe's flat curtain below.
-  let nightfallOverlay = null;
-  const BLOB_COUNT = 4;
-  const runNightfallTransition = () => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      applyTheme('dark');
+  // Both the manual toggle and the Beyond Earth easter egg (see initHeroHeadlineLanguages) drive
+  // theme changes through this one wipe, via the browser's View Transitions API rather than a
+  // hand-built overlay. Earlier overlay-based attempts (a flat curtain, then a blurred "mist" one)
+  // both had to hide real content behind an opaque layer and only flip the theme once fully
+  // covered -- content froze/disappeared mid-transition, which read as broken rather than fluid.
+  // startViewTransition instead snapshots the actual before/after page as two live layers
+  // (::view-transition-old/new(root), see the CSS) and animates between them with a clip-path
+  // reveal -- text, the earth and the product image stay visible and in motion the whole time,
+  // because nothing is ever covered; the boundary between old and new is just a moving clip edge.
+  const runThemeWipe = (nextTheme, direction) => {
+    if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      applyTheme(nextTheme);
       return;
     }
-    if (!nightfallOverlay) {
-      nightfallOverlay = document.createElement('div');
-      nightfallOverlay.className = 'theme-nightfall-overlay';
-      nightfallOverlay.setAttribute('aria-hidden', 'true');
-      const base = document.createElement('div');
-      base.className = 'theme-nightfall-overlay__base';
-      nightfallOverlay.appendChild(base);
-      for (let i = 0; i < BLOB_COUNT; i += 1) {
-        const blob = document.createElement('span');
-        blob.className = 'theme-nightfall-overlay__blob';
-        blob.style.setProperty('--top', `${Math.round(-5 + (i * 100) / BLOB_COUNT + Math.random() * 12)}%`);
-        blob.style.setProperty('--w', `${Math.round(60 + Math.random() * 24)}vw`);
-        blob.style.setProperty('--h', `${Math.round(55 + Math.random() * 24)}vh`);
-        blob.style.setProperty('--blur', `${Math.round(44 + Math.random() * 30)}px`);
-        blob.style.setProperty('--dur', `${Math.round(1500 + Math.random() * 260)}ms`);
-        blob.style.setProperty('--delay', `${Math.round(Math.random() * 180)}ms`);
-        blob.style.setProperty('--travel', `${Math.round(96 + Math.random() * 30)}vw`);
-        nightfallOverlay.appendChild(blob);
-      }
-    }
-    nightfallOverlay.classList.remove('is-sweeping', 'is-dissipating');
-    document.body.appendChild(nightfallOverlay);
-    // Force layout so the resting (unswept) state commits before the class below starts the
-    // transition -- otherwise the browser can coalesce both changes into one paint and skip it.
-    void nightfallOverlay.offsetWidth;
-    nightfallOverlay.classList.add('is-sweeping');
-    window.setTimeout(() => {
-      applyTheme('dark');
-      nightfallOverlay.classList.add('is-dissipating');
-      window.setTimeout(() => {
-        nightfallOverlay.remove();
-      }, 550);
-    }, 1900);
+    document.documentElement.dataset.themeWipeDirection = direction;
+    const transition = document.startViewTransition(() => applyTheme(nextTheme));
+    transition.finished.finally(() => {
+      delete document.documentElement.dataset.themeWipeDirection;
+    });
   };
 
   buttons.forEach((button) => {
     button.addEventListener('click', () => {
       const nextTheme = button.dataset.themeNext || (document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-      if (nextTheme === 'dark' && document.documentElement.dataset.theme !== 'dark') {
-        runNightfallTransition();
-        return;
-      }
-      applyTheme(nextTheme);
+      // Dark reads as sweeping in from the left, light as sweeping in from the right -- a mirrored
+      // pair rather than the same direction both ways.
+      runThemeWipe(nextTheme, nextTheme === 'dark' ? 'ltr' : 'rtl');
     });
   });
 
@@ -155,42 +127,9 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
     applyTheme(document.documentElement.dataset.theme, false);
   });
 
-  // "Beyond Earth" easter egg (see initHeroHeadlineLanguages/initHeroEarthRotation): the starfield
-  // and inclined-orbit rotation are a dark-space effect, so triggering it while in light mode
-  // forces dark mode -- via a wipe rather than the plain crossfade a manual toggle gets, since a
-  // sudden flat cut felt at odds with "you've been swept off into space" framing. The wipe is a
-  // fixed, page-covering overlay (built lazily so it costs nothing until first used) that grows
-  // left-to-right over the still-light page; only once it fully covers the screen does the theme
-  // actually flip and the overlay disappear -- at that instant both are identical solid dark, so
-  // there's nothing to see happen. Doing it in that order (flip only once fully covered) avoids
-  // ever having real page content mid-repaint while the wipe is partway across it.
-  let wipeOverlay = null;
-  const runBeyondEarthThemeWipe = () => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      applyTheme('dark');
-      return;
-    }
-    if (!wipeOverlay) {
-      wipeOverlay = document.createElement('div');
-      wipeOverlay.className = 'theme-wipe-overlay';
-      wipeOverlay.setAttribute('aria-hidden', 'true');
-    }
-    wipeOverlay.classList.remove('is-sweeping');
-    document.body.appendChild(wipeOverlay);
-    // Force layout so the removed/re-added overlay commits its resting (unswept) state before
-    // the class below starts the transition -- otherwise the browser can coalesce both changes
-    // into one paint and skip the animation entirely.
-    void wipeOverlay.offsetWidth;
-    wipeOverlay.classList.add('is-sweeping');
-    window.setTimeout(() => {
-      applyTheme('dark');
-      wipeOverlay.remove();
-    }, 720);
-  };
-
   document.addEventListener('felya:beyondearth', (event) => {
     if (!event?.detail?.active) return;
-    if (document.documentElement.dataset.theme !== 'dark') runBeyondEarthThemeWipe();
+    if (document.documentElement.dataset.theme !== 'dark') runThemeWipe('dark', 'ltr');
   });
 }
 
