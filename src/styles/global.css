@@ -35,6 +35,67 @@ body {
     transform: scaleX(1);
 }
 
+/* Manual light-to-dark toggle (see initColorTheme's runNightfallTransition in site.js): a
+   reliable, fully-covering soft-edged sweep (__base) doing the actual work of guaranteeing the
+   page ends up completely dark, plus several blurred, dark blobs (__blob) drifting across in loose
+   sync with it purely for texture -- together reading as mist rolling in rather than the easter
+   egg's single hard-edged curtain above (deliberately a different technique: flat wipe read as too
+   mechanical for "night falling" on the everyday toggle). Exactly viewport-sized, not overscanned:
+   __base's gradient stops are percentages of *this* box, so enlarging it (as an earlier version
+   did, to keep a blurred blob's edge from clipping) silently pushed the gradient's "fully opaque"
+   point outside the visible area -- the sweep never actually reached full coverage at the right
+   edge. Nothing here clips overflow (no overflow:hidden), so the blobs' own negative `left` and
+   generous size already keep their blur from ever being cut off, without needing the container
+   itself enlarged. filter:blur() here is a one-off, ~2s transition triggered by an explicit click,
+   not a per-frame cost on a continuously animated element -- unlike .hero-earth's rotation (see
+   the perf notes over there), so it's fine. */
+.theme-nightfall-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    pointer-events: none;
+    opacity: 1;
+}
+
+.theme-nightfall-overlay.is-dissipating {
+    transition: opacity 550ms ease-out;
+    opacity: 0;
+}
+
+.theme-nightfall-overlay__base {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right,
+        #000000 0%, #000000 58%,
+        rgba(0, 0, 0, 0.88) 72%,
+        rgba(0, 0, 0, 0.45) 86%,
+        rgba(0, 0, 0, 0) 100%);
+    transform-origin: left center;
+    transform: scaleX(0);
+}
+
+.theme-nightfall-overlay.is-sweeping .theme-nightfall-overlay__base {
+    transition: transform 1650ms cubic-bezier(.32, .04, .28, 1);
+    transform: scaleX(1);
+}
+
+.theme-nightfall-overlay__blob {
+    position: absolute;
+    top: var(--top, 20%);
+    left: -60vw;
+    width: var(--w, 70vw);
+    height: var(--h, 65vh);
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.8) 42%, rgba(0, 0, 0, 0) 70%);
+    filter: blur(var(--blur, 56px));
+    transform: translateX(0);
+}
+
+.theme-nightfall-overlay.is-sweeping .theme-nightfall-overlay__blob {
+    transition: transform var(--dur, 1650ms) var(--delay, 0ms) cubic-bezier(.32, .04, .28, 1);
+    transform: translateX(var(--travel, 110vw));
+}
+
 html:lang(ko) body {
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
 }
@@ -2203,24 +2264,6 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     pointer-events: none;
     transition: opacity 360ms cubic-bezier(.22,.75,.25,1);
     will-change: opacity;
-}
-
-.hero-product-image--light {
-    opacity: 1;
-}
-
-.hero-product-image--dark {
-    opacity: 0;
-}
-
-.hero-product-composite[data-glove-theme="dark"] .hero-product-image--light,
-html[data-theme="dark"] .hero-product-composite:not([data-glove-theme]) .hero-product-image--light {
-    opacity: 0;
-}
-
-.hero-product-composite[data-glove-theme="dark"] .hero-product-image--dark,
-html[data-theme="dark"] .hero-product-composite:not([data-glove-theme]) .hero-product-image--dark {
-    opacity: 1;
 }
 
 html[data-theme="light"] .hero-reveal::before {

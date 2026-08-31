@@ -1,12 +1,11 @@
 ---
-import { gloveLightImage, gloveDarkImage } from '../data/site.js';
+import { gloveLightImage } from '../data/site.js';
 import { heroEarthPath, heroEarthLimbPath, heroEarthClipPath, heroEarthViewBox } from '../data/hero-earth-coastline.js';
 import type { Locale } from '../i18n/config';
 import { t } from '../i18n/translations';
 
 const { locale } = Astro.props as { locale: Locale };
 
-const gloveSrcset = gloveDarkImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
 const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
 ---
 
@@ -59,13 +58,7 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
                      sizes="(min-width: 1280px) 540px, (min-width: 1024px) 460px, (min-width: 640px) 430px, calc(100vw - 48px)"
                      width={gloveLightImage.width} height={gloveLightImage.height}
                      alt={t(locale, 'hero.imageAlt')} loading="eager" decoding="async" fetchpriority="high"
-                     class="hero-product-image hero-product-image--light">
-                <img src={gloveDarkImage.src}
-                     srcset={gloveSrcset}
-                     sizes="(min-width: 1280px) 540px, (min-width: 1024px) 460px, (min-width: 640px) 430px, calc(100vw - 48px)"
-                     width={gloveDarkImage.width} height={gloveDarkImage.height}
-                     alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high"
-                     class="hero-product-image hero-product-image--dark">
+                     class="hero-product-image">
             </div>
         </div>
     </div>

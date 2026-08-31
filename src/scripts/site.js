@@ -93,9 +93,60 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
 
   applyTheme(readStoredTheme(), false);
 
+  // Manual light-to-dark toggle: a soft, misty left-to-right sweep instead of the plain
+  // background-color crossfade body{} still handles for every other theme change (dark-to-light,
+  // language switches, restoring a saved preference on load). See the .theme-nightfall-overlay
+  // CSS for why this is built from a reliably-covering base layer plus decorative blurred blobs,
+  // and why it deliberately doesn't reuse runBeyondEarthThemeWipe's flat curtain below.
+  let nightfallOverlay = null;
+  const BLOB_COUNT = 4;
+  const runNightfallTransition = () => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      applyTheme('dark');
+      return;
+    }
+    if (!nightfallOverlay) {
+      nightfallOverlay = document.createElement('div');
+      nightfallOverlay.className = 'theme-nightfall-overlay';
+      nightfallOverlay.setAttribute('aria-hidden', 'true');
+      const base = document.createElement('div');
+      base.className = 'theme-nightfall-overlay__base';
+      nightfallOverlay.appendChild(base);
+      for (let i = 0; i < BLOB_COUNT; i += 1) {
+        const blob = document.createElement('span');
+        blob.className = 'theme-nightfall-overlay__blob';
+        blob.style.setProperty('--top', `${Math.round(-5 + (i * 100) / BLOB_COUNT + Math.random() * 12)}%`);
+        blob.style.setProperty('--w', `${Math.round(60 + Math.random() * 24)}vw`);
+        blob.style.setProperty('--h', `${Math.round(55 + Math.random() * 24)}vh`);
+        blob.style.setProperty('--blur', `${Math.round(44 + Math.random() * 30)}px`);
+        blob.style.setProperty('--dur', `${Math.round(1500 + Math.random() * 260)}ms`);
+        blob.style.setProperty('--delay', `${Math.round(Math.random() * 180)}ms`);
+        blob.style.setProperty('--travel', `${Math.round(96 + Math.random() * 30)}vw`);
+        nightfallOverlay.appendChild(blob);
+      }
+    }
+    nightfallOverlay.classList.remove('is-sweeping', 'is-dissipating');
+    document.body.appendChild(nightfallOverlay);
+    // Force layout so the resting (unswept) state commits before the class below starts the
+    // transition -- otherwise the browser can coalesce both changes into one paint and skip it.
+    void nightfallOverlay.offsetWidth;
+    nightfallOverlay.classList.add('is-sweeping');
+    window.setTimeout(() => {
+      applyTheme('dark');
+      nightfallOverlay.classList.add('is-dissipating');
+      window.setTimeout(() => {
+        nightfallOverlay.remove();
+      }, 550);
+    }, 1900);
+  };
+
   buttons.forEach((button) => {
     button.addEventListener('click', () => {
       const nextTheme = button.dataset.themeNext || (document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+      if (nextTheme === 'dark' && document.documentElement.dataset.theme !== 'dark') {
+        runNightfallTransition();
+        return;
+      }
       applyTheme(nextTheme);
     });
   });
@@ -194,25 +245,6 @@ export function initThemeImages({ root = document } = {}) {
 
   applySources();
   document.addEventListener('felya:themechange', applySources);
-}
-
-export function initHeroProductThemeTransition({ root = document } = {}) {
-  const composites = Array.from(root.querySelectorAll('[data-hero-product-composite]'));
-  if (!composites.length) return;
-
-  const applyGloveTheme = (theme) => {
-    const nextTheme = theme === 'dark' ? 'dark' : 'light';
-    composites.forEach((composite) => {
-      composite.dataset.gloveTheme = nextTheme;
-    });
-  };
-
-  applyGloveTheme(document.documentElement.dataset.theme);
-
-  document.addEventListener('felya:themechange', (event) => {
-    const nextTheme = event.detail?.theme || document.documentElement.dataset.theme;
-    applyGloveTheme(nextTheme);
-  });
 }
 
 export function initTwoLineHeadings({ root = document } = {}) {
@@ -2429,7 +2461,6 @@ export function initSectionNavigation({ root = document } = {}) {
 export function initSite(root = document) {
   initColorTheme({ root });
   initThemeImages({ root });
-  initHeroProductThemeTransition({ root });
   initLanguageSelector({ root });
   initTwoLineHeadings({ root });
   initMobileNavigation({ root });
