@@ -94,31 +94,42 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
   applyTheme(readStoredTheme(), false);
 
   // Both the manual toggle and the Beyond Earth easter egg (see initHeroHeadlineLanguages) drive
-  // theme changes through this one wipe, via the browser's View Transitions API rather than a
-  // hand-built overlay. Earlier overlay-based attempts (a flat curtain, then a blurred "mist" one)
-  // both had to hide real content behind an opaque layer and only flip the theme once fully
-  // covered -- content froze/disappeared mid-transition, which read as broken rather than fluid.
-  // startViewTransition instead snapshots the actual before/after page into two layers
-  // (::view-transition-old/new(root), see the CSS) and animates between them with a clip-path
-  // reveal -- text, the earth and the product image are never covered by an opaque shape, only by
-  // a moving clip edge, so both snapshots stay fully legible throughout.
+  // theme changes through this one wipe. An earlier version of this used the browser's View
+  // Transitions API: it snapshots the page just before/after a DOM change into two layers and
+  // animates between them, which sounded like exactly what a "content never gets covered" wipe
+  // needs. Measured, though: those layers are frozen snapshots, and while they're showing, the
+  // *live* page's rendering is suspended underneath -- confirmed by watching .hero-earth's rotation
+  // (which runs continuously via requestAnimationFrame) stop advancing for the transition's entire
+  // duration even when explicitly exempted from the snapshot via its own view-transition-name.
+  // There's no way to keep one continuously-animating element live while the rest of the page runs
+  // through a View Transition, so it's a dead end for this specific requirement.
   //
-  // Those two layers are still snapshots, though -- the actual live page is hidden (not painted)
-  // for the transition's duration, so anything continuously animating underneath (the earth's
-  // rotation) doesn't visibly advance during that window. The felya:themewipe event lets
-  // initHeroEarthRotation pause its own time integration for exactly that window, so the rotation
-  // resumes from where it was instead of jumping forward by however long the wipe took.
+  // This version instead flips the real theme (and thus every real color) immediately, and lets
+  // .hero-section::after -- an always-live, ordinary CSS pseudo-element, positioned behind
+  // .hero-earth and .hero-composition -- animate its own clip-path to *look* like the background
+  // is wiping across. Nothing is ever snapshotted or suspended, so the earth keeps rotating
+  // uninterrupted the entire time; see the CSS for the rest of this.
+  const heroSection = root.querySelector('.hero-section');
   const runThemeWipe = (nextTheme, direction) => {
-    if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       applyTheme(nextTheme);
       return;
     }
     document.documentElement.dataset.themeWipeDirection = direction;
-    document.dispatchEvent(new CustomEvent('felya:themewipe', { detail: { active: true } }));
-    const transition = document.startViewTransition(() => applyTheme(nextTheme));
-    transition.finished.finally(() => {
+    applyTheme(nextTheme);
+    // Listens for the ::after pseudo-element's own animationend rather than a hardcoded
+    // setTimeout matching the CSS's 600ms: a duplicated magic number:like that is exactly the kind
+    // of thing that quietly drifts out of sync the next time either value gets tuned (this was
+    // caught by testing a slowed-down animation-duration override and watching the JS timeout yank
+    // the wipe to its end state early, well before the slower animation had actually finished).
+    // Not that it matters for correctness either way here -- see the CSS comment on why the
+    // animation's forwards-held end state always matches what the static rules want regardless of
+    // when the attribute is removed -- but waiting for the real event costs nothing and removes
+    // the drift risk entirely.
+    heroSection?.addEventListener('animationend', function onWipeEnd(event) {
+      if (event.pseudoElement !== '::after') return;
+      heroSection.removeEventListener('animationend', onWipeEnd);
       delete document.documentElement.dataset.themeWipeDirection;
-      document.dispatchEvent(new CustomEvent('felya:themewipe', { detail: { active: false } }));
     });
   };
 
@@ -1182,7 +1193,17 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // currentIntensity below, so entering/leaving the easter egg is one smooth transition rather
   // than a jump-cut.
   const BEYOND_PERIOD_MS = 26000;
-  const BEYOND_TILT_DEG = 34;
+  // Asymmetric on purpose, not a plain +/-34 swing around 0: the visible strip only ever shows
+  // latitudes roughly [lat0+44, lat0+90] (it's a grazing near-limb crop, not a top-down view --
+  // see project()'s coscMin cutoff), so a *symmetric* tilt centered on the equator never actually
+  // reaches it -- even at its most negative extreme it only came down to about +10 degrees,
+  // comfortably northern-hemisphere the entire time. Centering the swing on -20 with a wider +/-40
+  // amplitude instead ranges from a high-north extreme (lat0=+20, window ~[64,90]) down through a
+  // southern one (lat0=-60, window ~[-16,30] -- genuinely crossing the equator into the southern
+  // hemisphere, both visible in the same frame at that point in the cycle) rather than hovering
+  // permanently north.
+  const BEYOND_TILT_CENTER_DEG = -20;
+  const BEYOND_TILT_AMPLITUDE_DEG = 40;
   const BEYOND_TILT_PERIOD_MS = 24000;
   // Smaller than tilt: rolling around the true projection center (see projectBeyond below) moves
   // near-limb points a lot per degree -- points near the visible strip sit close to the sphere's
@@ -1286,24 +1307,11 @@ export function initHeroEarthRotation({ root = document } = {}) {
     beyondToggledAt = performance.now();
   });
 
-  // View Transitions (see initColorTheme's runThemeWipe) render the whole page as a frozen
-  // snapshot for the wipe's duration -- this rAF loop keeps running underneath, invisibly, and
-  // without this flag `dt` below would keep integrating against real elapsed time the whole time
-  // it's hidden. That doesn't desync anything (lon0 stays mathematically correct), but it does
-  // mean the reveal jumps forward by however long the transition took the instant the live page
-  // becomes visible again -- a visible stutter right at the moment the wipe finishes, even though
-  // the rotation itself was never actually wrong. Freezing `dt` to 0 for the same window the page
-  // is invisible keeps the reveal a continuation of exactly where the rotation was when it froze.
-  let isThemeWipePaused = false;
-  document.addEventListener('felya:themewipe', (event) => {
-    isThemeWipePaused = Boolean(event?.detail?.active);
-  });
-
   function tick(now) {
     frame = window.requestAnimationFrame(tick);
-    const dt = (lastIntegration === null || isThemeWipePaused) ? 0 : now - lastIntegration;
+    const dt = lastIntegration === null ? 0 : now - lastIntegration;
     lastIntegration = now;
-    if (!visible || isThemeWipePaused) return;
+    if (!visible) return;
 
     const intensity = currentIntensity(now);
     const period = PERIOD_MS + (BEYOND_PERIOD_MS - PERIOD_MS) * intensity;
@@ -1317,7 +1325,8 @@ export function initHeroEarthRotation({ root = document } = {}) {
     if (now - lastUpdate < UPDATE_INTERVAL_MS) return;
     lastUpdate = now;
 
-    const tiltDeg = intensity * BEYOND_TILT_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2);
+    const tiltDeg = intensity * (BEYOND_TILT_CENTER_DEG
+      + BEYOND_TILT_AMPLITUDE_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2));
     const rollDeg = intensity * BEYOND_ROLL_DEG
       * Math.sin((now / BEYOND_ROLL_PERIOD_MS) * Math.PI * 2 + BEYOND_ROLL_PHASE);
     const lat0R = tiltDeg * D2R;

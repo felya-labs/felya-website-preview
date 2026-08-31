@@ -12,56 +12,16 @@ body {
     font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background-color: #000000;
     color: #ffffff;
-    transition: background-color 220ms ease, color 220ms ease;
-}
-
-/* Theme toggle wipe (see initColorTheme's runThemeWipe in site.js) -- used for both the manual
-   toggle and the Beyond Earth easter egg. Built on the View Transitions API rather than a hand-
-   rolled overlay: startViewTransition snapshots the page just before and just after the theme
-   flips into ::view-transition-old(root)/::view-transition-new(root), two live full-viewport
-   layers the browser composites for us. That's the piece an overlay approach can't get: text, the
-   earth and the product image stay visible and legible in both layers the whole time -- there's
-   never a moment where content is hidden behind a covering shape, only a clip-path boundary
-   sliding across revealing the new layer over the old one. Browsers without support (Firefox, at
-   least for now) just fall through to runThemeWipe's plain applyTheme() call, i.e. the same
-   220ms crossfade this page has always had for every *other* theme change (dark-to-light before
-   this, language switches, restoring a saved preference) -- not a regression, the previous
-   behavior everywhere.
-
-   Old stays fully opaque and unclipped the entire time (nothing animates it) -- it's the layer
-   showing through wherever new's clip-path hasn't reached yet. New is clipped via inset() from
-   one edge, so the invisible edge is a hard clip while the region already revealed is completely
-   normal, live content -- the wipe boundary is the only place the two layers are ever compared. */
-::view-transition-old(root),
-::view-transition-new(root) {
-    animation: none;
-    mix-blend-mode: normal;
-}
-
-::view-transition-new(root) {
-    clip-path: inset(0 0 0 0);
-}
-
-html[data-theme-wipe-direction="ltr"]::view-transition-new(root) {
-    animation: theme-wipe-reveal-ltr 600ms cubic-bezier(.4, 0, .2, 1);
-}
-
-html[data-theme-wipe-direction="rtl"]::view-transition-new(root) {
-    animation: theme-wipe-reveal-rtl 600ms cubic-bezier(.4, 0, .2, 1);
-}
-
-/* inset(top right bottom left): shrinking the *right* inset from 100% to 0% grows the visible
-   region from the left edge outward -- reads as sweeping in left-to-right. */
-@keyframes theme-wipe-reveal-ltr {
-    from { clip-path: inset(0 100% 0 0); }
-    to { clip-path: inset(0 0 0 0); }
-}
-
-/* Mirror of the above: shrinking the *left* inset instead grows the visible region from the right
-   edge outward -- sweeping in right-to-left, for dark-to-light. */
-@keyframes theme-wipe-reveal-rtl {
-    from { clip-path: inset(0 0 0 100%); }
-    to { clip-path: inset(0 0 0 0); }
+    /* 520ms, not the original 220ms: roughly matches .hero-section::after's 600ms wipe (see
+       below) so text color arrives close to when the directional background wipe passing under
+       it does, rather than flipping to the new theme's color well before the background there has
+       caught up (a real contrast risk for the dark-to-light direction specifically, where text
+       would otherwise go dark while still sitting on a not-yet-lightened background). Still a
+       plain, non-directional crossfade -- text everywhere fades in lockstep rather than following
+       the wipe's left-to-right/right-to-left motion -- but that keeps it simple and always at
+       least midway-readable throughout, which a hard directional cutover for text specifically
+       would need real per-element masking to guarantee. */
+    transition: background-color 520ms ease, color 520ms ease;
 }
 
 html:lang(ko) body {
@@ -1774,6 +1734,14 @@ html[data-theme="light"] .mobile-nav-toggle {
     --earth-clearance: calc(min(var(--earth-h), 14rem) + 1rem);
 }
 
+/* Visibility here is clip-path-driven, not opacity -- see initColorTheme's runThemeWipe in
+   site.js for why: opacity would put this behind a browser-level snapshot mechanism (View
+   Transitions) that, we found empirically, suspends *everything* underneath for the transition's
+   duration -- including .hero-earth's rotation, which needs to keep animating live throughout.
+   A clip-path animated directly on this always-live pseudo-element never touches that mechanism
+   at all: nothing is ever snapshotted or suspended, so .hero-earth (z-index 1, above this
+   element's z-index 0) and .hero-composition (z-index 2) just keep rendering normally, uninterrupted,
+   the entire time this wipes open or shut behind them. */
 .hero-section::after {
     content: "";
     position: absolute;
@@ -1784,12 +1752,40 @@ html[data-theme="light"] .mobile-nav-toggle {
             radial-gradient(circle at 78% 10%, rgba(74, 109, 168, 0.08), transparent 27rem),
             radial-gradient(circle at 18% 4%, rgba(255, 255, 255, 0.9), transparent 24rem),
             linear-gradient(180deg, #fcfdfe 0%, #f4f6f8 46%, #eef2f5 100%);
-    opacity: 0;
-    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
+    clip-path: inset(0 0 0 100%);
 }
 
 html[data-theme="light"] .hero-section::after {
-    opacity: 1;
+    clip-path: inset(0 0 0 0);
+}
+
+/* Wipe in progress (see runThemeWipe): the animation overrides the static clip-path above for its
+   duration, then -- because both land on the same value the static rule for the *arriving* theme
+   already specifies -- holds there with no jump once the direction attribute is cleared afterward.
+   Reduced motion never sets this attribute at all (see site.js), so it's an instant clip-path
+   swap via the static rules above, matching how the rest of the page already handles the
+   preference. */
+html[data-theme-wipe-direction="ltr"] .hero-section::after {
+    animation: hero-section-after-wipe-ltr 600ms cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
+html[data-theme-wipe-direction="rtl"] .hero-section::after {
+    animation: hero-section-after-wipe-rtl 600ms cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
+/* Light-to-dark: the light background wipes away left-to-right, uncovering the section's own
+   #000000 base underneath as it goes. */
+@keyframes hero-section-after-wipe-ltr {
+    from { clip-path: inset(0 0 0 0); }
+    to { clip-path: inset(0 0 0 100%); }
+}
+
+/* Dark-to-light: the mirror image -- the light background wipes in from the right, growing
+   leftward, rather than reusing the ltr keyframe in reverse (which would still start the reveal
+   from the left). */
+@keyframes hero-section-after-wipe-rtl {
+    from { clip-path: inset(0 0 0 100%); }
+    to { clip-path: inset(0 0 0 0); }
 }
 
 /* Hero earth — a faint horizon-line backdrop behind the hero copy, not a focal element. Real
