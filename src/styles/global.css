@@ -1754,6 +1754,59 @@ html[data-theme="light"] .hero-section::after {
    "edge of the planet" is physically consistent with the coastline data at every breakpoint.
    Purely supportive of the "Anywhere on Earth" headline; must never compete with it or the
    product image for attention. */
+/* "Beyond Earth" easter egg (see initHeroBeyondEarthStarfield in site.js): a field of streaks
+   that fade in behind the earth and coastline, reading as travel away from the planet into deep
+   space. Sits at z-index 0 -- behind .hero-earth (1) and .hero-composition (2) -- so it never
+   competes with headline/product legibility, and is only ever built/animated in response to the
+   felya:beyondearth event, so the default page carries zero extra DOM/animation cost. */
+.hero-starfield {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 900ms cubic-bezier(.4, 0, .2, 1);
+}
+
+.hero-starfield.is-active {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-starfield { display: none; }
+}
+
+/* Same "dimmer against a light background" treatment as every other layer of the earth graphic
+   below (.hero-earth__horizon path etc.) -- a scale on the inherited custom property, since the
+   per-streak --peak itself is an inline style set once in JS (see initHeroBeyondEarthStarfield)
+   and would otherwise always win over a plain CSS override here. */
+.hero-starfield { --hero-starfield-peak-scale: 1; }
+html[data-theme="light"] .hero-starfield { --hero-starfield-peak-scale: 0.55; }
+
+/* Per-streak geometry (--x/--len/--dur/--delay/--peak) comes from inline custom properties set
+   once in JS at creation time -- transform/opacity only (see the perf notes below on
+   .hero-earth__horizon for why: no filter/blur here either), and a negative --delay starts each
+   streak mid-flight instead of every streak launching from the same point in unison. */
+.hero-starfield__streak {
+    position: absolute;
+    left: var(--x, 50%);
+    bottom: -10%;
+    width: 2px;
+    height: var(--len, 90px);
+    background: linear-gradient(to top, transparent, var(--accent-strong), transparent);
+    opacity: 0;
+    transform: translateY(0) scaleY(0.4);
+    animation: hero-starfield-streak var(--dur, 5s) linear var(--delay, 0s) infinite;
+}
+
+@keyframes hero-starfield-streak {
+    0% { transform: translateY(0) scaleY(0.4); opacity: 0; }
+    8% { opacity: calc(var(--peak, 0.5) * var(--hero-starfield-peak-scale, 1)); }
+    78% { opacity: calc(var(--peak, 0.5) * var(--hero-starfield-peak-scale, 1)); }
+    100% { transform: translateY(-115vh) scaleY(1); opacity: 0; }
+}
+
 .hero-earth {
     position: absolute;
     inset: 0;

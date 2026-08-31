@@ -477,6 +477,7 @@ export function initHeroHeadlineLanguages({
     headline.dir = 'ltr';
     headline.dataset.heroLanguage = 'Easter egg';
     fitHeadline();
+    document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: true } }));
   };
 
   const cancelIntro = () => {
@@ -709,6 +710,7 @@ export function initHeroHeadlineLanguages({
     if (isEasterEggActive) {
       isEasterEggActive = false;
       setState('interaction');
+      document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: false } }));
       await transitionHeadline(restoreHeadline);
       resetLanguageCycle();
       scheduleNormalIdle();
@@ -1152,6 +1154,30 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // very high-refresh-rate displays without any perceptible smoothness cost.
   const UPDATE_INTERVAL_MS = 16;
 
+  // "Beyond Earth" easter egg (triggered elsewhere via the felya:beyondearth event): instead of
+  // the calm equatorial west-to-east drift, the sub-viewer point itself wanders in latitude -- a
+  // real parameter of the same orthographic projection below, not a CSS trick -- while the
+  // visible strip also banks around its own center. Together these read as watching the planet
+  // from a moving, inclined vantage (an ISS-style orbit) rather than a fixed point on the
+  // equator. Two incommensurate periods (24s tilt / 17s roll) so the two motions drift in and out
+  // of phase with each other instead of repeating in lockstep, and the rotation itself spins up
+  // to a much shorter period -- all three ramp in/out together via `intensity`, see
+  // currentIntensity below, so entering/leaving the easter egg is one smooth transition rather
+  // than a jump-cut.
+  const BEYOND_PERIOD_MS = 26000;
+  const BEYOND_TILT_DEG = 34;
+  const BEYOND_TILT_PERIOD_MS = 24000;
+  const BEYOND_ROLL_DEG = 22;
+  const BEYOND_ROLL_PERIOD_MS = 17000;
+  const BEYOND_ROLL_PHASE = Math.PI / 3;
+  // Pivot for the roll, in the same (pre-SVG-y-flip) coordinate space project() works in. The
+  // strip's clip only ever shows raw y roughly in [70,100] (see heroEarthViewBox/heroEarthClipPath
+  // -- this is a grazing limb view, not a top-down one), so 85 sits at the vertical center of
+  // what's actually visible. Rolling around the sphere's true (off-screen) center would swing the
+  // whole visible band wildly instead of banking it.
+  const ROLL_PIVOT_Y = 85;
+  const BEYOND_TRANSITION_MS = 1400;
+
   function project(lon, lat, lon0) {
     const dlon = ((lon - lon0 + 540) % 360) - 180;
     if (Math.abs(dlon) > maxDlon) return null;
@@ -1165,12 +1191,35 @@ export function initHeroEarthRotation({ root = document } = {}) {
     return `${Math.round(x * 100) / 100},${Math.round(-y * 100) / 100}`;
   }
 
-  function buildPath(lon0) {
+  // General case, used only while the easter egg is transitioning in/out or active: reinstates
+  // the sub-viewer latitude (lat0) that project() above assumes is 0, via the same orthographic
+  // formula generalized to an arbitrary sub-viewer point, plus a post-projection roll around the
+  // visible strip's own center (ROLL_PIVOT_Y). Kept separate so the default (lat0=0, no roll)
+  // path above stays exactly as cheap as it always was. Also skips project()'s maxDlon
+  // pre-filter, which is only a safe shortcut when lat0 is 0 -- near a pole, points far away in
+  // raw longitude can still be in view.
+  function projectBeyond(lon, lat, lon0, lat0R, cosRoll, sinRoll) {
+    const dlon = ((lon - lon0 + 540) % 360) - 180;
+    const latR = lat * D2R, dlonR = dlon * D2R;
+    const cosc = Math.sin(lat0R) * Math.sin(latR) + Math.cos(lat0R) * Math.cos(latR) * Math.cos(dlonR);
+    if (cosc < coscMin) return null;
+    const x = R * Math.cos(latR) * Math.sin(dlonR);
+    const y = R * (Math.cos(lat0R) * Math.sin(latR) - Math.sin(lat0R) * Math.cos(latR) * Math.cos(dlonR));
+    const dy = y - ROLL_PIVOT_Y;
+    const rolledX = x * cosRoll - dy * sinRoll;
+    const rolledY = ROLL_PIVOT_Y + (x * sinRoll + dy * cosRoll);
+    return `${Math.round(rolledX * 100) / 100},${Math.round(-rolledY * 100) / 100}`;
+  }
+
+  function buildPath(lon0, lat0R = 0, cosRoll = 1, sinRoll = 0) {
+    const useBeyond = lat0R !== 0 || cosRoll !== 1;
     const parts = [];
     for (const run of heroEarthSegments) {
       let segment = [];
       for (const [lon, lat] of run) {
-        const p = project(lon, lat, lon0);
+        const p = useBeyond
+          ? projectBeyond(lon, lat, lon0, lat0R, cosRoll, sinRoll)
+          : project(lon, lat, lon0);
         if (p) {
           segment.push(p);
         } else {
@@ -1186,13 +1235,56 @@ export function initHeroEarthRotation({ root = document } = {}) {
   let frame = null;
   let lastUpdate = 0;
   let visible = true;
+  let lon0 = LON_START;
+  let lastIntegration = null;
+
+  let beyondActive = false;
+  let beyondToggledAt = 0;
+  let beyondIntensityAtToggle = 0;
+
+  // Smoothstepped 0..1 ramp toward whichever state (active/inactive) was last requested,
+  // starting from wherever the ramp actually was at the moment it was last toggled -- so
+  // re-triggering mid-transition eases from the current value instead of snapping.
+  const currentIntensity = (now) => {
+    const elapsed = now - beyondToggledAt;
+    const t = Math.min(1, Math.max(0, elapsed / BEYOND_TRANSITION_MS));
+    const eased = t * t * (3 - 2 * t);
+    const target = beyondActive ? 1 : 0;
+    return beyondIntensityAtToggle + (target - beyondIntensityAtToggle) * eased;
+  };
+
+  document.addEventListener('felya:beyondearth', (event) => {
+    const active = Boolean(event?.detail?.active);
+    if (active === beyondActive) return;
+    beyondIntensityAtToggle = currentIntensity(performance.now());
+    beyondActive = active;
+    beyondToggledAt = performance.now();
+  });
 
   function tick(now) {
     frame = window.requestAnimationFrame(tick);
-    if (!visible || now - lastUpdate < UPDATE_INTERVAL_MS) return;
+    const dt = lastIntegration === null ? 0 : now - lastIntegration;
+    lastIntegration = now;
+    if (!visible) return;
+
+    const intensity = currentIntensity(now);
+    const period = PERIOD_MS + (BEYOND_PERIOD_MS - PERIOD_MS) * intensity;
+    // Integrated rather than derived fresh from absolute time each frame (as the plain-drift
+    // case above can afford to be): the period itself now varies continuously, and re-deriving
+    // an angle from `now / period` every frame would jump discontinuously whenever period
+    // changes. Accumulating angular velocity over dt keeps the turn smooth through the spin-up
+    // and spin-down alike.
+    lon0 = (((lon0 - (360 / period) * dt) % 360) + 360) % 360;
+
+    if (now - lastUpdate < UPDATE_INTERVAL_MS) return;
     lastUpdate = now;
-    const lon0 = LON_START - ((now / PERIOD_MS) % 1) * 360;
-    path.setAttribute('d', buildPath(lon0));
+
+    const tiltDeg = intensity * BEYOND_TILT_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2);
+    const rollDeg = intensity * BEYOND_ROLL_DEG
+      * Math.sin((now / BEYOND_ROLL_PERIOD_MS) * Math.PI * 2 + BEYOND_ROLL_PHASE);
+    const lat0R = tiltDeg * D2R;
+    const rollR = rollDeg * D2R;
+    path.setAttribute('d', buildPath(lon0, lat0R, Math.cos(rollR), Math.sin(rollR)));
   }
 
   const start = () => {
@@ -1201,6 +1293,8 @@ export function initHeroEarthRotation({ root = document } = {}) {
   const stop = () => {
     if (frame !== null) window.cancelAnimationFrame(frame);
     frame = null;
+    lon0 = LON_START;
+    lastIntegration = null;
     path.setAttribute('d', buildPath(LON_START));
   };
 
@@ -1219,6 +1313,48 @@ export function initHeroEarthRotation({ root = document } = {}) {
   });
 
   start();
+}
+
+// Companion to the "Beyond Earth" branch of initHeroEarthRotation above: a field of thin streaks
+// that fade in behind the earth once the easter egg is triggered, reading as travel away from the
+// planet into deep space. Kept as its own module (own event listener, own reduced-motion check)
+// rather than folded into the rotation tick loop -- the streaks are plain CSS animations once
+// built, so there's nothing per-frame here for a shared rAF loop to buy.
+export function initHeroBeyondEarthStarfield({ root = document, random = Math.random } = {}) {
+  const container = root.querySelector('[data-hero-starfield]');
+  if (!container) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (reduceMotion.matches) return; // static/absent starfield, no motion to opt out of
+
+  const STREAK_COUNT = 56;
+  let built = false;
+
+  const build = () => {
+    if (built) return;
+    built = true;
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < STREAK_COUNT; i += 1) {
+      const streak = document.createElement('span');
+      streak.className = 'hero-starfield__streak';
+      const duration = 3.4 + random() * 3.6;
+      streak.style.setProperty('--x', `${(random() * 100).toFixed(2)}%`);
+      streak.style.setProperty('--len', `${Math.round(60 + random() * 100)}px`);
+      streak.style.setProperty('--dur', `${duration.toFixed(2)}s`);
+      // Negative delay starts each streak mid-flight instead of every streak launching from the
+      // same point in unison the moment the easter egg activates.
+      streak.style.setProperty('--delay', `${(-random() * duration).toFixed(2)}s`);
+      streak.style.setProperty('--peak', (0.32 + random() * 0.38).toFixed(2));
+      fragment.appendChild(streak);
+    }
+    container.appendChild(fragment);
+  };
+
+  document.addEventListener('felya:beyondearth', (event) => {
+    const active = Boolean(event?.detail?.active);
+    if (active) build();
+    container.classList.toggle('is-active', active);
+  });
 }
 
 export function initPatonSystemDemonstration({ root = document } = {}) {
@@ -2258,6 +2394,7 @@ export function initSite(root = document) {
   initHeroMobileGloveScroll({ root });
   initHeroCopyAlignment({ root });
   initHeroEarthRotation({ root });
+  initHeroBeyondEarthStarfield({ root });
   initPatonSystemDemonstration({ root });
   initSectionReveals({ root });
   initSectionNavigation({ root });
