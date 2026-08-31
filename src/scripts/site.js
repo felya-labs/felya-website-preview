@@ -98,19 +98,27 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
   // hand-built overlay. Earlier overlay-based attempts (a flat curtain, then a blurred "mist" one)
   // both had to hide real content behind an opaque layer and only flip the theme once fully
   // covered -- content froze/disappeared mid-transition, which read as broken rather than fluid.
-  // startViewTransition instead snapshots the actual before/after page as two live layers
+  // startViewTransition instead snapshots the actual before/after page into two layers
   // (::view-transition-old/new(root), see the CSS) and animates between them with a clip-path
-  // reveal -- text, the earth and the product image stay visible and in motion the whole time,
-  // because nothing is ever covered; the boundary between old and new is just a moving clip edge.
+  // reveal -- text, the earth and the product image are never covered by an opaque shape, only by
+  // a moving clip edge, so both snapshots stay fully legible throughout.
+  //
+  // Those two layers are still snapshots, though -- the actual live page is hidden (not painted)
+  // for the transition's duration, so anything continuously animating underneath (the earth's
+  // rotation) doesn't visibly advance during that window. The felya:themewipe event lets
+  // initHeroEarthRotation pause its own time integration for exactly that window, so the rotation
+  // resumes from where it was instead of jumping forward by however long the wipe took.
   const runThemeWipe = (nextTheme, direction) => {
     if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       applyTheme(nextTheme);
       return;
     }
     document.documentElement.dataset.themeWipeDirection = direction;
+    document.dispatchEvent(new CustomEvent('felya:themewipe', { detail: { active: true } }));
     const transition = document.startViewTransition(() => applyTheme(nextTheme));
     transition.finished.finally(() => {
       delete document.documentElement.dataset.themeWipeDirection;
+      document.dispatchEvent(new CustomEvent('felya:themewipe', { detail: { active: false } }));
     });
   };
 
@@ -1278,11 +1286,24 @@ export function initHeroEarthRotation({ root = document } = {}) {
     beyondToggledAt = performance.now();
   });
 
+  // View Transitions (see initColorTheme's runThemeWipe) render the whole page as a frozen
+  // snapshot for the wipe's duration -- this rAF loop keeps running underneath, invisibly, and
+  // without this flag `dt` below would keep integrating against real elapsed time the whole time
+  // it's hidden. That doesn't desync anything (lon0 stays mathematically correct), but it does
+  // mean the reveal jumps forward by however long the transition took the instant the live page
+  // becomes visible again -- a visible stutter right at the moment the wipe finishes, even though
+  // the rotation itself was never actually wrong. Freezing `dt` to 0 for the same window the page
+  // is invisible keeps the reveal a continuation of exactly where the rotation was when it froze.
+  let isThemeWipePaused = false;
+  document.addEventListener('felya:themewipe', (event) => {
+    isThemeWipePaused = Boolean(event?.detail?.active);
+  });
+
   function tick(now) {
     frame = window.requestAnimationFrame(tick);
-    const dt = lastIntegration === null ? 0 : now - lastIntegration;
+    const dt = (lastIntegration === null || isThemeWipePaused) ? 0 : now - lastIntegration;
     lastIntegration = now;
-    if (!visible) return;
+    if (!visible || isThemeWipePaused) return;
 
     const intensity = currentIntensity(now);
     const period = PERIOD_MS + (BEYOND_PERIOD_MS - PERIOD_MS) * intensity;
