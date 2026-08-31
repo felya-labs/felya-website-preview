@@ -20,6 +20,7 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
                     <path d={heroEarthClipPath} />
                 </clipPath>
             </defs>
+            <path class="hero-earth__disc" d={heroEarthClipPath} />
             <path class="hero-earth__horizon-glow hero-earth__horizon-glow--diffuse" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
             <path class="hero-earth__horizon-glow hero-earth__horizon-glow--wide" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />
             <path class="hero-earth__horizon-glow hero-earth__horizon-glow--soft" d={heroEarthLimbPath} clip-path="url(#hero-earth-clip)" />

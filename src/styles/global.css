@@ -15,6 +15,26 @@ body {
     transition: background-color 220ms ease, color 220ms ease;
 }
 
+/* Beyond Earth easter-egg theme switch (see initColorTheme's runBeyondEarthThemeWipe in site.js):
+   a fixed, full-viewport curtain that grows left-to-right over the still-light page via a
+   transform (cheap, GPU-composited -- no layout/paint cost per frame, consistent with every other
+   animation on this page). #000000 matches body's own dark background_color exactly, so once the
+   sweep finishes and the real theme flips underneath it, removing the overlay is imperceptible. */
+.theme-wipe-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    background: linear-gradient(to right, #000000 0%, #000000 92%, rgba(0, 0, 0, 0) 100%);
+    transform-origin: left center;
+    transform: scaleX(0);
+    pointer-events: none;
+}
+
+.theme-wipe-overlay.is-sweeping {
+    transition: transform 700ms cubic-bezier(.65, 0, .35, 1);
+    transform: scaleX(1);
+}
+
 html:lang(ko) body {
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
 }
@@ -1835,6 +1855,26 @@ html[data-theme="light"] .hero-starfield { --hero-starfield-peak-scale: 0.55; }
     stroke-width: 1.5px;
     vector-effect: non-scaling-stroke;
     opacity: 0.65;
+}
+
+/* The visible cap's solid body -- same shape as the clipPath above, filled instead of used as a
+   mask. Without this, the earth was only ever glowing outlines over transparent space: fine when
+   nothing sat behind it, but once .hero-starfield (z-index 0, below .hero-earth's 1) started
+   streaking stars past, they showed straight through the "planet" instead of disappearing behind
+   it -- there was nothing there to occlude them. Painted before the glow/coastline paths (first
+   child, see HeroSection.astro) so it sits behind them, not over them. Dark-theme only: in light
+   theme the earth reads as a faint wireframe against a light page (see the opacity overrides
+   below), where a solid fill would be a much bigger, unrequested visual change, and the occlusion
+   problem doesn't arise there since the easter egg that adds the starfield now also forces dark
+   theme (see initColorTheme's felya:beyondearth handling in site.js). */
+.hero-earth__horizon path.hero-earth__disc {
+    fill: #000000;
+    stroke: none;
+    opacity: 1;
+}
+
+html[data-theme="light"] .hero-earth__horizon path.hero-earth__disc {
+    fill: none;
 }
 
 /* Four stacked, progressively wider and more transparent strokes (painted widest-first, see

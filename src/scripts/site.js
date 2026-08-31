@@ -103,6 +103,44 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
   document.addEventListener('felya:languagechange', () => {
     applyTheme(document.documentElement.dataset.theme, false);
   });
+
+  // "Beyond Earth" easter egg (see initHeroHeadlineLanguages/initHeroEarthRotation): the starfield
+  // and inclined-orbit rotation are a dark-space effect, so triggering it while in light mode
+  // forces dark mode -- via a wipe rather than the plain crossfade a manual toggle gets, since a
+  // sudden flat cut felt at odds with "you've been swept off into space" framing. The wipe is a
+  // fixed, page-covering overlay (built lazily so it costs nothing until first used) that grows
+  // left-to-right over the still-light page; only once it fully covers the screen does the theme
+  // actually flip and the overlay disappear -- at that instant both are identical solid dark, so
+  // there's nothing to see happen. Doing it in that order (flip only once fully covered) avoids
+  // ever having real page content mid-repaint while the wipe is partway across it.
+  let wipeOverlay = null;
+  const runBeyondEarthThemeWipe = () => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      applyTheme('dark');
+      return;
+    }
+    if (!wipeOverlay) {
+      wipeOverlay = document.createElement('div');
+      wipeOverlay.className = 'theme-wipe-overlay';
+      wipeOverlay.setAttribute('aria-hidden', 'true');
+    }
+    wipeOverlay.classList.remove('is-sweeping');
+    document.body.appendChild(wipeOverlay);
+    // Force layout so the removed/re-added overlay commits its resting (unswept) state before
+    // the class below starts the transition -- otherwise the browser can coalesce both changes
+    // into one paint and skip the animation entirely.
+    void wipeOverlay.offsetWidth;
+    wipeOverlay.classList.add('is-sweeping');
+    window.setTimeout(() => {
+      applyTheme('dark');
+      wipeOverlay.remove();
+    }, 720);
+  };
+
+  document.addEventListener('felya:beyondearth', (event) => {
+    if (!event?.detail?.active) return;
+    if (document.documentElement.dataset.theme !== 'dark') runBeyondEarthThemeWipe();
+  });
 }
 
 export function initLanguageSelector({ root = document, config = language } = {}) {
@@ -1167,15 +1205,14 @@ export function initHeroEarthRotation({ root = document } = {}) {
   const BEYOND_PERIOD_MS = 26000;
   const BEYOND_TILT_DEG = 34;
   const BEYOND_TILT_PERIOD_MS = 24000;
-  const BEYOND_ROLL_DEG = 22;
+  // Smaller than tilt: rolling around the true projection center (see projectBeyond below) moves
+  // near-limb points a lot per degree -- points near the visible strip sit close to the sphere's
+  // own radius from that center, so even a modest angle sweeps them by a large fraction of the
+  // strip's own height. This is the angle, not the resulting on-screen motion, so it reads as a
+  // properly "deutlich" bank without becoming an illegible blur.
+  const BEYOND_ROLL_DEG = 11;
   const BEYOND_ROLL_PERIOD_MS = 17000;
   const BEYOND_ROLL_PHASE = Math.PI / 3;
-  // Pivot for the roll, in the same (pre-SVG-y-flip) coordinate space project() works in. The
-  // strip's clip only ever shows raw y roughly in [70,100] (see heroEarthViewBox/heroEarthClipPath
-  // -- this is a grazing limb view, not a top-down one), so 85 sits at the vertical center of
-  // what's actually visible. Rolling around the sphere's true (off-screen) center would swing the
-  // whole visible band wildly instead of banking it.
-  const ROLL_PIVOT_Y = 85;
   const BEYOND_TRANSITION_MS = 1400;
 
   function project(lon, lat, lon0) {
@@ -1193,11 +1230,21 @@ export function initHeroEarthRotation({ root = document } = {}) {
 
   // General case, used only while the easter egg is transitioning in/out or active: reinstates
   // the sub-viewer latitude (lat0) that project() above assumes is 0, via the same orthographic
-  // formula generalized to an arbitrary sub-viewer point, plus a post-projection roll around the
-  // visible strip's own center (ROLL_PIVOT_Y). Kept separate so the default (lat0=0, no roll)
-  // path above stays exactly as cheap as it always was. Also skips project()'s maxDlon
-  // pre-filter, which is only a safe shortcut when lat0 is 0 -- near a pole, points far away in
-  // raw longitude can still be in view.
+  // formula generalized to an arbitrary sub-viewer point, plus a post-projection roll. Kept
+  // separate so the default (lat0=0, no roll) path above stays exactly as cheap as it always was.
+  // Also skips project()'s maxDlon pre-filter, which is only a safe shortcut when lat0 is 0 --
+  // near a pole, points far away in raw longitude can still be in view.
+  //
+  // The roll rotates (x, y) around the origin (0, 0) -- not some other point picked to sit near
+  // the visible strip. That matters: for a true sphere under orthographic projection, every
+  // constant-cosc contour (including the one heroEarthLimbPath is baked from, and the sphere's
+  // own silhouette) projects to a circle centered exactly on the origin, *regardless* of viewing
+  // direction -- lon0, lat0, roll, all of it. Rotating around the origin is therefore the one
+  // pivot that turns the coastline as a rigid body without ever pulling it out of alignment with
+  // that fixed circle -- i.e. an actual rotating sphere, not the flattened map being sheared
+  // around a point that has no such invariant. An earlier version rolled around a point local to
+  // the visible strip instead (chosen because it sat mid-crop), which is exactly why the coastline
+  // visibly warped relative to the static horizon glow.
   function projectBeyond(lon, lat, lon0, lat0R, cosRoll, sinRoll) {
     const dlon = ((lon - lon0 + 540) % 360) - 180;
     const latR = lat * D2R, dlonR = dlon * D2R;
@@ -1205,9 +1252,8 @@ export function initHeroEarthRotation({ root = document } = {}) {
     if (cosc < coscMin) return null;
     const x = R * Math.cos(latR) * Math.sin(dlonR);
     const y = R * (Math.cos(lat0R) * Math.sin(latR) - Math.sin(lat0R) * Math.cos(latR) * Math.cos(dlonR));
-    const dy = y - ROLL_PIVOT_Y;
-    const rolledX = x * cosRoll - dy * sinRoll;
-    const rolledY = ROLL_PIVOT_Y + (x * sinRoll + dy * cosRoll);
+    const rolledX = x * cosRoll - y * sinRoll;
+    const rolledY = x * sinRoll + y * cosRoll;
     return `${Math.round(rolledX * 100) / 100},${Math.round(-rolledY * 100) / 100}`;
   }
 
