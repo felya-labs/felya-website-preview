@@ -1197,13 +1197,16 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // latitudes roughly [lat0+44, lat0+90] (it's a grazing near-limb crop, not a top-down view --
   // see project()'s coscMin cutoff), so a *symmetric* tilt centered on the equator never actually
   // reaches it -- even at its most negative extreme it only came down to about +10 degrees,
-  // comfortably northern-hemisphere the entire time. Centering the swing on -20 with a wider +/-40
-  // amplitude instead ranges from a high-north extreme (lat0=+20, window ~[64,90]) down through a
-  // southern one (lat0=-60, window ~[-16,30] -- genuinely crossing the equator into the southern
-  // hemisphere, both visible in the same frame at that point in the cycle) rather than hovering
-  // permanently north.
-  const BEYOND_TILT_CENTER_DEG = -20;
-  const BEYOND_TILT_AMPLITUDE_DEG = 40;
+  // comfortably northern-hemisphere the entire time. An initial -20/+/-40 version still only
+  // grazed the equator (window down to ~[-16,30]) rather than showing the Southern Hemisphere
+  // properly, since heroEarthSegments used to have no data at all south of about -2 degrees
+  // anyway (see hero-earth-coastline.js) -- now that the full globe is actually in the data,
+  // centering the swing on -42 with a wider +/-42 amplitude ranges from a high-north extreme
+  // (lat0=0, window [44,90] -- coincides with the calm default rotation's own view) down through
+  // a genuinely southern one (lat0=-84, window ~[-40,6] -- southern Africa, Madagascar, southern
+  // Australia and South America all land inside that band, not just a graze past the equator).
+  const BEYOND_TILT_CENTER_DEG = -42;
+  const BEYOND_TILT_AMPLITUDE_DEG = 42;
   const BEYOND_TILT_PERIOD_MS = 24000;
   // Smaller than tilt: rolling around the true projection center (see projectBeyond below) moves
   // near-limb points a lot per degree -- points near the visible strip sit close to the sphere's
