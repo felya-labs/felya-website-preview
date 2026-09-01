@@ -117,6 +117,13 @@ html[data-theme="light"] .theme-brand-logo {
     pointer-events: none;
 }
 
+/* Visibility is clip-path-driven (a hard directional reveal), not opacity -- an opacity fade on a
+   blurred gradient reads as a soft blob independently *growing/blooming* in place (its dim outer
+   fringe only becomes perceptible as opacity rises), which is exactly the separate, out-of-place
+   "old animation" character that kept standing out against the rest of the page even once its
+   timing was synced to the wipe. A clip-path reveal has the same hard-edged "curtain" language as
+   .hero-section::after and .hero-earth__disc below, so this reads as one motion uncovering the
+   whole scene rather than a second, differently-shaped effect happening alongside it. */
 .hero-product-stage::before {
     inset: -14% -21% -17% -20%;
     background:
@@ -124,12 +131,7 @@ html[data-theme="light"] .theme-brand-logo {
             radial-gradient(ellipse at 64% 76%, rgba(27, 38, 55, 0.085), transparent 58%),
             radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.72) 55%, rgba(255, 255, 255, 0.22) 76%, transparent 88%);
     filter: blur(24px);
-    opacity: 0;
-    /* Matches .hero-section::after's wipe exactly (600ms cubic-bezier(.4,0,.2,1), same as body's
-       color transition above) -- this used to run on its own 480ms/680ms timing with a different
-       easing curve (a leftover from before the wipe existed), which made it visibly drift out of
-       sync with the wipe on every toggle instead of reading as one coordinated motion. */
-    transition: opacity 600ms cubic-bezier(.4, 0, .2, 1);
+    clip-path: inset(0 0 0 100%);
 }
 
 .hero-product-stage::after {
@@ -149,7 +151,24 @@ html[data-theme="light"] .theme-brand-logo {
 }
 
 html[data-theme="light"] .hero-product-stage::before {
-    opacity: 1;
+    clip-path: inset(0 0 0 0);
+}
+
+/* Reuses .hero-section::after's own keyframes (identical shape: visible -> hidden for ltr, hidden
+   -> visible for rtl) rather than duplicating them -- same motion, just retimed. This element
+   sits roughly in the right ~60-90% of the viewport (it tracks the product image), so the main
+   wipe's own front doesn't sweep past it until well into the 600ms; animating this over the full
+   0-600ms range from t=0 would finish revealing/hiding it long before the visible boundary
+   actually arrives there, popping it in ahead of the sweep instead of being uncovered by it. The
+   delay/duration below are a fixed approximation of when that front crosses this region -- not a
+   measured value, since the product image's relative horizontal position barely moves across
+   breakpoints -- tuned to finish right around the same 600ms the main wipe does. */
+html[data-theme-wipe-direction="ltr"] .hero-product-stage::before {
+    animation: hero-section-after-wipe-ltr 260ms cubic-bezier(.4, 0, .2, 1) 320ms forwards;
+}
+
+html[data-theme-wipe-direction="rtl"] .hero-product-stage::before {
+    animation: hero-section-after-wipe-rtl 260ms cubic-bezier(.4, 0, .2, 1) forwards;
 }
 
 html[data-theme="light"] .hero-product-stage::after {
@@ -1898,10 +1917,20 @@ html[data-theme="light"] .hero-starfield { --hero-starfield-peak-scale: 0.55; }
     fill: #000000;
     stroke: none;
     opacity: 1;
+    /* Was an instant fill:none <-> fill:#000000 swap with no transition -- the globe snapped
+       solid black the moment the theme attribute flipped, well before the wipe had visually
+       reached it (nothing sweeps *through* this shape from the background wipe below: the disc is
+       opaque and sits above it in z-index, so this fill is the only thing the viewer actually sees
+       here). 600ms cubic-bezier(.4,0,.2,1) matches the wipe's own duration/easing so it darkens
+       across the same span instead of jumping ahead of it. */
+    transition: fill 600ms cubic-bezier(.4, 0, .2, 1);
 }
 
 html[data-theme="light"] .hero-earth__horizon path.hero-earth__disc {
-    fill: none;
+    /* transparent, not none: `none` is a keyword, not a color, so it can't be interpolated by the
+       transition above -- fill would still jump instantly. transparent (rgba(0,0,0,0)) is a real
+       color equal in appearance to no fill at all, so it fades smoothly instead. */
+    fill: transparent;
 }
 
 /* Four stacked, progressively wider and more transparent strokes (painted widest-first, see

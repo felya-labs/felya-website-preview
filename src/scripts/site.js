@@ -1191,8 +1191,9 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // of phase with each other instead of repeating in lockstep, and the rotation itself spins up
   // to a much shorter period -- all three ramp in/out together via `intensity`, see
   // currentIntensity below, so entering/leaving the easter egg is one smooth transition rather
-  // than a jump-cut.
-  const BEYOND_PERIOD_MS = 26000;
+  // than a jump-cut. 15s/turn (was 26s) for a noticeably faster base spin -- still just the
+  // *base* rate the direction wobble further speeds up or reverses below.
+  const BEYOND_PERIOD_MS = 15000;
   // Asymmetric on purpose, not a plain +/-34 swing around 0: the visible strip only ever shows
   // latitudes roughly [lat0+44, lat0+90] (it's a grazing near-limb crop, not a top-down view --
   // see project()'s coscMin cutoff), so a *symmetric* tilt centered on the equator never actually
