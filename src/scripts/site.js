@@ -1217,6 +1217,21 @@ export function initHeroEarthRotation({ root = document } = {}) {
   const BEYOND_ROLL_PERIOD_MS = 17000;
   const BEYOND_ROLL_PHASE = Math.PI / 3;
   const BEYOND_TRANSITION_MS = 1400;
+  // Direction wobble: rather than always drifting the same way (however fast), the spin's own
+  // *velocity* is scaled by a sum of two incommensurate sine waves plus a DC offset -- still
+  // spinning forward most of the time, but every so often both waves dip negative together and
+  // the globe smoothly decelerates, stops, and reverses for a while before turning forward again.
+  // This is a continuous, differentiable function of time (a sum of sines), so the reversal is
+  // never a jump -- lon0 is its time-integral, and that integral stays perfectly smooth through
+  // every slow-down/reverse/speed-up, however erratic the direction feels. Periods incommensurate
+  // with each other and with BEYOND_TILT_PERIOD_MS/BEYOND_ROLL_PERIOD_MS/BEYOND_PERIOD_MS above so
+  // reversals land at unpredictable points in the tilt/roll cycle instead of always coinciding.
+  const BEYOND_SPIN_WOBBLE_PERIOD_A_MS = 19500;
+  const BEYOND_SPIN_WOBBLE_PERIOD_B_MS = 31000;
+  const BEYOND_SPIN_WOBBLE_PHASE = Math.PI / 5;
+  const BEYOND_SPIN_WOBBLE_DC = 0.7;
+  const BEYOND_SPIN_WOBBLE_AMP_A = 0.55;
+  const BEYOND_SPIN_WOBBLE_AMP_B = 0.4;
 
   function project(lon, lat, lon0) {
     const dlon = ((lon - lon0 + 540) % 360) - 180;
@@ -1323,7 +1338,18 @@ export function initHeroEarthRotation({ root = document } = {}) {
     // an angle from `now / period` every frame would jump discontinuously whenever period
     // changes. Accumulating angular velocity over dt keeps the turn smooth through the spin-up
     // and spin-down alike.
-    lon0 = (((lon0 - (360 / period) * dt) % 360) + 360) % 360;
+    //
+    // directionMultiplier blends from a flat 1 (calm mode: always the plain westward drift above)
+    // toward the wobble sum as intensity ramps to 1, so the reversal effect itself fades in/out
+    // with the easter egg rather than snapping on. Blending the multiplier (not just adding the
+    // wobble on top) keeps this a lerp between two continuous functions of time, so it's still
+    // smooth through the ramp -- see the wobble constants' own comment above for why the wobble
+    // itself never introduces a discontinuity either.
+    const wobble = BEYOND_SPIN_WOBBLE_DC
+      + BEYOND_SPIN_WOBBLE_AMP_A * Math.sin((now / BEYOND_SPIN_WOBBLE_PERIOD_A_MS) * Math.PI * 2)
+      + BEYOND_SPIN_WOBBLE_AMP_B * Math.sin((now / BEYOND_SPIN_WOBBLE_PERIOD_B_MS) * Math.PI * 2 + BEYOND_SPIN_WOBBLE_PHASE);
+    const directionMultiplier = 1 + intensity * (wobble - 1);
+    lon0 = (((lon0 - (360 / period) * dt * directionMultiplier) % 360) + 360) % 360;
 
     if (now - lastUpdate < UPDATE_INTERVAL_MS) return;
     lastUpdate = now;
