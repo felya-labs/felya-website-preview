@@ -12,7 +12,16 @@ body {
     font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background-color: #000000;
     color: #ffffff;
-    transition: background-color 220ms ease, color 220ms ease;
+    /* 520ms, not the original 220ms: roughly matches .hero-section::after's 600ms wipe (see
+       below) so text color arrives close to when the directional background wipe passing under
+       it does, rather than flipping to the new theme's color well before the background there has
+       caught up (a real contrast risk for the dark-to-light direction specifically, where text
+       would otherwise go dark while still sitting on a not-yet-lightened background). Still a
+       plain, non-directional crossfade -- text everywhere fades in lockstep rather than following
+       the wipe's left-to-right/right-to-left motion -- but that keeps it simple and always at
+       least midway-readable throughout, which a hard directional cutover for text specifically
+       would need real per-element masking to guarantee. */
+    transition: background-color 520ms ease, color 520ms ease;
 }
 
 html:lang(ko) body {
@@ -79,22 +88,24 @@ html[data-theme="light"] body {
 }
 
 .theme-brand-logo {
-    --brand-logo-width: 12rem;
-    --brand-logo-height: 2.125rem;
-    --brand-logo-offset: -2.12rem;
+    --brand-logo-frame-width: 5.56rem;
+    --brand-logo-frame-height: 1.75rem;
+    --brand-logo-canvas-width: 7.82rem;
+    --brand-logo-canvas-offset-x: -1.12rem;
+    --brand-logo-canvas-offset-y: -1.31rem;
     position: relative;
     display: block;
-    width: calc(var(--brand-logo-width) * .71);
-    height: var(--brand-logo-height);
+    width: var(--brand-logo-frame-width);
+    height: var(--brand-logo-frame-height);
     overflow: hidden;
 }
 
 .theme-brand-logo__asset {
     position: absolute;
-    top: var(--brand-logo-offset);
-    left: 0;
+    top: var(--brand-logo-canvas-offset-y);
+    left: var(--brand-logo-canvas-offset-x);
     display: block;
-    width: var(--brand-logo-width);
+    width: var(--brand-logo-canvas-width);
     max-width: none;
     height: auto;
 }
@@ -104,6 +115,15 @@ html[data-theme="light"] .theme-brand-logo__asset--white { display: none; }
 html[data-theme="light"] .theme-brand-logo__asset--black { display: block; }
 
 .hero-product-stage {
+    /* Containing block for ::before/::after below (both position:absolute): without this,
+       neither has any positioned ancestor of their own, so their right/bottom percentages
+       resolve against the next one up the tree instead -- .hero-composition, a much bigger box
+       spanning the whole headline+image area. The ::after contact shadow in particular was
+       floating wherever "5% from .hero-composition's bottom" happened to land rather than
+       actually sitting under the glove -- most visible now that .hero-composition can be taller
+       than its content (see its margin-block:auto), which moves that point further from the
+       image than before. */
+    position: relative;
     isolation: isolate;
 }
 
@@ -115,6 +135,13 @@ html[data-theme="light"] .theme-brand-logo__asset--black { display: block; }
     pointer-events: none;
 }
 
+/* Visibility is clip-path-driven (a hard directional reveal), not opacity -- an opacity fade on a
+   blurred gradient reads as a soft blob independently *growing/blooming* in place (its dim outer
+   fringe only becomes perceptible as opacity rises), which is exactly the separate, out-of-place
+   "old animation" character that kept standing out against the rest of the page even once its
+   timing was synced to the wipe. A clip-path reveal has the same hard-edged "curtain" language as
+   .hero-section::after and .hero-earth__disc below, so this reads as one motion uncovering the
+   whole scene rather than a second, differently-shaped effect happening alongside it. */
 .hero-product-stage::before {
     inset: -14% -21% -17% -20%;
     background:
@@ -122,8 +149,7 @@ html[data-theme="light"] .theme-brand-logo__asset--black { display: block; }
             radial-gradient(ellipse at 64% 76%, rgba(27, 38, 55, 0.085), transparent 58%),
             radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.72) 55%, rgba(255, 255, 255, 0.22) 76%, transparent 88%);
     filter: blur(24px);
-    opacity: 0;
-    transition: opacity 480ms cubic-bezier(.4, 0, .2, 1);
+    clip-path: inset(0 0 0 100%);
 }
 
 .hero-product-stage::after {
@@ -143,9 +169,24 @@ html[data-theme="light"] .theme-brand-logo__asset--black { display: block; }
 }
 
 html[data-theme="light"] .hero-product-stage::before {
-    opacity: 1;
-    transition-duration: 680ms;
-    transition-timing-function: cubic-bezier(.16, 1, .3, 1);
+    clip-path: inset(0 0 0 0);
+}
+
+/* Reuses .hero-section::after's own keyframes (identical shape: visible -> hidden for ltr, hidden
+   -> visible for rtl) rather than duplicating them -- same motion, just retimed. This element
+   sits roughly in the right ~60-90% of the viewport (it tracks the product image), so the main
+   wipe's own front doesn't sweep past it until well into the 600ms; animating this over the full
+   0-600ms range from t=0 would finish revealing/hiding it long before the visible boundary
+   actually arrives there, popping it in ahead of the sweep instead of being uncovered by it. The
+   delay/duration below are a fixed approximation of when that front crosses this region -- not a
+   measured value, since the product image's relative horizontal position barely moves across
+   breakpoints -- tuned to finish right around the same 600ms the main wipe does. */
+html[data-theme-wipe-direction="ltr"] .hero-product-stage::before {
+    animation: hero-section-after-wipe-ltr 260ms cubic-bezier(.4, 0, .2, 1) 320ms forwards;
+}
+
+html[data-theme-wipe-direction="rtl"] .hero-product-stage::before {
+    animation: hero-section-after-wipe-rtl 260ms cubic-bezier(.4, 0, .2, 1) forwards;
 }
 
 html[data-theme="light"] .hero-product-stage::after {
@@ -1688,9 +1729,58 @@ html[data-theme="light"] .mobile-nav-toggle {
     isolation: isolate;
     overflow: hidden;
     background: #000000;
-    padding: clamp(7rem, 12vh, 8.5rem) 1.5rem clamp(2.75rem, 5vh, 4rem);
+    display: flex;
+    flex-direction: column;
+    /* Must always fill the viewport on load, on every screen size -- non-negotiable, this is
+       what makes it a hero. Previously this min-height only lived in the min-width:1024px tier
+       below, so any narrower/shorter breakpoint (portrait tablets, foldables, anything whose
+       content is naturally shorter than its viewport) sized the section to its content instead,
+       leaving the next section peeking in below it. flex-direction:column plus
+       .hero-composition's margin-block:auto (below) is what actually uses the extra height --
+       min-height alone would just leave it as dead space at the bottom. */
+    min-height: 100vh;
+    min-height: 100svh;
+    /* Bottom floor lowered from 2.75rem, but the top one only as far as 6.5rem (was 7rem): the
+       header (Header.astro) is `fixed` below the md breakpoint, floating over the hero
+       regardless of viewport height (its own padding is all rem-based, no vh) -- roughly 6.25rem
+       tall in practice. A top floor lower than that (an earlier pass here tried 4rem) let PATON
+       actually collide with the header on a short phone (iPhone SE, Surface Duo) once 9vh alone
+       no longer reached the old 7rem floor. 6.5rem keeps a small real gap under the header on
+       every phone this tier applies to (all of them share the same fixed-height header below
+       768px) while still shrinking from the original 7rem on merely-short-not-tiny viewports.
+       The overflow-vs-short-viewport problem this was originally added for (see --earth-h and
+       .hero-product-stage below for the rest of it) is still solved -- just not from this lever. */
+    padding: clamp(6.5rem, 9vh, 8.5rem) 1.5rem clamp(1.5rem, 4.5vh, 4rem);
+    /* Declared here (not on .hero-earth) so .hero-product-stage can also read it below --
+       the product image needs to know how tall the earth strip is to reserve clearance above it.
+       min(15vw, 12vh), not plain 15vw: on a short-but-wide phone (a foldable's outer screen,
+       landscape phones) 15vw alone still floored at 9rem regardless of height, the single
+       biggest contributor to the same overflow-past-the-fold problem above. The 12vh term only
+       ever pulls this *down* below what 15vw would give -- on a normal-proportioned viewport 15vw
+       stays the smaller (binding) term, unchanged from before. Floor lowered further (to 3.5rem,
+       from 5.5rem) to make room for the top padding floor above being less aggressive than
+       originally planned. */
+    --earth-h: clamp(3.5rem, min(15vw, 12vh), 16rem);
+    /* Clearance reserved above the earth strip (.hero-copy and .hero-product-stage both read
+       this, see their margin-bottom) -- capped separately from --earth-h itself, not just
+       calc(var(--earth-h) + 1rem), because the two want different growth curves. The visual
+       earth band can reasonably keep growing on a very wide or very tall viewport (it's meant to
+       read as a bigger, more present horizon there). The *gap* reserved above it doesn't need to
+       grow at the same rate -- past a point it just reads as dead space between the composition
+       and the earth rather than a deliberate margin, most visible on a short-relative-to-width
+       ultrawide window where --earth-h alone can reach 300px+. 14rem keeps the gap reasonable at
+       that extreme while changing nothing anywhere --earth-h was already under the cap. */
+    --earth-clearance: calc(min(var(--earth-h), 14rem) + 1rem);
 }
 
+/* Visibility here is clip-path-driven, not opacity -- see initColorTheme's runThemeWipe in
+   site.js for why: opacity would put this behind a browser-level snapshot mechanism (View
+   Transitions) that, we found empirically, suspends *everything* underneath for the transition's
+   duration -- including .hero-earth's rotation, which needs to keep animating live throughout.
+   A clip-path animated directly on this always-live pseudo-element never touches that mechanism
+   at all: nothing is ever snapshotted or suspended, so .hero-earth (z-index 1, above this
+   element's z-index 0) and .hero-composition (z-index 2) just keep rendering normally, uninterrupted,
+   the entire time this wipes open or shut behind them. */
 .hero-section::after {
     content: "";
     position: absolute;
@@ -1701,181 +1791,280 @@ html[data-theme="light"] .mobile-nav-toggle {
             radial-gradient(circle at 78% 10%, rgba(74, 109, 168, 0.08), transparent 27rem),
             radial-gradient(circle at 18% 4%, rgba(255, 255, 255, 0.9), transparent 24rem),
             linear-gradient(180deg, #fcfdfe 0%, #f4f6f8 46%, #eef2f5 100%);
-    opacity: 0;
-    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
+    clip-path: inset(0 0 0 100%);
 }
 
 html[data-theme="light"] .hero-section::after {
+    clip-path: inset(0 0 0 0);
+}
+
+/* Wipe in progress (see runThemeWipe): the animation overrides the static clip-path above for its
+   duration, then -- because both land on the same value the static rule for the *arriving* theme
+   already specifies -- holds there with no jump once the direction attribute is cleared afterward.
+   Reduced motion never sets this attribute at all (see site.js), so it's an instant clip-path
+   swap via the static rules above, matching how the rest of the page already handles the
+   preference. */
+html[data-theme-wipe-direction="ltr"] .hero-section::after {
+    animation: hero-section-after-wipe-ltr 600ms cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
+html[data-theme-wipe-direction="rtl"] .hero-section::after {
+    animation: hero-section-after-wipe-rtl 600ms cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
+/* Light-to-dark: the light background wipes away left-to-right, uncovering the section's own
+   #000000 base underneath as it goes. */
+@keyframes hero-section-after-wipe-ltr {
+    from { clip-path: inset(0 0 0 0); }
+    to { clip-path: inset(0 0 0 100%); }
+}
+
+/* Dark-to-light: the mirror image -- the light background wipes in from the right, growing
+   leftward, rather than reusing the ltr keyframe in reverse (which would still start the reveal
+   from the left). */
+@keyframes hero-section-after-wipe-rtl {
+    from { clip-path: inset(0 0 0 100%); }
+    to { clip-path: inset(0 0 0 0); }
+}
+
+/* Hero earth — a faint horizon-line backdrop behind the hero copy, not a focal element. Real
+   coastline geometry (Natural Earth land-110m vector data), drawn as glowing outlines only — no
+   filled landmass — using a true orthographic projection with the sub-viewer point on the
+   equator, so the North Pole sits at the true top of the sphere and the visible strip is a real
+   polar cap, not a flat map crop or an arbitrary crop further north. Static for now (a future
+   rotation would recompute this projection continuously in JS, not crossfade pre-baked frames).
+   The horizon glow and the coastline's own clip mask (an SVG clipPath, not a hand-tuned CSS
+   ellipse) are both the true circular limb of the sphere in this same projection space, so the
+   "edge of the planet" is physically consistent with the coastline data at every breakpoint.
+   Purely supportive of the "Anywhere on Earth" headline; must never compete with it or the
+   product image for attention. */
+/* "Beyond Earth" easter egg (see initHeroBeyondEarthStarfield in site.js): a field of streaks
+   that fade in behind the earth and coastline, reading as travel away from the planet into deep
+   space. Sits at z-index 0 -- behind .hero-earth (1) and .hero-composition (2) -- so it never
+   competes with headline/product legibility, and is only ever built/animated in response to the
+   felya:beyondearth event, so the default page carries zero extra DOM/animation cost. */
+.hero-starfield {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 900ms cubic-bezier(.4, 0, .2, 1);
+}
+
+.hero-starfield.is-active {
     opacity: 1;
 }
 
-/* Hero globe — CSS-only 3D wireframe, three comparable variants via [data-globe]. */
-.hero-globe {
+@media (prefers-reduced-motion: reduce) {
+    .hero-starfield { display: none; }
+}
+
+/* Same "dimmer against a light background" treatment as every other layer of the earth graphic
+   below (.hero-earth__horizon path etc.) -- a scale on the inherited custom property, since the
+   per-streak --peak itself is an inline style set once in JS (see initHeroBeyondEarthStarfield)
+   and would otherwise always win over a plain CSS override here. */
+.hero-starfield { --hero-starfield-peak-scale: 1; }
+html[data-theme="light"] .hero-starfield { --hero-starfield-peak-scale: 0.55; }
+
+/* Per-streak geometry (--x/--len/--dur/--delay/--peak) comes from inline custom properties set
+   once in JS at creation time -- transform/opacity only (see the perf notes below on
+   .hero-earth__horizon for why: no filter/blur here either), and a negative --delay starts each
+   streak mid-flight instead of every streak launching from the same point in unison. */
+.hero-starfield__streak {
+    position: absolute;
+    left: var(--x, 50%);
+    bottom: -10%;
+    width: 2px;
+    height: var(--len, 90px);
+    background: linear-gradient(to top, transparent, var(--accent-strong), transparent);
+    opacity: 0;
+    transform: translateY(0) scaleY(0.4);
+    animation: hero-starfield-streak var(--dur, 5s) linear var(--delay, 0s) infinite;
+}
+
+@keyframes hero-starfield-streak {
+    0% { transform: translateY(0) scaleY(0.4); opacity: 0; }
+    8% { opacity: calc(var(--peak, 0.5) * var(--hero-starfield-peak-scale, 1)); }
+    78% { opacity: calc(var(--peak, 0.5) * var(--hero-starfield-peak-scale, 1)); }
+    100% { transform: translateY(-115vh) scaleY(1); opacity: 0; }
+}
+
+.hero-earth {
     position: absolute;
     inset: 0;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow: hidden;
     pointer-events: none;
-    opacity: var(--globe-opacity-dark, 0.22);
+}
+
+.hero-earth__horizon {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: var(--earth-h);
+    overflow: visible;
+}
+
+/* Glow via stacked, wider, more transparent strokes instead of blur()/drop-shadow(): a CSS
+   filter here measured as a major source of the rotation's frame stutter even though this path
+   never changes -- in software rendering it still forces a full repaint of the filtered region
+   whenever the sibling animated coastline mutates. Stacked strokes are just more vector geometry,
+   which the renderer can composite without ever re-rasterizing a blur. */
+.hero-earth__horizon path {
+    fill: none;
+    stroke: var(--accent-strong);
+    stroke-width: 1.5px;
+    vector-effect: non-scaling-stroke;
+    opacity: 0.65;
+}
+
+/* The visible cap's solid body -- same shape as the clipPath above, filled instead of used as a
+   mask. Without this, the earth was only ever glowing outlines over transparent space: fine when
+   nothing sat behind it, but once .hero-starfield (z-index 0, below .hero-earth's 1) started
+   streaking stars past, they showed straight through the "planet" instead of disappearing behind
+   it -- there was nothing there to occlude them. Painted before the glow/coastline paths (first
+   child, see HeroSection.astro) so it sits behind them, not over them. Dark-theme only: in light
+   theme the earth reads as a faint wireframe against a light page (see the opacity overrides
+   below), where a solid fill would be a much bigger, unrequested visual change, and the occlusion
+   problem doesn't arise there since the easter egg that adds the starfield now also forces dark
+   theme (see initColorTheme's felya:beyondearth handling in site.js). */
+.hero-earth__horizon path.hero-earth__disc {
+    fill: #000000;
+    stroke: none;
+    opacity: 1;
+    /* Was an instant fill:none <-> fill:#000000 swap with no transition -- the globe snapped
+       solid black the moment the theme attribute flipped, well before the wipe had visually
+       reached it (nothing sweeps *through* this shape from the background wipe below: the disc is
+       opaque and sits above it in z-index, so this fill is the only thing the viewer actually sees
+       here). 600ms cubic-bezier(.4,0,.2,1) matches the wipe's own duration/easing so it darkens
+       across the same span instead of jumping ahead of it. */
+    transition: fill 600ms cubic-bezier(.4, 0, .2, 1);
+}
+
+html[data-theme="light"] .hero-earth__horizon path.hero-earth__disc {
+    /* transparent, not none: `none` is a keyword, not a color, so it can't be interpolated by the
+       transition above -- fill would still jump instantly. transparent (rgba(0,0,0,0)) is a real
+       color equal in appearance to no fill at all, so it fades smoothly instead. */
+    fill: transparent;
+}
+
+/* Four stacked, progressively wider and more transparent strokes (painted widest-first, see
+   HeroSection.astro) instead of one or two -- a single glow layer read as a thin outline with a
+   faint halo, not an atmosphere. More layers approximate the soft gaussian falloff of a real
+   atmospheric limb glow while staying stroke-based (still no blur()/drop-shadow(): see the
+   perf note above on .hero-earth__horizon-glow -- that's still what keeps the rotation smooth). */
+.hero-earth__horizon path.hero-earth__horizon-glow {
+    stroke-width: 5px;
+    opacity: 0.3;
+}
+
+.hero-earth__horizon path.hero-earth__horizon-glow--soft {
+    stroke-width: 11px;
+    opacity: 0.16;
+}
+
+.hero-earth__horizon path.hero-earth__horizon-glow--wide {
+    stroke-width: 20px;
+    opacity: 0.08;
+}
+
+.hero-earth__horizon path.hero-earth__horizon-glow--diffuse {
+    stroke-width: 34px;
+    opacity: 0.04;
+}
+
+html[data-theme="light"] .hero-earth__horizon path {
+    opacity: 0.42;
+}
+
+html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow {
+    opacity: 0.2;
+}
+
+html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow--soft {
+    opacity: 0.11;
+}
+
+html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow--wide {
+    opacity: 0.055;
+}
+
+html[data-theme="light"] .hero-earth__horizon path.hero-earth__horizon-glow--diffuse {
+    opacity: 0.028;
+}
+
+/* A static gradient stand-in for the ambient glow that used to be a drop-shadow on
+   .hero-earth__orb. That filter re-rasterized a blur across the whole (animated, ~3000-point)
+   coastline on every rotation frame -- measured at 100+ ms of extra paint per update, which is
+   exactly the stutter this was reported as. A gradient never needs to repaint when the
+   coastline's `d` changes, so the rotation stays smooth; only the crisp coastline stroke still
+   tracks the sphere's edge precisely, via .hero-earth__horizon above. */
+.hero-earth__glow {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--earth-h);
+    /* Wider and slightly brighter than before, to read as an atmospheric bloom sitting behind
+       the stroke-based horizon glow above, rather than a narrow smudge under just the crisp
+       line. */
+    background: radial-gradient(ellipse 70% 92% at 50% 100%, var(--accent-soft), transparent 72%);
+    opacity: 0.82;
     transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
-    --globe-r: 9rem;
-    --globe-count: 7;
-    --globe-spin: 130s;
-    --globe-opacity-dark: 0.22;
-    --globe-opacity-light: 0.16;
 }
 
-html[data-theme="light"] .hero-globe {
-    opacity: var(--globe-opacity-light, 0.16);
+html[data-theme="light"] .hero-earth__glow {
+    opacity: 0.62;
 }
 
-.hero-globe[data-globe="off"] {
-    display: none;
-}
-
-.hero-globe[data-globe="b"] {
-    --globe-count: 3;
-    --globe-spin: 110s;
-    --globe-opacity-dark: 0.30;
-    --globe-opacity-light: 0.20;
-}
-
-.hero-globe[data-globe="c"] {
-    --globe-count: 2;
-    --globe-spin: 340s;
-    --globe-opacity-dark: 0.09;
-    --globe-opacity-light: 0.06;
-}
-
-@media (min-width: 640px) {
-    .hero-globe { --globe-r: 12rem; }
-}
-
-@media (min-width: 1024px) {
-    .hero-globe { --globe-r: 15rem; justify-content: flex-end; padding-right: clamp(0rem, 6vw, 7rem); }
-}
-
-@media (min-width: 1440px) {
-    .hero-globe { --globe-r: 17rem; }
-}
-
-.hero-globe__stage {
-    position: relative;
-    width: calc(var(--globe-r) * 2);
-    height: calc(var(--globe-r) * 2);
-    perspective: calc(var(--globe-r) * 8);
-}
-
-.hero-globe__sphere {
+.hero-earth__orb {
     position: absolute;
-    inset: 0;
-    transform-style: preserve-3d;
-    transform: rotateX(-14deg);
-    animation: hero-globe-spin var(--globe-spin) linear infinite;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--earth-h);
+    opacity: 0.7;
+    transition: opacity 560ms cubic-bezier(.4, 0, .2, 1);
 }
 
-@keyframes hero-globe-spin {
-    from { transform: rotateX(-14deg) rotateY(0deg); }
-    to   { transform: rotateX(-14deg) rotateY(360deg); }
+html[data-theme="light"] .hero-earth__orb {
+    opacity: 0.55;
 }
 
-.hero-globe__meridian,
-.hero-globe__parallel {
-    position: absolute;
-    inset: 0;
+.hero-earth__coastline {
     display: block;
-    border-radius: 50%;
-    border: 1px solid var(--accent);
-}
-
-.hero-globe__meridian {
-    transform: rotateY(calc(var(--n) * 180deg / var(--globe-count)));
-}
-
-.hero-globe__meridian:nth-child(even) {
-    border-color: var(--accent-strong);
-}
-
-.hero-globe__meridian:nth-child(n + 4) {
-    display: none;
-}
-
-.hero-globe[data-globe="a"] .hero-globe__meridian {
-    display: block;
-}
-
-.hero-globe[data-globe="c"] .hero-globe__meridian:nth-child(n + 3) {
-    display: none;
-}
-
-.hero-globe__parallel {
-    --lat: calc(var(--offset) * 26deg);
-    transform: translateY(calc(var(--globe-r) * -1 * sin(var(--lat)))) rotateX(90deg) scale(cos(var(--lat)));
-}
-
-.hero-globe[data-globe="b"] .hero-globe__parallel,
-.hero-globe[data-globe="c"] .hero-globe__parallel {
-    display: none;
-}
-
-.hero-globe__pulses {
-    position: absolute;
-    inset: 0;
     width: 100%;
     height: 100%;
-    display: none;
+}
+
+.hero-earth__coastline path {
     fill: none;
+    stroke: var(--accent-strong);
+    stroke-width: 1.1px;
+    vector-effect: non-scaling-stroke;
 }
 
-.hero-globe__pulses path {
-    fill: none;
-    stroke: none;
-}
-
-.hero-globe[data-globe="b"] .hero-globe__pulses {
-    display: block;
-}
-
-.hero-globe__pulse {
-    fill: var(--accent-strong);
-}
-
-.hero-globe__pulse--gold {
-    fill: var(--signal-gold);
-    filter: drop-shadow(0 0 4px var(--signal-gold-glow));
-}
-
-.hero-globe-switcher {
-    position: fixed;
-    left: 1rem;
-    bottom: 1rem;
-    z-index: 60;
-    display: flex;
-    gap: 0.4rem;
-    padding: 0.4rem;
-    border-radius: 0.6rem;
-    background: rgba(0, 0, 0, 0.72);
-    backdrop-filter: blur(6px);
-}
-
-.hero-globe-switcher button {
-    font-size: 0.68rem;
-    line-height: 1;
-    padding: 0.45rem 0.6rem;
-    border-radius: 0.4rem;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.72);
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.hero-globe-switcher button[aria-pressed="true"] {
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.4);
+/* min-aspect-ratio:6/5 alongside the width, here and on the matching block further down that
+   establishes the two-column desktop composition: width alone let a portrait tablet at exactly
+   1024px wide (iPad Pro 12.9" portrait is 1024x1366) through as if it were a landscape desktop.
+   See the comment on that block for the full story (including why 6/5, not the original 4/3) --
+   this half just keeps the two tiers' --earth-h in sync (a portrait/near-square device should
+   get the same earth-h as any other sub-1024px portrait tablet, not this wider desktop-tuned
+   value). */
+@media (min-width: 1024px) and (min-aspect-ratio: 6/5) {
+    /* min(13vw, 22vh), not plain 13vw, and a lower floor (6rem, not 11rem): a landscape device
+       that's wide but short (a smart-display-class screen, a browser window resized short) could
+       still be pure-width-bound down to the 11rem floor regardless of how little vertical room
+       was actually left -- on a 1024x600 landscape screen the floor alone, plus this same value's
+       reuse as .hero-product-stage's margin-bottom below, pushed the section past the viewport
+       height and most of the earth strip below the fold, reading as "the earth is tiny" (only
+       its topmost sliver stayed visible) even though the strip itself wasn't actually small.
+       Normal desktop/laptop screens (never this short relative to their width) stay 13vw-bound,
+       unchanged. */
+    .hero-section { --earth-h: clamp(6rem, min(13vw, 20vh), 17rem); }
 }
 
 .hero-composition {
@@ -1883,9 +2072,22 @@ html[data-theme="light"] .hero-globe {
     z-index: 2;
     display: grid;
     width: 100%;
-    max-width: 104rem;
+    /* Was 104rem, then 116rem: 104rem was the actual bottleneck behind the language-cycling
+       headline's horizontal squeeze (scaleX, see .hero-headline-language-text) at ordinary
+       desktop sizes too, not just the large-viewport tier below. 116rem fixed the squeeze but
+       overshot -- wider than the text ever needs (capped at .hero-copy's own 64rem), so the
+       excess just became dead space that pushed the product image toward the far edge instead
+       of toward the headline. 106rem keeps the text column just wide enough to stay unsquashed
+       while pulling the whole composition back into a centered, cohesive group. */
+    max-width: 106rem;
     min-height: auto;
     margin-inline: auto;
+    /* Vertically centers the copy+product stack within whatever extra height .hero-section's
+       viewport-filling min-height adds beyond the content's natural size (see .hero-section
+       above) -- without this, the flex column would leave that space stranded below the content
+       instead of using it. Reset to 0 at the 1024px+ tier below, where .hero-composition itself
+       grows via flex:1 and its children bottom-anchor against the earth strip instead. */
+    margin-block: auto;
     align-items: center;
 }
 
@@ -1894,14 +2096,18 @@ html[data-theme="light"] .hero-globe {
     z-index: 2;
     min-width: 0;
     max-width: 48rem;
-    padding-top: 1.75rem;
+    /* A fixed 1.75rem was one more small contributor (with .hero-title/.hero-lead's own margins
+       and .hero-product-stage's margin-top below) to the mobile-tier content overflowing a short
+       viewport's height and pushing the earth strip below the fold -- vh-clamped like the
+       section padding above, for the same reason. */
+    padding-top: clamp(0.5rem, 2.5vh, 1.75rem);
     animation: hero-copy-in 700ms cubic-bezier(.22,.75,.25,1) both;
 }
 
 .hero-title {
     max-width: 48rem;
-    margin: 1.05rem 0 0;
-    font-size: clamp(2.25rem, 8.7vw, 3.35rem);
+    margin: clamp(0.4rem, 1.8vh, 1.05rem) 0 0;
+    font-size: clamp(2rem, 7.4vw, 2.85rem);
     font-weight: 700;
     line-height: 0.96;
     letter-spacing: 0;
@@ -2022,7 +2228,7 @@ html[data-theme="light"] .hero-headline-language-hitbox {
 
 .hero-lead {
     max-width: 38rem;
-    margin: 1.4rem 0 0;
+    margin: clamp(0.6rem, 2.2vh, 1.4rem) 0 0;
     color: var(--text-soft);
     font-size: 1.06rem;
     font-weight: 520;
@@ -2032,8 +2238,23 @@ html[data-theme="light"] .hero-headline-language-hitbox {
 .hero-product-stage {
     display: flex;
     width: 100%;
-    height: clamp(18rem, 78vw, 24rem);
-    margin-top: 1.75rem;
+    /* min(84vw, 38vh), not plain 84vw: on a short-but-wide phone (landscape, or a small phone
+       that's unusually wide for its height) the vw term alone could still push this toward its
+       own 26rem ceiling regardless of how little vertical room is actually left -- alongside
+       --earth-h and the fixed margins here, a contributor to mobile-tier content overflowing a
+       short viewport and pushing the earth strip off-screen. The vh term only ever pulls the
+       result *down*; a normal-proportioned phone stays vw-bound, unchanged. Coefficients raised
+       from 78vw/34vh (and the ceiling from 24rem): the headline shrank alongside this (see
+       .hero-title's font-size above), freeing enough room to let the glove read bigger without
+       reopening that overflow. */
+    height: clamp(13rem, min(84vw, 38vh), 26rem);
+    margin-top: clamp(0.5rem, 2.5vh, 1.75rem);
+    /* Reserve clearance for the earth strip below so the glove's cuff never sits on top of the
+       coastline art (it did, at every breakpoint -- measured, not a guess: the two heights were
+       previously computed independently of each other, with nothing keeping them apart).
+       --earth-clearance, not calc(var(--earth-h) + 1rem) directly -- see that variable's
+       definition above for why the two are capped differently. */
+    margin-bottom: var(--earth-clearance);
     align-items: center;
     justify-content: center;
     animation: hero-product-in 900ms 120ms cubic-bezier(.22,.75,.25,1) both;
@@ -2056,24 +2277,6 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     pointer-events: none;
     transition: opacity 360ms cubic-bezier(.22,.75,.25,1);
     will-change: opacity;
-}
-
-.hero-product-image--light {
-    opacity: 1;
-}
-
-.hero-product-image--dark {
-    opacity: 0;
-}
-
-.hero-product-composite[data-glove-theme="dark"] .hero-product-image--light,
-html[data-theme="dark"] .hero-product-composite:not([data-glove-theme]) .hero-product-image--light {
-    opacity: 0;
-}
-
-.hero-product-composite[data-glove-theme="dark"] .hero-product-image--dark,
-html[data-theme="dark"] .hero-product-composite:not([data-glove-theme]) .hero-product-image--dark {
-    opacity: 1;
 }
 
 html[data-theme="light"] .hero-reveal::before {
@@ -3638,7 +3841,13 @@ html[data-theme="light"] .contact-section {
     gap: 0.75rem;
 }
 
-.footer-brand .theme-brand-logo { --brand-logo-width: 10.1rem; --brand-logo-height: 1.8rem; --brand-logo-offset: -1.78rem; }
+.theme-brand-logo--footer {
+    --brand-logo-frame-width: 4.77rem;
+    --brand-logo-frame-height: 1.5rem;
+    --brand-logo-canvas-width: 6.71rem;
+    --brand-logo-canvas-offset-x: -0.96rem;
+    --brand-logo-canvas-offset-y: -1.12rem;
+}
 
 .footer-socials {
     grid-area: social;
@@ -3719,7 +3928,15 @@ html[data-theme="light"] .contact-section {
     .hero-section { padding-inline: 2rem; }
     .hero-title { font-size: clamp(3.5rem, 8.2vw, 5.2rem); }
     .hero-lead { font-size: 1.2rem; }
-    .hero-product-stage { height: clamp(21rem, 46vw, 27rem); }
+    /* max(46vw, 40vh), not plain 46vw, and a taller ceiling (34rem, not 27rem): a portrait
+       tablet in this tier (iPad Mini, Surface Pro 7, and -- since the min-aspect-ratio gate on
+       the 1024px+ desktop tier below -- iPad Pro 12.9" portrait too) typically has much more
+       spare vertical room than horizontal, and 46vw alone left the glove reading small and
+       disconnected against a much bigger headline (font-size grows with vw here too, but faster,
+       via .hero-title's own clamp) and a lot of empty canvas around it. The 40vh term lets it
+       grow to use that room instead; a wide-but-short viewport (already handled by the base
+       tier's own min(78vw, 42vh) below 640px) stays 46vw-bound here, unaffected. */
+    .hero-product-stage { height: clamp(21rem, max(46vw, 40vh), 34rem); }
     .partner-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
     .partner-grid .partner-logo-frame { grid-column: span 2; }
     .partner-grid .partner-logo-frame:nth-child(6) { grid-column: 2 / span 2; }
@@ -3739,36 +3956,149 @@ html[data-theme="light"] .contact-section {
         padding-top: 11rem;
         padding-bottom: 8rem;
     }
+}
+
+/* min-aspect-ratio:6/5 (was 4/3, see below): width alone let a *portrait* viewport at exactly
+   1024px wide through here as if it were a landscape desktop -- iPad Pro 12.9" portrait is
+   exactly 1024x1366. It got the two-column side-by-side composition below, sized for a wide
+   landscape screen, at a width with nowhere near the room for that: the product image (grown
+   via vh, so tall means big) ended up needing so much of the row's height that the whole
+   composition's align-self:end anchoring left a huge empty gap above the headline instead of the
+   headline sitting near the top. Below the threshold (portrait, or close to square), it now
+   falls through to the base/mobile-tier rules instead -- the same single-column,
+   vertically-centered, stacked layout every *other* portrait tablet already used (iPad Air,
+   Surface Pro 7, neither was ever wide *and* short enough to reach this tier in the first place).
+
+   4/3 (1.333) was the first cut, tuned only against portrait tablets -- it turned out to also
+   exclude a case that isn't a tablet at all: two windows side by side on an ultrawide monitor.
+   Halving an ultrawide's width still leaves a *lot* of width (e.g. 1720px from a 3440px
+   monitor), but the window stays exactly as tall as the full screen, so its aspect ratio lands
+   well under 4/3 (around 1.2 for a 3440x1440 split in half) -- the stacked layout doesn't just
+   look cramped there the way it would on a genuinely narrow tablet, it actively breaks: the
+   product image's *container* is full-width (100%, sized for a phone where that's harmless)
+   while the headline stays capped at the base tier's 48rem, so the image ends up centered
+   somewhere in the middle of a mostly-empty row instead of grouped with the text at all -- which
+   is the bug this was reported as. 6/5 (1.2) draws the line between the two cases instead: real
+   portrait tablets are still comfortably excluded (iPad Pro included, at 0.75), while a split
+   ultrawide window -- and anything else that's wide but merely not-quite-4:3 -- now clears it and
+   gets the two-column layout it actually has the width for. Real desktop/laptop screens this
+   tier targets clear either threshold by more, so none of them are affected by this change. */
+@media (min-width: 1024px) and (min-aspect-ratio: 6/5) {
     .hero-section {
-        display: flex;
-        min-height: 100vh;
-        min-height: 100svh;
-        padding: clamp(7.5rem, 12vh, 9rem) 4rem clamp(2.75rem, 5vh, 4rem);
+        /* display:flex and the viewport-filling min-height now live in the base rule above --
+           they apply at every breakpoint, not just this one. Only the padding differs here.
+           Top floor stays 5.5rem: the header is `absolute` (not fixed) at this width, but still
+           overlays the hero the same way, and 5.5rem is already the minimum that clears it at
+           any width in this tier -- lowering it would repeat the mobile-tier header-overlap bug.
+           Bottom floor lowered (2.75rem to 1.5rem) since nothing pins it to the header. */
+        padding: clamp(5.5rem, 8vh, 7rem) 4rem clamp(1.5rem, 5vh, 4rem);
     }
     .hero-composition {
         flex: 1;
-        grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
-        gap: clamp(2rem, 4vw, 4.5rem);
-        min-height: clamp(34rem, calc(100svh - 12rem), 46rem);
+        /* The base rule centers the composition vertically via margin-block:auto, for tiers
+           whose content is shorter than the viewport. Here .hero-composition instead grows to
+           fill the leftover height itself (flex:1), and its children bottom-anchor within that
+           grown box against the earth strip (.hero-copy/.hero-product-stage align-self:end
+           below) -- auto margins would otherwise claim that space before flex-grow gets it,
+           collapsing the item back to content size and breaking that anchoring. */
+        margin-block: 0;
+        /* Was fr-based (minmax(0, 1.08fr) minmax(22rem, 0.92fr)): fr tracks split whatever width
+           the container has, but neither column's actual content scales with that width -- the
+           text is capped at a fixed 64/72rem and the glove's rendered width follows its own
+           height clamp, not the column. So on any screen wider than those two together need, fr
+           handed the leftover to both columns as internal slack, which showed up as extra empty
+           space between the headline and the image (worst on 3440px+, ~280px of dead air).
+           max-content-based columns instead size each track to exactly what its content needs;
+           justify-content below then centers that tight two-column cluster as a group, so any
+           leftover container width becomes a balanced outer margin instead of an internal gap. */
+        /* Column 1's floor was 0 (i.e. whatever's left after column 2 takes what it wants):
+           fine once there's enough total width, but between 1024px and ~1280px (where the next
+           tier gives the whole row more room) a tall viewport lets column 2 grow toward its own
+           vh-driven ceiling regardless of how little width is left for column 1 -- and since the
+           headline still can't wrap (white-space:nowrap below), it absorbed that entirely as a
+           scaleX squeeze instead (measured near 0.7-0.85 in that zone). Giving column 1 a real
+           floor and lowering column 2's guarantees it stays legible even when height alone would
+           otherwise have let the glove crowd it out. */
+        grid-template-columns: minmax(32rem, max-content) minmax(20rem, max-content);
+        justify-content: center;
+        /* Tighter than the original clamp(2rem, 4vw, 4.5rem): that gap plus the wide max-width
+           above spread text and product image toward opposite edges instead of reading as one
+           composed group. */
+        gap: clamp(1.5rem, 3vw, 3.5rem);
     }
     .hero-copy {
         padding-top: 0;
-        transform: translateY(-0.75rem);
+        /* Wider than the 48rem mobile/tablet cap: that width was fine for the German/English
+           headline it was tuned against, but the language-cycling second line (.hero-headline-
+           language-text) can be dramatically longer in other languages, and gets squeezed
+           horizontally (scaleX, see .hero-headline-language-text below) to fit inside whatever
+           width it's given. Measured this directly: at 48rem, even the English reference text
+           was already being compressed to ~0.80 scale at the larger sizing tier, and real
+           translations as low as ~0.35-0.54 -- visibly squashed. .hero-lead keeps its own
+           narrower 38rem cap below for readability, so widening this doesn't lengthen its lines. */
+        max-width: 64rem;
+        /* Bottom-anchored with the same reserved clearance as .hero-product-stage below (rather
+           than the container's default centering) so their relationship stays fixed regardless
+           of how tall the viewport is. Plain centering would only match their visible centers
+           when the row's height happens to equal the glove's own box height -- true when the row
+           sized itself to content, but never true once the section is forced to fill the full
+           viewport, where the leftover height grows with the screen and drags the headline's
+           centered position away from the glove's by an amount that scales with viewport height. */
+        align-self: end;
+        margin-bottom: var(--earth-clearance);
     }
-    .hero-title { font-size: clamp(3.55rem, 5.2vw, 5.1rem); }
+    /* JS-driven fine positioning (initHeroCopyAlignment in scripts/site.js): keeps the headline's
+       second line level with the gap between the glove's thumb and index finger, measured against
+       the actual rendered glove image so it holds at any viewport size -- not something a static
+       CSS offset could do, since the glove's height (and therefore where that gap lands) itself
+       scales with viewport height. On a separate wrapper, not .hero-copy itself, because
+       .hero-copy already owns `transform` for its entrance animation. */
+    .hero-copy-align { transform: translateY(var(--hero-copy-align-shift, 0px)); }
+    .hero-title {
+        max-width: 64rem; /* matches .hero-copy's widened cap above -- see comment there */
+        /* 5.2vw ran too large at the low end of this tier (e.g. 1366px wide) -- 4.2vw keeps the
+           headline readable without crowding the product image at smaller desktop widths, while
+           still reaching the same 5.1rem ceiling by ~1930px wide where it was already capping.
+           Floor lowered further, from 3.55rem: at the narrow end of this tier (~1024px wide,
+           where 4.2vw alone already sits below any floor this size) it was crowding the product
+           image, most noticeable on a short landscape viewport (1024x600) where the image had
+           the least room to begin with. */
+        font-size: clamp(3rem, 4.2vw, 5.1rem);
+    }
     .hero-title span { white-space: nowrap; }
     .hero-product-stage {
-        height: clamp(28rem, 60vh, 42rem);
+        /* Bigger than the original clamp(22rem, 46vh, 32rem): the glove was reading small
+           relative to the headline at every desktop size once measured side by side. Floor
+           lowered further since (25rem, i.e. the *old* ceiling) turned out to still be a real
+           floor on a short landscape viewport (a 1024x600 smart-display-class screen): 52vh
+           there is only 312px, well under 400px, so the floor -- not 52vh -- was what pushed the
+           section past the viewport height, the other half (with --earth-h above) of the earth
+           strip ending up mostly clipped below the fold. Normal laptop/desktop heights stay
+           vh-bound well above this floor, unaffected. Coefficient and ceiling raised (52vh/34rem
+           to 58vh/36rem) alongside the headline shrinking above -- freeing enough room for the
+           glove to read bigger without reopening that same short-viewport overflow. */
+        height: clamp(16rem, 57vh, 36rem);
         margin-top: 0;
-        padding-right: clamp(0.5rem, 1.5vw, 1.5rem);
-        justify-content: flex-end;
+        /* flex-start, not flex-end: this column's own minmax(22rem, 0.92fr) track is
+           consistently wider than the glove image actually renders (measured up to ~150px of
+           slack at some sizes), and flex-end was pushing the image across that entire slack to
+           the column's far-right edge -- putting empty space between the headline and the image
+           instead of at the outer edge where it's harmless. Anchoring to the column's start puts
+           the image right after the grid gap, next to the text, and pushes the leftover slack out
+           to the section's right margin instead. */
+        justify-content: flex-start;
+        /* Bottom-anchor within the grid row instead of the container's default vertical
+           centering: centering would only give half of any added margin-bottom back as real
+           clearance (the rest goes to the top, which doesn't need it). Anchoring to the bottom
+           makes the reserved earth clearance above exact, not approximate. */
+        align-self: end;
     }
     .hero-product-image { max-width: none; }
 }
 
 @media (min-width: 1280px) {
     .hero-product-stage {
-        height: clamp(31rem, 66vh, 46rem);
+        height: clamp(27rem, 56vh, 38rem);
         transform: translateX(clamp(0.5rem, 1vw, 1rem));
     }
     .section-title { font-size: 5rem; }
@@ -3776,12 +4106,99 @@ html[data-theme="light"] .contact-section {
     .contact-title { font-size: 5rem; }
 }
 
+/* Large/tall viewports (big monitors, 1440p+) and ultrawide screens (21:9, however tall): the
+   vw/vh clamps above were already hitting their ceiling here, so headline, glove and earth all
+   rendered at their SMALLEST relative size right where there's the MOST room -- exactly
+   backwards. Give the ceilings more room to grow instead of manufacturing empty space (on tall
+   screens) or leaving everything undersized against the canvas (on wide ones). Two triggers:
+   min-height for tall 16:9/16:10 screens, min-aspect-ratio for ultrawide -- a short ultrawide
+   like 2560x1080 doesn't clear the height bar but reads just as undersized as a tall one does,
+   so it needs the bump too, on its own condition rather than height.
+   The min-height branch's min-width used to match the 1024px tier above (1024px), on the
+   assumption that min-height:1100px alone was enough to mean "big monitor" -- it isn't: a
+   1024px-wide *portrait* tablet (iPad Pro 12.9" portrait is exactly 1024x1366) clears 1100px of
+   height too, so it got treated as a big desktop monitor and grown accordingly, at a width where
+   there's nowhere near the room for that. The glove (sized from vh, so tall means bigger)
+   crowded out the fixed-width two-column headline next to it, which still can't wrap (see
+   .hero-title span white-space:nowrap below) so it visibly squeezed instead (measured down to
+   ~0.48 scale, badly compressed -- see .hero-headline-language-text's scaleX). Real desktop
+   monitors this tier targets (1440p+, 1920x1200, etc.) are always comfortably wider than any
+   portrait tablet, so raising the width bar to 1600px keeps them in while excluding tablets --
+   the min-aspect-ratio branch for ultrawide is untouched, it was never the affected one. */
+@media (min-width: 1600px) and (min-height: 1100px),
+       (min-width: 1024px) and (min-aspect-ratio: 2/1) {
+    /* Was 130rem: like the base tier above, that gave the headline room to stay unsqueezed but
+       overshot what the text (capped at .hero-copy's 64rem) ever uses, so the leftover became
+       dead space pushing the glove toward the far edge instead of toward the headline. 120rem
+       keeps that same unsqueezed room while pulling text and glove back into a tighter group.
+
+       flex:none and margin-block:auto override the normal desktop tier's flex:1 + align-self:end
+       (bottom-anchored against the earth strip -- see that tier's .hero-composition comment).
+       That works well at ordinary desktop proportions, but on a genuinely
+       short-relative-to-its-width viewport (an ultrawide monitor window that isn't very tall)
+       flex:1 grows the row to fill the *entire* leftover height, and since --earth-clearance
+       above is now capped independent of --earth-h, that leftover can be substantially more than
+       the row's own content -- all of which collected as one dead zone above the headline, since
+       bottom-anchoring has nowhere else to put it. Centering the (content-sized, ungrown)
+       composition instead splits that same slack evenly above and below, which reads as
+       intentional rather than "content stranded at the bottom of an empty canvas" -- the same
+       approach the base/mobile tier already uses below 1024px. */
+    .hero-composition { flex: none; margin-block: auto; max-width: 120rem; }
+    /* min(..., 9vh) alongside the vw term: a short-but-wide screen (e.g. 2560x1080) and a
+       tall one at the same width (e.g. 2560x1440) previously got identical vw-driven sizing even
+       though the short one visibly has less vertical room to grow into. Capping by viewport
+       height too makes shallower ultrawide screens size down relative to taller ones at the same
+       width, instead of both maxing out identically. */
+    .hero-title { font-size: clamp(3.55rem, min(5.2vw, 9vh), 6.4rem); }
+    .hero-lead { font-size: clamp(1.2rem, 1vw, 1.4rem); }
+    .hero-product-stage { height: clamp(27rem, 56vh, 48rem); }
+    .hero-section { --earth-h: clamp(11rem, min(13vw, 22vh), 22rem); }
+}
+
+/* Very wide monitors (3440px+ ultrawide): even the tier above still reads undersized against
+   this much width, since its own ceilings were tuned for 2560-wide screens. Scoped by min-width
+   (not min-aspect-ratio) so it doesn't also inflate the 2560-wide tiers above, which weren't
+   asking to grow further. */
+@media (min-width: 3200px) {
+    .hero-composition { max-width: 140rem; }
+    /* .hero-copy/.hero-title's 64rem cap (set at the 1024px tier above) was tuned for the
+       6.4rem ceiling there -- the bigger 7.4rem ceiling here needs a wider cap too, or the
+       English reference text gets squeezed (scaleX) against that now-too-narrow cap. Measured:
+       72rem keeps it at scale 1.0. */
+    .hero-copy, .hero-title { max-width: 72rem; }
+    .hero-title { font-size: clamp(3.55rem, min(5.2vw, 9vh), 7.4rem); }
+    .hero-product-stage { height: clamp(27rem, 56vh, 54rem); }
+    .hero-section { --earth-h: clamp(11rem, min(13vw, 26vh), 24rem); }
+}
+
 @media (min-width: 1536px) {
     .hero-product-stage { transform: translateX(1.5rem); }
 }
 
+/* Unusually tall, sub-1024px-wide viewports -- not a real phone or tablet (the tallest in the
+   device matrix this was tuned against, Surface Pro 7 and iPad Pro portrait, both top out
+   around 1370px), but a real case anyway: a desktop browser window resized narrow and left at
+   full monitor height (e.g. ~830x1870). --earth-h's base-tier formula (min(15vw, 12vh)) is
+   deliberately width-led -- that's what keeps it from overflowing a short phone -- but the same
+   formula never lets it grow past what the (here, modest) width allows, so on a window this
+   tall it renders as a barely-there sliver instead of a visible horizon curve, and the
+   composition (centered via margin-block:auto, see the base rule) ends up looking like it's
+   floating with no relationship to it. 1450px safely excludes every real device already
+   measured (nothing here is shorter than 1450px), so this can size earth-h from height alone
+   without reopening the short-viewport overflow that formula was protecting against. */
+@media (max-width: 1023px) and (min-height: 1450px) {
+    .hero-section { --earth-h: clamp(9rem, 15vh, 22rem); }
+}
+
+/* This, not the plain .hero-title rule above, is what actually governs font-size below 640px --
+   same specificity, later in the cascade, so it wins for every width this reaches (there's no
+   width where the un-media-queried rule above is ever the one that applies: the min-width:640px
+   tier further down takes over immediately above this one's boundary). Lowered from
+   min(2.5rem, 9vw): shrinking the headline here is what gives .hero-product-stage's height
+   (below 640px, base rule above) room to grow without reopening the short-viewport overflow the
+   two were both tuned against together. */
 @media (max-width: 639px) {
-    .hero-title { font-size: min(2.5rem, 9vw); }
+    .hero-title { font-size: min(2.2rem, 7.8vw); }
 }
 
 @media (max-width: 1023px) {
@@ -4124,6 +4541,13 @@ html[data-theme="light"] .contact-section {
 
 @media (max-width: 767px) {
     :root { --section-space: 6.5rem; }
+    .theme-brand-logo:not(.theme-brand-logo--footer) {
+        --brand-logo-frame-width: 4.77rem;
+        --brand-logo-frame-height: 1.5rem;
+        --brand-logo-canvas-width: 6.71rem;
+        --brand-logo-canvas-offset-x: -0.96rem;
+        --brand-logo-canvas-offset-y: -1.12rem;
+    }
     .site-nav {
         border-radius: 2rem;
         corner-shape: squircle;
@@ -4213,7 +4637,13 @@ html[data-theme="light"] .contact-section {
         padding-top: 1.15rem;
     }
     .footer-identity { justify-items: center; gap: 0.45rem; text-align: center; }
-    .footer-brand .theme-brand-logo { --brand-logo-width: 8.7rem; --brand-logo-height: 1.55rem; --brand-logo-offset: -1.53rem; }
+    .theme-brand-logo--footer {
+        --brand-logo-frame-width: 4.37rem;
+        --brand-logo-frame-height: 1.375rem;
+        --brand-logo-canvas-width: 6.15rem;
+        --brand-logo-canvas-offset-x: -0.88rem;
+        --brand-logo-canvas-offset-y: -1.03rem;
+    }
     .footer-copyright { text-align: center; }
     .footer-socials { gap: 0.45rem; }
     .footer-socials a { width: 2.75rem; height: 2.75rem; }
@@ -4453,13 +4883,6 @@ html[data-theme="light"] .contact-section {
     .hero-copy,
     .hero-product-stage {
         animation: none;
-    }
-    .hero-globe__sphere {
-        animation: none;
-        transform: rotateX(-14deg) rotateY(20deg);
-    }
-    .hero-globe__pulses {
-        display: none !important;
     }
     .hero-product-image {
         transition: none;

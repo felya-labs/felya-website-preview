@@ -13,7 +13,7 @@ const { locale } = Astro.props as { locale: Locale };
         <div class="footer-bar">
             <div class="footer-identity">
                 <a href={`${localePath(locale)}#paton`} class="footer-brand" aria-label={t(locale, 'brand.home')}>
-                    <span class="theme-brand-logo" aria-hidden="true">
+                    <span class="theme-brand-logo theme-brand-logo--footer" aria-hidden="true">
                         <img src={brand.logo.whiteSrc} width={brand.logo.width} height={brand.logo.height} alt="" loading="lazy" decoding="async" fetchpriority="low" class="theme-brand-logo__asset theme-brand-logo__asset--white">
                         <img src={brand.logo.blackSrc} width={brand.logo.width} height={brand.logo.height} alt="" loading="lazy" decoding="async" fetchpriority="low" class="theme-brand-logo__asset theme-brand-logo__asset--black">
                     </span>
