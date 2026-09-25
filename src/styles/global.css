@@ -97,7 +97,7 @@ html[data-theme="light"] body {
     display: block;
     width: var(--brand-logo-frame-width);
     height: var(--brand-logo-frame-height);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .theme-brand-logo__asset {
@@ -3826,8 +3826,10 @@ html[data-theme="light"] .contact-section {
 .footer-bar {
     display: grid;
     grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
-    grid-template-areas: "identity social legal";
-    gap: 2rem;
+    grid-template-areas:
+        "identity social ."
+        "copyright legal legal";
+    gap: 1.25rem 2rem;
     align-items: center;
     margin-top: clamp(4.5rem, 5vw, 5.5rem);
     border-top: 1px solid var(--line);
@@ -3838,7 +3840,6 @@ html[data-theme="light"] .contact-section {
     grid-area: identity;
     display: grid;
     justify-items: start;
-    gap: 0.75rem;
 }
 
 .theme-brand-logo--footer {
@@ -3880,6 +3881,8 @@ html[data-theme="light"] .contact-section {
     align-items: baseline;
     gap: 1.25rem;
 }
+
+.footer-copyright { grid-area: copyright; }
 
 .footer-legal a,
 .footer-copyright {
@@ -4630,13 +4633,13 @@ html[data-theme="light"] .contact-section {
     }
     .footer-bar {
         grid-template-columns: 1fr;
-        grid-template-areas: "identity" "social" "legal";
+        grid-template-areas: "identity" "social" "copyright" "legal";
         justify-items: center;
         gap: 1rem;
         margin-top: 0;
         padding-top: 1.15rem;
     }
-    .footer-identity { justify-items: center; gap: 0.45rem; text-align: center; }
+    .footer-identity { justify-items: center; text-align: center; }
     .theme-brand-logo--footer {
         --brand-logo-frame-width: 4.37rem;
         --brand-logo-frame-height: 1.375rem;

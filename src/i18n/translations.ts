@@ -102,7 +102,7 @@ const en = {
   'workWithUs.joinTitle': 'Join the team',
   'workWithUs.joinDescription': 'Engineering, robotics, embedded systems, software and design',
   'workWithUs.openInvitation': 'See another way to work together? Let\'s talk.',
-  'footer.copyright': '© FELYA 2026.',
+  'footer.copyright': '© 2026 FELYA',
   'footer.legalAria': 'Legal information',
   'footer.linkedin': 'FELYA on LinkedIn',
   'footer.instagram': 'FELYA on Instagram',
@@ -117,7 +117,7 @@ export type TranslationKey = keyof typeof en;
 export type TranslationDictionary = Record<TranslationKey, string>;
 
 const de: TranslationDictionary = {
-  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© FELYA 2026.',
+  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA',
   'meta.description': 'FELYA entwickelt tragbare Interfaces, die menschliche Bewegung, Berührung und Fähigkeiten auf robotische Systeme übertragen.',
   'meta.ogDescription': 'Interfaces, die menschliche Fähigkeiten erweitern.',
@@ -168,7 +168,7 @@ const de: TranslationDictionary = {
 };
 
 const ky: TranslationDictionary = {
-  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© FELYA 2026.',
+  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA',
   'meta.description': 'FELYA адамдын кыймылын, тийүүсүн жана чеберчилигин роботтук системаларга өткөргөн тагылуучу интерфейстерди иштеп чыгат.',
   'meta.ogDescription': 'Адамдын мүмкүнчүлүгүн кеңейткен интерфейстер.',
@@ -197,7 +197,7 @@ const ky: TranslationDictionary = {
 };
 
 const id: TranslationDictionary = {
-  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© FELYA 2026.',
+  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA mengembangkan antarmuka wearable yang menyalurkan gerakan, sentuhan, dan keahlian manusia ke sistem robotik.', 'meta.ogDescription': 'Antarmuka yang memperluas kemampuan manusia.', 'meta.imageAlt': 'Sarung tangan haptik PATON dari FELYA dengan pesan Tangan Anda. Di mana pun di dunia.',
   'brand.home': 'Beranda FELYA', 'nav.skip': 'Langsung ke konten', 'nav.primary': 'Navigasi utama', 'nav.open': 'Buka navigasi', 'nav.why': 'Mengapa', 'nav.prototypes': 'Prototipe', 'nav.futures': 'Masa depan', 'nav.contact': 'Kontak',
   'theme.toLight': 'Beralih ke mode terang', 'theme.toDark': 'Beralih ke mode gelap', 'language.open': 'Pilih bahasa', 'language.dialog': 'Pilihan bahasa', 'language.close': 'Tutup pilihan bahasa', 'language.current': 'Bahasa aktif',
@@ -214,7 +214,7 @@ const id: TranslationDictionary = {
 };
 
 const ko: TranslationDictionary = {
-  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© FELYA 2026.',
+  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA는 사람의 움직임과 촉감, 숙련도를 로봇 시스템에 전달하는 웨어러블 인터페이스를 개발합니다.', 'meta.ogDescription': '인간의 역량을 확장하는 인터페이스.', 'meta.imageAlt': '“당신의 두 손. 세계 어디에서나.”라는 문구와 함께 보이는 FELYA의 PATON 햅틱 글러브.',
   'brand.home': 'FELYA 홈', 'nav.skip': '본문으로 건너뛰기', 'nav.primary': '주요 탐색', 'nav.open': '메뉴 열기', 'nav.why': '철학', 'nav.prototypes': '프로토타입', 'nav.futures': '미래', 'nav.contact': '문의',
   'theme.toLight': '라이트 모드로 전환', 'theme.toDark': '다크 모드로 전환', 'language.open': '언어 선택', 'language.dialog': '언어 선택', 'language.close': '언어 선택 닫기', 'language.current': '현재 언어',
@@ -230,7 +230,7 @@ const ko: TranslationDictionary = {
 };
 
 const ja: TranslationDictionary = {
-  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© FELYA 2026.',
+  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYAは、人の動き、触覚、技能をロボットシステムへ伝えるウェアラブルインターフェースを開発しています。', 'meta.ogDescription': '人の能力を拡張するインターフェース。', 'meta.imageAlt': '「あなたの手を、世界のどこへでも。」というメッセージとFELYAのPATONハプティックグローブ。',
   'brand.home': 'FELYA ホーム', 'nav.skip': '本文へ移動', 'nav.primary': 'メインナビゲーション', 'nav.open': 'ナビゲーションを開く', 'nav.why': '思想', 'nav.prototypes': 'プロトタイプ', 'nav.futures': '未来', 'nav.contact': 'お問い合わせ',
   'theme.toLight': 'ライトモードに切り替える', 'theme.toDark': 'ダークモードに切り替える', 'language.open': '言語を選択', 'language.dialog': '言語選択', 'language.close': '言語選択を閉じる', 'language.current': '現在の言語',
@@ -246,7 +246,7 @@ const ja: TranslationDictionary = {
 };
 
 const zhCn: TranslationDictionary = {
-  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© FELYA 2026.',
+  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA 开发可穿戴交互界面，将人的动作、触觉与技能传递至机器人系统。', 'meta.ogDescription': '延展人类能力的交互界面。', 'meta.imageAlt': 'FELYA 的 PATON 触觉手套，以及“你的双手。遍及世界。”标语。',
   'brand.home': 'FELYA 首页', 'nav.skip': '跳至主要内容', 'nav.primary': '主导航', 'nav.open': '打开导航', 'nav.why': '理念', 'nav.prototypes': '原型', 'nav.futures': '未来', 'nav.contact': '联系',
   'theme.toLight': '切换至浅色模式', 'theme.toDark': '切换至深色模式', 'language.open': '选择语言', 'language.dialog': '语言选择', 'language.close': '关闭语言选择', 'language.current': '当前语言',
@@ -262,7 +262,7 @@ const zhCn: TranslationDictionary = {
 };
 
 const zhTw: TranslationDictionary = {
-  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© FELYA 2026.',
+  'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA 開發穿戴式介面，將人的動作、觸覺與技能帶入機器人系統。', 'meta.ogDescription': '延伸人類能力的介面。', 'meta.imageAlt': 'FELYA 的 PATON 觸覺手套，以及「你的雙手。世界任何角落。」標語。',
   'brand.home': 'FELYA 首頁', 'nav.skip': '跳至主要內容', 'nav.primary': '主要導覽', 'nav.open': '開啟導覽選單', 'nav.why': '理念', 'nav.prototypes': '原型', 'nav.futures': '未來', 'nav.contact': '聯絡',
   'theme.toLight': '切換至淺色模式', 'theme.toDark': '切換至深色模式', 'language.open': '選擇語言', 'language.dialog': '語言選擇', 'language.close': '關閉語言選擇', 'language.current': '目前語言',
@@ -379,7 +379,7 @@ const ru: TranslationDictionary = {
   'workWithUs.joinTitle': 'Присоединиться к команде',
   'workWithUs.joinDescription': 'Инженерия, робототехника, встраиваемые системы, программное обеспечение и дизайн',
   'workWithUs.openInvitation': 'Видите другой формат сотрудничества? Давайте обсудим.',
-  'footer.copyright': '© FELYA 2026.',
+  'footer.copyright': '© 2026 FELYA',
   'footer.legalAria': 'Правовая информация',
   'footer.linkedin': 'FELYA в LinkedIn',
   'footer.instagram': 'FELYA в Instagram',
@@ -492,7 +492,7 @@ const pt: TranslationDictionary = {
   'workWithUs.joinTitle': 'Junte-se à equipa',
   'workWithUs.joinDescription': 'Engenharia, robótica, sistemas integrados, software e design',
   'workWithUs.openInvitation': 'Vê outra forma de trabalharmos juntos? Vamos conversar.',
-  'footer.copyright': '© FELYA 2026.',
+  'footer.copyright': '© 2026 FELYA',
   'footer.legalAria': 'Informação legal',
   'footer.linkedin': 'FELYA no LinkedIn',
   'footer.instagram': 'FELYA no Instagram',
@@ -605,7 +605,7 @@ const fr: TranslationDictionary = {
   'workWithUs.joinTitle': 'Rejoindre l’équipe',
   'workWithUs.joinDescription': 'Ingénierie, robotique, systèmes embarqués, logiciel et design',
   'workWithUs.openInvitation': 'Vous imaginez une autre façon de collaborer ? Parlons-en.',
-  'footer.copyright': '© FELYA 2026.',
+  'footer.copyright': '© 2026 FELYA',
   'footer.legalAria': 'Informations légales',
   'footer.linkedin': 'FELYA sur LinkedIn',
   'footer.instagram': 'FELYA sur Instagram',
@@ -718,7 +718,7 @@ const es: TranslationDictionary = {
   'workWithUs.joinTitle': 'Únete al equipo',
   'workWithUs.joinDescription': 'Ingeniería, robótica, sistemas integrados, software y diseño',
   'workWithUs.openInvitation': '¿Ves otra forma de colaborar? Hablemos.',
-  'footer.copyright': '© FELYA 2026.',
+  'footer.copyright': '© 2026 FELYA',
   'footer.legalAria': 'Información legal',
   'footer.linkedin': 'FELYA en LinkedIn',
   'footer.instagram': 'FELYA en Instagram',
@@ -831,7 +831,7 @@ const it: TranslationDictionary = {
   'workWithUs.joinTitle': 'Entra nel team',
   'workWithUs.joinDescription': 'Ingegneria, robotica, sistemi embedded, software e design',
   'workWithUs.openInvitation': 'Vedi un altro modo di collaborare? Parliamone.',
-  'footer.copyright': '© FELYA 2026.',
+  'footer.copyright': '© 2026 FELYA',
   'footer.legalAria': 'Informazioni legali',
   'footer.linkedin': 'FELYA su LinkedIn',
   'footer.instagram': 'FELYA su Instagram',

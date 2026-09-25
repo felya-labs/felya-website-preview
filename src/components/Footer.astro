@@ -8,7 +8,7 @@ import { t, type TranslationKey } from '../i18n/translations';
 const { locale } = Astro.props as { locale: Locale };
 ---
 
-<footer class="site-footer section-shell">
+<footer id="footer" class="site-footer section-shell">
     <div class="section-inner">
         <div class="footer-bar">
             <div class="footer-identity">
@@ -19,7 +19,6 @@ const { locale } = Astro.props as { locale: Locale };
                     </span>
                     <span class="sr-only">FELYA</span>
                 </a>
-                <p class="footer-copyright" data-i18n="footer.copyright">{t(locale, 'footer.copyright')}</p>
             </div>
             <div class="footer-socials">
                 {socialLinks.map((link) => (
@@ -34,6 +33,7 @@ const { locale } = Astro.props as { locale: Locale };
                 ))}
                 <a href="https://brand.felya.com" target="_blank" rel="noopener noreferrer">Brand Guide</a>
             </nav>
+            <p class="footer-copyright" data-i18n="footer.copyright">{t(locale, 'footer.copyright')}</p>
         </div>
     </div>
 </footer>
