@@ -7,7 +7,7 @@ export const brand = {
   name: 'FELYA',
   logo: {
     blackSrc: '/assets/images/brand/felya-logo/felya-logo-black.svg',
-    whiteSrc: '/assets/images/brand/felya-logo/felya-logo-white.svg',
+    whiteSrc: '/assets/images/brand/felya-logo/felya-logo-white-optical.svg',
     width: 1920,
     height: 1080
   }
