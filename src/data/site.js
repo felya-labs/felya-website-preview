@@ -6,9 +6,10 @@ const imageSrcset = (directory, fileStem, widths = responsiveImageWidths) =>
 export const brand = {
   name: 'FELYA',
   logo: {
-    src: '/assets/images/brand/felya-labs-logo/felya-labs-wordmark-white.webp',
-    width: 2935,
-    height: 1034
+    blackSrc: '/assets/images/brand/felya-logo/felya-logo-black.svg',
+    whiteSrc: '/assets/images/brand/felya-logo/felya-logo-white.svg',
+    width: 1920,
+    height: 1080
   }
 };
 
@@ -53,9 +54,6 @@ export const socialLinks = [
   }
 ];
 
-// Unused -- the hero now shows gloveLightImage in both themes (see HeroSection.astro). Left
-// declared, and the underlying asset file left in place, rather than deleted, in case a
-// dark-specific product shot is wanted again later.
 export const gloveDarkImage = {
   src: '/assets/images/hero/paton-glove/paton-glove-dark-premium-v1.webp',
   srcset: [
@@ -75,7 +73,7 @@ export const gloveLightImage = {
   sizes: '(min-width: 1536px) 760px, (min-width: 1024px) 680px, (min-width: 768px) 620px, 300px',
   width: 1200,
   height: 1343,
-  alt: 'Close-up of the FELYA haptic glove with blue finger mechanisms over a fabric glove.'
+  alt: gloveDarkImage.alt
 };
 
 const developmentUpdatesFormAction = 'https://submit-form.com/5I3xX6ZMl';

@@ -9,10 +9,6 @@ import {
   priorityHeroLanguages,
   secondaryHeroLanguages
 } from './hero-headline-translations.js';
-import {
-  heroEarthSegments,
-  heroEarthRotationParams
-} from '../data/hero-earth-coastline.js';
 
 export {
   colorTheme,
@@ -93,62 +89,15 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
 
   applyTheme(readStoredTheme(), false);
 
-  // Both the manual toggle and the Beyond Earth easter egg (see initHeroHeadlineLanguages) drive
-  // theme changes through this one wipe. An earlier version of this used the browser's View
-  // Transitions API: it snapshots the page just before/after a DOM change into two layers and
-  // animates between them, which sounded like exactly what a "content never gets covered" wipe
-  // needs. Measured, though: those layers are frozen snapshots, and while they're showing, the
-  // *live* page's rendering is suspended underneath -- confirmed by watching .hero-earth's rotation
-  // (which runs continuously via requestAnimationFrame) stop advancing for the transition's entire
-  // duration even when explicitly exempted from the snapshot via its own view-transition-name.
-  // There's no way to keep one continuously-animating element live while the rest of the page runs
-  // through a View Transition, so it's a dead end for this specific requirement.
-  //
-  // This version instead flips the real theme (and thus every real color) immediately, and lets
-  // .hero-section::after -- an always-live, ordinary CSS pseudo-element, positioned behind
-  // .hero-earth and .hero-composition -- animate its own clip-path to *look* like the background
-  // is wiping across. Nothing is ever snapshotted or suspended, so the earth keeps rotating
-  // uninterrupted the entire time; see the CSS for the rest of this.
-  const heroSection = root.querySelector('.hero-section');
-  const runThemeWipe = (nextTheme, direction) => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      applyTheme(nextTheme);
-      return;
-    }
-    document.documentElement.dataset.themeWipeDirection = direction;
-    applyTheme(nextTheme);
-    // Listens for the ::after pseudo-element's own animationend rather than a hardcoded
-    // setTimeout matching the CSS's 600ms: a duplicated magic number:like that is exactly the kind
-    // of thing that quietly drifts out of sync the next time either value gets tuned (this was
-    // caught by testing a slowed-down animation-duration override and watching the JS timeout yank
-    // the wipe to its end state early, well before the slower animation had actually finished).
-    // Not that it matters for correctness either way here -- see the CSS comment on why the
-    // animation's forwards-held end state always matches what the static rules want regardless of
-    // when the attribute is removed -- but waiting for the real event costs nothing and removes
-    // the drift risk entirely.
-    heroSection?.addEventListener('animationend', function onWipeEnd(event) {
-      if (event.pseudoElement !== '::after') return;
-      heroSection.removeEventListener('animationend', onWipeEnd);
-      delete document.documentElement.dataset.themeWipeDirection;
-    });
-  };
-
   buttons.forEach((button) => {
     button.addEventListener('click', () => {
       const nextTheme = button.dataset.themeNext || (document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-      // Dark reads as sweeping in from the left, light as sweeping in from the right -- a mirrored
-      // pair rather than the same direction both ways.
-      runThemeWipe(nextTheme, nextTheme === 'dark' ? 'ltr' : 'rtl');
+      applyTheme(nextTheme);
     });
   });
 
   document.addEventListener('felya:languagechange', () => {
     applyTheme(document.documentElement.dataset.theme, false);
-  });
-
-  document.addEventListener('felya:beyondearth', (event) => {
-    if (!event?.detail?.active) return;
-    if (document.documentElement.dataset.theme !== 'dark') runThemeWipe('dark', 'ltr');
   });
 }
 
@@ -203,6 +152,25 @@ export function initThemeImages({ root = document } = {}) {
 
   applySources();
   document.addEventListener('felya:themechange', applySources);
+}
+
+export function initHeroProductThemeTransition({ root = document } = {}) {
+  const composites = Array.from(root.querySelectorAll('[data-hero-product-composite]'));
+  if (!composites.length) return;
+
+  const applyGloveTheme = (theme) => {
+    const nextTheme = theme === 'dark' ? 'dark' : 'light';
+    composites.forEach((composite) => {
+      composite.dataset.gloveTheme = nextTheme;
+    });
+  };
+
+  applyGloveTheme(document.documentElement.dataset.theme);
+
+  document.addEventListener('felya:themechange', (event) => {
+    const nextTheme = event.detail?.theme || document.documentElement.dataset.theme;
+    applyGloveTheme(nextTheme);
+  });
 }
 
 export function initTwoLineHeadings({ root = document } = {}) {
@@ -505,7 +473,6 @@ export function initHeroHeadlineLanguages({
     headline.dir = 'ltr';
     headline.dataset.heroLanguage = 'Easter egg';
     fitHeadline();
-    document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: true } }));
   };
 
   const cancelIntro = () => {
@@ -738,7 +705,6 @@ export function initHeroHeadlineLanguages({
     if (isEasterEggActive) {
       isEasterEggActive = false;
       setState('interaction');
-      document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: false } }));
       await transitionHeadline(restoreHeadline);
       resetLanguageCycle();
       scheduleNormalIdle();
@@ -815,12 +781,9 @@ export function initHeroHeadlineLanguages({
     isFocused = false;
     if (!isEasterEggActive) scheduleNormalIdle();
   };
-  // Always refit, not just while an intro/cycling language is showing: the resting default
-  // headline needs this too whenever the hitbox's available width changes for any reason (a
-  // window resize, a devtools viewport-dimension switch, an orientation change) -- gating this
-  // on dataset.heroLanguage left the resting text's scale stuck at whatever it was computed as
-  // on the very first fit, however that number came about.
-  const handleResize = () => fitHeadline();
+  const handleResize = () => {
+    if (headline.dataset.heroLanguage) fitHeadline();
+  };
   const handleLanguageChange = () => {
     if (!isEasterEggActive) {
       cancelPreview();
@@ -885,22 +848,12 @@ export function initHeroHeadlineLanguages({
   listen(document, 'visibilitychange', handleVisibilityChange);
   reduceMotion.addEventListener?.('change', handleReducedMotionChange);
 
-  // Belt-and-suspenders alongside the resize listener above: a window resize is only one way
-  // the hitbox's available width can change. A ResizeObserver also catches a font swap reflowing
-  // the line, a sibling layout shift, or a breakpoint's width cap kicking in at a size no
-  // window-level resize event fires for (e.g. a devtools device-toolbar switch that changes the
-  // viewport without the page navigating). Doesn't loop: fitHeadline only ever writes a
-  // transform on .hero-headline-language-text, which doesn't feed back into hitbox's own size.
-  const hitboxResizeObserver = 'ResizeObserver' in window ? new ResizeObserver(() => fitHeadline()) : null;
-  hitboxResizeObserver?.observe(hitbox);
-
   const cleanup = () => {
     isDestroyed = true;
     cancelPreview();
     cancelTimers();
     listeners.splice(0).forEach((removeListener) => removeListener());
     reduceMotion.removeEventListener?.('change', handleReducedMotionChange);
-    hitboxResizeObserver?.disconnect();
     cancelHeadlineTransition();
     hitbox.classList.remove('hero-headline-language-hitbox--animating', 'hero-headline-language-hitbox--idle-transition');
     hitbox.removeAttribute('data-hero-language-state');
@@ -910,11 +863,6 @@ export function initHeroHeadlineLanguages({
   listen(window, 'pagehide', cleanup, { once: true });
 
   fitHeadline();
-  // Independent of whichever branch scheduleIntro() below takes (e.g. it skips its own
-  // fonts.ready wait entirely under prefers-reduced-motion): refit once webfonts are actually
-  // loaded, since the very first fitHeadline() call above may have measured against fallback
-  // font metrics.
-  document.fonts?.ready.then(() => { if (!isDestroyed) fitHeadline(); });
   setState('intro');
   scheduleIntro();
 }
@@ -1103,335 +1051,6 @@ export function initHeroMobileGloveScroll({ root = document } = {}) {
   window.addEventListener('scroll', requestUpdate, { passive: true });
   window.addEventListener('resize', requestUpdate);
   reduceMotion.addEventListener?.('change', requestUpdate);
-}
-
-export function initHeroCopyAlignment({ root = document } = {}) {
-  const wrap = root.querySelector('.hero-copy-align');
-  const glove = root.querySelector('.hero-product-composite');
-  const line = root.querySelector('.hero-headline-language-hitbox');
-  if (!wrap || !glove || !line) return;
-
-  // Measured on the source photo: the web between the thumb and index finger sits at ~50% of
-  // the image's own height. Only meaningful in the desktop two-column layout (glove and headline
-  // are stacked, not side by side, below 1024px, so there's no "level with the glove" to keep).
-  const GLOVE_THUMB_INDEX_GAP_FRACTION = 0.5;
-  const desktopQuery = window.matchMedia('(min-width: 1024px)');
-
-  let frame = null;
-
-  function align() {
-    frame = null;
-    if (!desktopQuery.matches) {
-      wrap.style.removeProperty('--hero-copy-align-shift');
-      return;
-    }
-    // Reset first and force a fresh layout read -- otherwise a previously-applied shift would be
-    // baked into the rects below, and the delta would compound on every resize instead of being
-    // measured against the true unshifted position each time.
-    wrap.style.setProperty('--hero-copy-align-shift', '0px');
-    const gloveRect = glove.getBoundingClientRect();
-    const lineRect = line.getBoundingClientRect();
-    if (!gloveRect.height || !lineRect.height) return; // image not laid out/decoded yet
-    const targetY = gloveRect.top + gloveRect.height * GLOVE_THUMB_INDEX_GAP_FRACTION;
-    const lineCenterY = lineRect.top + lineRect.height / 2;
-    wrap.style.setProperty('--hero-copy-align-shift', `${(targetY - lineCenterY).toFixed(1)}px`);
-  }
-
-  const requestAlign = () => {
-    if (frame !== null) return;
-    frame = window.requestAnimationFrame(align);
-  };
-
-  align();
-  // Glove images load async (eager, but not guaranteed ready before first layout); re-align once
-  // they actually have dimensions, and again on anything that can move the text or the image.
-  root.querySelectorAll('.hero-product-image').forEach((img) => {
-    if (img.complete) return;
-    img.addEventListener('load', requestAlign, { once: true });
-  });
-  document.fonts?.ready?.then(requestAlign);
-  window.addEventListener('resize', requestAlign);
-  desktopQuery.addEventListener?.('change', requestAlign);
-}
-
-export function initHeroEarthRotation({ root = document } = {}) {
-  const container = root.querySelector('.hero-earth');
-  const path = root.querySelector('.hero-earth__coastline path');
-  if (!container || !path) return;
-
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  if (reduceMotion.matches) return; // leave the server-rendered static frame in place
-
-  const { R, maxDlon, coscMin } = heroEarthRotationParams;
-  const D2R = Math.PI / 180;
-
-  // West-to-east planetary rotation reads, for a fixed external viewer, as features drifting
-  // left-to-right on screen -- so the sub-viewer longitude drifts west (decreases) over time.
-  // Same true-orthographic math as the build script that generated the static frame (sub-viewer
-  // on the equator), just re-evaluated every frame instead of baked once.
-  const PERIOD_MS = 150000; // one full 360deg turn every 2.5 minutes -- was 2 minutes, slowed down further for a calmer drift
-  // Sub-viewer longitude the rotation starts from. 0 (Greenwich) read as starting over Europe;
-  // 100 (over Asia) then read as starting too far east. 50 sits between the two (roughly the
-  // Urals), then drifts west into Europe ~17s into the loop (matches the static heroEarthPath
-  // default below, which is baked at this same longitude).
-  const LON_START = 50;
-  // 12fps (throttled) was the actual remaining cause of the reported stutter: consistent timing
-  // isn't the same as smooth motion, and 12fps reads as discrete steps rather than a continuous
-  // turn no matter how evenly spaced. Now that a frame costs ~2ms (post filter-removal), there's
-  // no reason to throttle below the display's own refresh rate; this just caps redundant work on
-  // very high-refresh-rate displays without any perceptible smoothness cost.
-  const UPDATE_INTERVAL_MS = 16;
-
-  // "Beyond Earth" easter egg (triggered elsewhere via the felya:beyondearth event): instead of
-  // the calm equatorial west-to-east drift, the sub-viewer point itself wanders in latitude -- a
-  // real parameter of the same orthographic projection below, not a CSS trick -- while the
-  // visible strip also banks around its own center. Together these read as watching the planet
-  // from a moving, inclined vantage (an ISS-style orbit) rather than a fixed point on the
-  // equator. Two incommensurate periods (24s tilt / 17s roll) so the two motions drift in and out
-  // of phase with each other instead of repeating in lockstep, and the rotation itself spins up
-  // to a much shorter period -- all three ramp in/out together via `intensity`, see
-  // currentIntensity below, so entering/leaving the easter egg is one smooth transition rather
-  // than a jump-cut. 15s/turn (was 26s) for a noticeably faster base spin -- still just the
-  // *base* rate the direction wobble further speeds up or reverses below.
-  const BEYOND_PERIOD_MS = 15000;
-  // Asymmetric on purpose, not a plain +/-34 swing around 0: the visible strip only ever shows
-  // latitudes roughly [lat0+44, lat0+90] (it's a grazing near-limb crop, not a top-down view --
-  // see project()'s coscMin cutoff), so a *symmetric* tilt centered on the equator never actually
-  // reaches it -- even at its most negative extreme it only came down to about +10 degrees,
-  // comfortably northern-hemisphere the entire time. An initial -20/+/-40 version still only
-  // grazed the equator (window down to ~[-16,30]) rather than showing the Southern Hemisphere
-  // properly, since heroEarthSegments used to have no data at all south of about -2 degrees
-  // anyway (see hero-earth-coastline.js) -- now that the full globe is actually in the data,
-  // centering the swing on -42 with a wider +/-42 amplitude ranges from a high-north extreme
-  // (lat0=0, window [44,90] -- coincides with the calm default rotation's own view) down through
-  // a genuinely southern one (lat0=-84, window ~[-40,6] -- southern Africa, Madagascar, southern
-  // Australia and South America all land inside that band, not just a graze past the equator).
-  const BEYOND_TILT_CENTER_DEG = -42;
-  const BEYOND_TILT_AMPLITUDE_DEG = 42;
-  const BEYOND_TILT_PERIOD_MS = 24000;
-  // Smaller than tilt: rolling around the true projection center (see projectBeyond below) moves
-  // near-limb points a lot per degree -- points near the visible strip sit close to the sphere's
-  // own radius from that center, so even a modest angle sweeps them by a large fraction of the
-  // strip's own height. This is the angle, not the resulting on-screen motion, so it reads as a
-  // properly "deutlich" bank without becoming an illegible blur.
-  const BEYOND_ROLL_DEG = 11;
-  const BEYOND_ROLL_PERIOD_MS = 17000;
-  const BEYOND_ROLL_PHASE = Math.PI / 3;
-  const BEYOND_TRANSITION_MS = 1400;
-  // Direction wobble: rather than always drifting the same way (however fast), the spin's own
-  // *velocity* is scaled by a sum of two incommensurate sine waves plus a DC offset -- still
-  // spinning forward most of the time, but every so often both waves dip negative together and
-  // the globe smoothly decelerates, stops, and reverses for a while before turning forward again.
-  // This is a continuous, differentiable function of time (a sum of sines), so the reversal is
-  // never a jump -- lon0 is its time-integral, and that integral stays perfectly smooth through
-  // every slow-down/reverse/speed-up, however erratic the direction feels. Periods incommensurate
-  // with each other and with BEYOND_TILT_PERIOD_MS/BEYOND_ROLL_PERIOD_MS/BEYOND_PERIOD_MS above so
-  // reversals land at unpredictable points in the tilt/roll cycle instead of always coinciding.
-  const BEYOND_SPIN_WOBBLE_PERIOD_A_MS = 19500;
-  const BEYOND_SPIN_WOBBLE_PERIOD_B_MS = 31000;
-  const BEYOND_SPIN_WOBBLE_PHASE = Math.PI / 5;
-  const BEYOND_SPIN_WOBBLE_DC = 0.7;
-  const BEYOND_SPIN_WOBBLE_AMP_A = 0.55;
-  const BEYOND_SPIN_WOBBLE_AMP_B = 0.4;
-
-  function project(lon, lat, lon0) {
-    const dlon = ((lon - lon0 + 540) % 360) - 180;
-    if (Math.abs(dlon) > maxDlon) return null;
-    const latR = lat * D2R, dlonR = dlon * D2R;
-    const cosc = Math.cos(latR) * Math.cos(dlonR);
-    if (cosc < coscMin) return null;
-    const x = R * Math.cos(latR) * Math.sin(dlonR);
-    const y = R * Math.sin(latR);
-    // Math.round beats toFixed here (called ~7000x/frame) -- sub-pixel precision either way,
-    // path data doesn't need a fixed decimal count.
-    return `${Math.round(x * 100) / 100},${Math.round(-y * 100) / 100}`;
-  }
-
-  // General case, used only while the easter egg is transitioning in/out or active: reinstates
-  // the sub-viewer latitude (lat0) that project() above assumes is 0, via the same orthographic
-  // formula generalized to an arbitrary sub-viewer point, plus a post-projection roll. Kept
-  // separate so the default (lat0=0, no roll) path above stays exactly as cheap as it always was.
-  // Also skips project()'s maxDlon pre-filter, which is only a safe shortcut when lat0 is 0 --
-  // near a pole, points far away in raw longitude can still be in view.
-  //
-  // The roll rotates (x, y) around the origin (0, 0) -- not some other point picked to sit near
-  // the visible strip. That matters: for a true sphere under orthographic projection, every
-  // constant-cosc contour (including the one heroEarthLimbPath is baked from, and the sphere's
-  // own silhouette) projects to a circle centered exactly on the origin, *regardless* of viewing
-  // direction -- lon0, lat0, roll, all of it. Rotating around the origin is therefore the one
-  // pivot that turns the coastline as a rigid body without ever pulling it out of alignment with
-  // that fixed circle -- i.e. an actual rotating sphere, not the flattened map being sheared
-  // around a point that has no such invariant. An earlier version rolled around a point local to
-  // the visible strip instead (chosen because it sat mid-crop), which is exactly why the coastline
-  // visibly warped relative to the static horizon glow.
-  function projectBeyond(lon, lat, lon0, lat0R, cosRoll, sinRoll) {
-    const dlon = ((lon - lon0 + 540) % 360) - 180;
-    const latR = lat * D2R, dlonR = dlon * D2R;
-    const cosc = Math.sin(lat0R) * Math.sin(latR) + Math.cos(lat0R) * Math.cos(latR) * Math.cos(dlonR);
-    if (cosc < coscMin) return null;
-    const x = R * Math.cos(latR) * Math.sin(dlonR);
-    const y = R * (Math.cos(lat0R) * Math.sin(latR) - Math.sin(lat0R) * Math.cos(latR) * Math.cos(dlonR));
-    const rolledX = x * cosRoll - y * sinRoll;
-    const rolledY = x * sinRoll + y * cosRoll;
-    return `${Math.round(rolledX * 100) / 100},${Math.round(-rolledY * 100) / 100}`;
-  }
-
-  function buildPath(lon0, lat0R = 0, cosRoll = 1, sinRoll = 0) {
-    const useBeyond = lat0R !== 0 || cosRoll !== 1;
-    const parts = [];
-    for (const run of heroEarthSegments) {
-      let segment = [];
-      for (const [lon, lat] of run) {
-        const p = useBeyond
-          ? projectBeyond(lon, lat, lon0, lat0R, cosRoll, sinRoll)
-          : project(lon, lat, lon0);
-        if (p) {
-          segment.push(p);
-        } else {
-          if (segment.length > 1) parts.push(`M ${segment.join(' L ')}`);
-          segment = [];
-        }
-      }
-      if (segment.length > 1) parts.push(`M ${segment.join(' L ')}`);
-    }
-    return parts.join(' ');
-  }
-
-  let frame = null;
-  let lastUpdate = 0;
-  let visible = true;
-  let lon0 = LON_START;
-  let lastIntegration = null;
-
-  let beyondActive = false;
-  let beyondToggledAt = 0;
-  let beyondIntensityAtToggle = 0;
-
-  // Smoothstepped 0..1 ramp toward whichever state (active/inactive) was last requested,
-  // starting from wherever the ramp actually was at the moment it was last toggled -- so
-  // re-triggering mid-transition eases from the current value instead of snapping.
-  const currentIntensity = (now) => {
-    const elapsed = now - beyondToggledAt;
-    const t = Math.min(1, Math.max(0, elapsed / BEYOND_TRANSITION_MS));
-    const eased = t * t * (3 - 2 * t);
-    const target = beyondActive ? 1 : 0;
-    return beyondIntensityAtToggle + (target - beyondIntensityAtToggle) * eased;
-  };
-
-  document.addEventListener('felya:beyondearth', (event) => {
-    const active = Boolean(event?.detail?.active);
-    if (active === beyondActive) return;
-    beyondIntensityAtToggle = currentIntensity(performance.now());
-    beyondActive = active;
-    beyondToggledAt = performance.now();
-  });
-
-  function tick(now) {
-    frame = window.requestAnimationFrame(tick);
-    const dt = lastIntegration === null ? 0 : now - lastIntegration;
-    lastIntegration = now;
-    if (!visible) return;
-
-    const intensity = currentIntensity(now);
-    const period = PERIOD_MS + (BEYOND_PERIOD_MS - PERIOD_MS) * intensity;
-    // Integrated rather than derived fresh from absolute time each frame (as the plain-drift
-    // case above can afford to be): the period itself now varies continuously, and re-deriving
-    // an angle from `now / period` every frame would jump discontinuously whenever period
-    // changes. Accumulating angular velocity over dt keeps the turn smooth through the spin-up
-    // and spin-down alike.
-    //
-    // directionMultiplier blends from a flat 1 (calm mode: always the plain westward drift above)
-    // toward the wobble sum as intensity ramps to 1, so the reversal effect itself fades in/out
-    // with the easter egg rather than snapping on. Blending the multiplier (not just adding the
-    // wobble on top) keeps this a lerp between two continuous functions of time, so it's still
-    // smooth through the ramp -- see the wobble constants' own comment above for why the wobble
-    // itself never introduces a discontinuity either.
-    const wobble = BEYOND_SPIN_WOBBLE_DC
-      + BEYOND_SPIN_WOBBLE_AMP_A * Math.sin((now / BEYOND_SPIN_WOBBLE_PERIOD_A_MS) * Math.PI * 2)
-      + BEYOND_SPIN_WOBBLE_AMP_B * Math.sin((now / BEYOND_SPIN_WOBBLE_PERIOD_B_MS) * Math.PI * 2 + BEYOND_SPIN_WOBBLE_PHASE);
-    const directionMultiplier = 1 + intensity * (wobble - 1);
-    lon0 = (((lon0 - (360 / period) * dt * directionMultiplier) % 360) + 360) % 360;
-
-    if (now - lastUpdate < UPDATE_INTERVAL_MS) return;
-    lastUpdate = now;
-
-    const tiltDeg = intensity * (BEYOND_TILT_CENTER_DEG
-      + BEYOND_TILT_AMPLITUDE_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2));
-    const rollDeg = intensity * BEYOND_ROLL_DEG
-      * Math.sin((now / BEYOND_ROLL_PERIOD_MS) * Math.PI * 2 + BEYOND_ROLL_PHASE);
-    const lat0R = tiltDeg * D2R;
-    const rollR = rollDeg * D2R;
-    path.setAttribute('d', buildPath(lon0, lat0R, Math.cos(rollR), Math.sin(rollR)));
-  }
-
-  const start = () => {
-    if (frame === null) frame = window.requestAnimationFrame(tick);
-  };
-  const stop = () => {
-    if (frame !== null) window.cancelAnimationFrame(frame);
-    frame = null;
-    lon0 = LON_START;
-    lastIntegration = null;
-    path.setAttribute('d', buildPath(LON_START));
-  };
-
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.target === container) visible = entry.isIntersecting;
-      });
-    }, { threshold: 0.01 });
-    observer.observe(container);
-  }
-
-  reduceMotion.addEventListener?.('change', () => {
-    if (reduceMotion.matches) stop();
-    else start();
-  });
-
-  start();
-}
-
-// Companion to the "Beyond Earth" branch of initHeroEarthRotation above: a field of thin streaks
-// that fade in behind the earth once the easter egg is triggered, reading as travel away from the
-// planet into deep space. Kept as its own module (own event listener, own reduced-motion check)
-// rather than folded into the rotation tick loop -- the streaks are plain CSS animations once
-// built, so there's nothing per-frame here for a shared rAF loop to buy.
-export function initHeroBeyondEarthStarfield({ root = document, random = Math.random } = {}) {
-  const container = root.querySelector('[data-hero-starfield]');
-  if (!container) return;
-
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  if (reduceMotion.matches) return; // static/absent starfield, no motion to opt out of
-
-  const STREAK_COUNT = 56;
-  let built = false;
-
-  const build = () => {
-    if (built) return;
-    built = true;
-    const fragment = document.createDocumentFragment();
-    for (let i = 0; i < STREAK_COUNT; i += 1) {
-      const streak = document.createElement('span');
-      streak.className = 'hero-starfield__streak';
-      const duration = 3.4 + random() * 3.6;
-      streak.style.setProperty('--x', `${(random() * 100).toFixed(2)}%`);
-      streak.style.setProperty('--len', `${Math.round(60 + random() * 100)}px`);
-      streak.style.setProperty('--dur', `${duration.toFixed(2)}s`);
-      // Negative delay starts each streak mid-flight instead of every streak launching from the
-      // same point in unison the moment the easter egg activates.
-      streak.style.setProperty('--delay', `${(-random() * duration).toFixed(2)}s`);
-      streak.style.setProperty('--peak', (0.32 + random() * 0.38).toFixed(2));
-      fragment.appendChild(streak);
-    }
-    container.appendChild(fragment);
-  };
-
-  document.addEventListener('felya:beyondearth', (event) => {
-    const active = Boolean(event?.detail?.active);
-    if (active) build();
-    container.classList.toggle('is-active', active);
-  });
 }
 
 export function initPatonSystemDemonstration({ root = document } = {}) {
@@ -2460,6 +2079,7 @@ export function initSectionNavigation({ root = document } = {}) {
 export function initSite(root = document) {
   initColorTheme({ root });
   initThemeImages({ root });
+  initHeroProductThemeTransition({ root });
   initLanguageSelector({ root });
   initTwoLineHeadings({ root });
   initMobileNavigation({ root });
@@ -2468,9 +2088,6 @@ export function initSite(root = document) {
   initPrototypeVideoCover({ root });
   initPrototypeFilmViewport({ root });
   initHeroMobileGloveScroll({ root });
-  initHeroCopyAlignment({ root });
-  initHeroEarthRotation({ root });
-  initHeroBeyondEarthStarfield({ root });
   initPatonSystemDemonstration({ root });
   initSectionReveals({ root });
   initSectionNavigation({ root });

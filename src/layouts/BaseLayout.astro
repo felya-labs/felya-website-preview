@@ -34,8 +34,8 @@ const resolvedTwitterDescription = twitterDescription ?? resolvedOpenGraphDescri
 const siteOrigin = Astro.site?.origin ?? 'https://preview.felya.com';
 const canonicalPath = Astro.url.pathname === '/index.html' ? '/' : Astro.url.pathname;
 const canonicalUrl = new URL(canonicalPath, siteOrigin).toString();
-const socialImageUrl = new URL('/assets/brand/felya-labs-paton-social-preview-1200x630.jpg', siteOrigin).toString();
-const organizationLogoUrl = new URL('/assets/brand/felya-labs-logo-square-512.png', siteOrigin).toString();
+const socialImageUrl = new URL('/assets/brand/felya-social-preview-1200x630.jpg', siteOrigin).toString();
+const organizationLogoUrl = new URL('/assets/brand/felya-mark-512.png', siteOrigin).toString();
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
