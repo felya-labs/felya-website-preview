@@ -10,6 +10,7 @@
     "preview": "astro preview",
     "generate:system-collision-masks": "node scripts/generate-system-collision-masks.mjs",
     "generate:negative-logo": "node assets-source/brand/generate-negative-logo-optical.mjs",
+    "generate:team-portrait": "node assets-source/about/team-portrait/build-team-portrait.mjs",
     "verify:references": "node scripts/verify-repository.mjs",
     "verify:i18n": "node --experimental-strip-types scripts/verify-localizations.mjs",
     "verify:localized-build": "node --experimental-strip-types scripts/verify-localized-build.mjs",
