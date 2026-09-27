@@ -1,3 +1,4 @@
+import { initPartnerImages, initFutureImages } from './image-loading.js';
 import {
   colorTheme,
   prototypeVideoCover,
@@ -133,12 +134,22 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
     });
   };
 
+  let themeRequest = 0;
   buttons.forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
+      const request = ++themeRequest;
       const nextTheme = button.dataset.themeNext || (document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-      // Dark reads as sweeping in from the left, light as sweeping in from the right -- a mirrored
-      // pair rather than the same direction both ways.
-      runThemeWipe(nextTheme, nextTheme === 'dark' ? 'ltr' : 'rtl');
+      const pending = [];
+      document.dispatchEvent(new CustomEvent('felya:beforethemechange', {
+        detail: { theme: nextTheme, waitUntil: (ready) => pending.push(ready) }
+      }));
+      try {
+        await Promise.all(pending);
+        if (request === themeRequest) {
+          // Preserve the current live Easter-egg wipe while waiting for required assets.
+          runThemeWipe(nextTheme, nextTheme === 'dark' ? 'ltr' : 'rtl');
+        }
+      } catch { /* Keep the current theme and its images when a replacement fails. */ }
     });
   });
 
@@ -188,7 +199,7 @@ export function initLanguageSelector({ root = document, config = language } = {}
 }
 
 export function initThemeImages({ root = document } = {}) {
-  const images = Array.from(root.querySelectorAll('[data-theme-image]'));
+  const images = Array.from(root.querySelectorAll('[data-theme-image]:not([data-future-image])'));
   if (!images.length) return;
 
   const applySources = () => {
@@ -990,6 +1001,12 @@ export function initPrototypeVideoCover({ root = document, config = prototypeVid
     const label = cover.querySelector('[data-video-play-label]');
     const playAriaLabel = cover.getAttribute('aria-label');
     const replayAriaLabel = cover.dataset.videoReplayLabel || playAriaLabel;
+    const coverImage = cover.querySelector('img');
+    const syncPoster = () => {
+      if (coverImage?.currentSrc) video.poster = coverImage.currentSrc;
+    };
+    coverImage?.addEventListener('load', syncPoster);
+    if (coverImage?.complete && coverImage.naturalWidth) syncPoster();
 
     const hideCover = () => {
       cover.hidden = true;
@@ -1009,6 +1026,7 @@ export function initPrototypeVideoCover({ root = document, config = prototypeVid
     cover.setAttribute('aria-label', playAriaLabel);
     cover.hidden = false;
     cover.addEventListener('click', () => {
+      syncPoster();
       loadVideoSources(video);
       frame?.setAttribute('data-video-state', 'loading');
       const playRequest = video.play();
@@ -1065,43 +1083,69 @@ export function initHeroMobileGloveScroll({ root = document } = {}) {
   if (!stages.length) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const hero = stages[0].closest('.hero-section') || stages[0];
   let frame = null;
+  let measureViewport = true;
+  let viewportWidth = 0;
+  let travel = 0;
+  let near = true;
+  let aboveViewport = false;
+  let lastValue = null;
 
   const reset = () => {
-    stages.forEach((stage) => {
-      stage.style.removeProperty('--hero-glove-y');
-    });
-
+    stages.forEach((stage) => stage.style.removeProperty('--hero-glove-y'));
     root.querySelectorAll('.hero-scroll-glove').forEach((glove) => {
       glove.style.removeProperty('transform');
     });
+    lastValue = null;
   };
-
+  const applyPosition = (scrollY) => {
+    const progress = Math.min(Math.max(scrollY / travel, 0), 1);
+    const value = `${(progress * -4).toFixed(2)}px`;
+    if (value === lastValue) return;
+    lastValue = value;
+    stages.forEach((stage) => stage.style.setProperty('--hero-glove-y', value));
+  };
   const update = () => {
     frame = null;
-
-    if (reduceMotion.matches || window.innerWidth >= 768) {
-      reset();
+    if (measureViewport) {
+      // Read together, before writes, and only on initialization/resize.
+      viewportWidth = window.innerWidth;
+      travel = Math.min(360, window.innerHeight * 0.48);
+      measureViewport = false;
+    }
+    if (reduceMotion.matches || viewportWidth >= 768) {
+      if (lastValue !== null) reset();
       return;
     }
-
-    const travel = Math.min(360, window.innerHeight * 0.48);
-    const progress = Math.min(Math.max(window.scrollY / travel, 0), 1);
-    const offsetY = progress * -4;
-
-    stages.forEach((stage) => {
-      stage.style.setProperty('--hero-glove-y', `${offsetY.toFixed(2)}px`);
-    });
+    // Keep scroll reads in the RAF, not in the scroll event between DOM writes.
+    applyPosition(near ? window.scrollY : aboveViewport ? travel : 0);
   };
-
   const requestUpdate = () => {
-    if (frame !== null) return;
-    frame = window.requestAnimationFrame(update);
+    if (frame === null) frame = window.requestAnimationFrame(update);
+  };
+  const onScroll = () => {
+    if (near && viewportWidth < 768) requestUpdate();
+  };
+  const onResize = () => {
+    measureViewport = true;
+    requestUpdate();
   };
 
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        near = entry.isIntersecting;
+        aboveViewport = entry.boundingClientRect.bottom <= 0;
+      });
+      requestUpdate();
+    }, { threshold: 0 });
+    observer.observe(hero);
+  }
+  reset();
   update();
-  window.addEventListener('scroll', requestUpdate, { passive: true });
-  window.addEventListener('resize', requestUpdate);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onResize);
   reduceMotion.addEventListener?.('change', requestUpdate);
 }
 
@@ -1160,7 +1204,6 @@ export function initHeroEarthRotation({ root = document } = {}) {
   if (!container || !path) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  if (reduceMotion.matches) return; // leave the server-rendered static frame in place
 
   const { R, maxDlon, coscMin } = heroEarthRotationParams;
   const D2R = Math.PI / 180;
@@ -1175,12 +1218,11 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // Urals), then drifts west into Europe ~17s into the loop (matches the static heroEarthPath
   // default below, which is baked at this same longitude).
   const LON_START = 50;
-  // 12fps (throttled) was the actual remaining cause of the reported stutter: consistent timing
-  // isn't the same as smooth motion, and 12fps reads as discrete steps rather than a continuous
-  // turn no matter how evenly spaced. Now that a frame costs ~2ms (post filter-removal), there's
-  // no reason to throttle below the display's own refresh rate; this just caps redundant work on
-  // very high-refresh-rate displays without any perceptible smoothness cost.
-  const UPDATE_INTERVAL_MS = 16;
+  // Keep desktop cadence; narrow viewports project at 30 Hz on the same RAF clock.
+  const compactViewport = window.matchMedia('(max-width: 767px)');
+  let compact = compactViewport.matches;
+  const DESKTOP_INTERVAL_MS = 16;
+  const MOBILE_INTERVAL_MS = 1000 / 30;
 
   // "Beyond Earth" easter egg (triggered elsewhere via the felya:beyondearth event): instead of
   // the calm equatorial west-to-east drift, the sub-viewer point itself wanders in latitude -- a
@@ -1297,11 +1339,17 @@ export function initHeroEarthRotation({ root = document } = {}) {
     return parts.join(' ');
   }
 
+  // Preserve the current rendered position across a reinitialisation, while pausing all
+  // scheduling whenever the globe, page, or motion preference makes it ineligible.
+  const preservedLon = container.__felyaEarthCleanup?.();
   let frame = null;
-  let lastUpdate = 0;
-  let visible = true;
-  let lon0 = LON_START;
+  let lastUpdate = null;
   let lastIntegration = null;
+  let visible = !('IntersectionObserver' in window);
+  let pageActive = true;
+  let frozen = false;
+  let disposed = false;
+  let lon0 = Number.isFinite(preservedLon) ? preservedLon : LON_START;
 
   let beyondActive = false;
   let beyondToggledAt = 0;
@@ -1326,12 +1374,14 @@ export function initHeroEarthRotation({ root = document } = {}) {
     beyondToggledAt = performance.now();
   });
 
+  const canRun = () => !disposed && visible && pageActive && !frozen
+    && document.visibilityState === 'visible' && !reduceMotion.matches;
+
   function tick(now) {
-    frame = window.requestAnimationFrame(tick);
+    frame = null;
+    if (!canRun()) { stop(); return; }
     const dt = lastIntegration === null ? 0 : now - lastIntegration;
     lastIntegration = now;
-    if (!visible) return;
-
     const intensity = currentIntensity(now);
     const period = PERIOD_MS + (BEYOND_PERIOD_MS - PERIOD_MS) * intensity;
     // Integrated rather than derived fresh from absolute time each frame (as the plain-drift
@@ -1352,8 +1402,12 @@ export function initHeroEarthRotation({ root = document } = {}) {
     const directionMultiplier = 1 + intensity * (wobble - 1);
     lon0 = (((lon0 - (360 / period) * dt * directionMultiplier) % 360) + 360) % 360;
 
-    if (now - lastUpdate < UPDATE_INTERVAL_MS) return;
-    lastUpdate = now;
+    const interval = compact ? MOBILE_INTERVAL_MS : DESKTOP_INTERVAL_MS;
+    const tolerance = compact ? 0.1 : 0;
+    if (lastUpdate !== null && now - lastUpdate + tolerance < interval) { start(); return; }
+    // Preserve the fractional remainder at 30 Hz so timestamp rounding does not reduce cadence.
+    lastUpdate = lastUpdate === null || !compact
+      ? now : lastUpdate + Math.floor((now - lastUpdate + tolerance) / interval) * interval;
 
     const tiltDeg = intensity * (BEYOND_TILT_CENTER_DEG
       + BEYOND_TILT_AMPLITUDE_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2));
@@ -1362,34 +1416,59 @@ export function initHeroEarthRotation({ root = document } = {}) {
     const lat0R = tiltDeg * D2R;
     const rollR = rollDeg * D2R;
     path.setAttribute('d', buildPath(lon0, lat0R, Math.cos(rollR), Math.sin(rollR)));
+    start();
   }
 
-  const start = () => {
-    if (frame === null) frame = window.requestAnimationFrame(tick);
-  };
-  const stop = () => {
+  function start() {
+    if (canRun() && frame === null) frame = window.requestAnimationFrame(tick);
+  }
+  function stop() {
     if (frame !== null) window.cancelAnimationFrame(frame);
     frame = null;
-    lon0 = LON_START;
     lastIntegration = null;
-    path.setAttribute('d', buildPath(LON_START));
-  };
-
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.target === container) visible = entry.isIntersecting;
-      });
-    }, { threshold: 0.01 });
-    observer.observe(container);
+    lastUpdate = null;
   }
+  const sync = () => { if (canRun()) start(); else stop(); };
+  const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.target === container) visible = entry.isIntersecting;
+    });
+    sync();
+  }, { threshold: 0.01 }) : null;
+  observer?.observe(container);
 
-  reduceMotion.addEventListener?.('change', () => {
-    if (reduceMotion.matches) stop();
-    else start();
-  });
-
-  start();
+  const onPageHide = (event) => {
+    pageActive = false;
+    stop();
+    if (!event.persisted) cleanup();
+  };
+  const onPageShow = () => { pageActive = true; sync(); };
+  const onViewportChange = () => { compact = compactViewport.matches; lastUpdate = null; sync(); };
+  const onFreeze = () => { frozen = true; sync(); };
+  const onResume = () => { frozen = false; sync(); };
+  function cleanup() {
+    disposed = true;
+    stop();
+    observer?.disconnect();
+    reduceMotion.removeEventListener?.('change', sync);
+    compactViewport.removeEventListener?.('change', onViewportChange);
+    document.removeEventListener('visibilitychange', sync);
+    document.removeEventListener('freeze', onFreeze);
+    document.removeEventListener('resume', onResume);
+    window.removeEventListener('pagehide', onPageHide);
+    window.removeEventListener('pageshow', onPageShow);
+    if (container.__felyaEarthCleanup === cleanup) delete container.__felyaEarthCleanup;
+    return lon0;
+  }
+  container.__felyaEarthCleanup = cleanup;
+  reduceMotion.addEventListener?.('change', sync);
+  compactViewport.addEventListener?.('change', onViewportChange);
+  document.addEventListener('visibilitychange', sync);
+  document.addEventListener('freeze', onFreeze);
+  document.addEventListener('resume', onResume);
+  window.addEventListener('pagehide', onPageHide);
+  window.addEventListener('pageshow', onPageShow);
+  sync();
 }
 
 // Companion to the "Beyond Earth" branch of initHeroEarthRotation above: a field of thin streaks
@@ -1472,6 +1551,36 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
     const activeHapticTimers = new Set();
 
     demonstration.dataset.awakening = 'pending';
+
+    // The compact paths use fixed SVG coordinates; responsive layout only scales
+    // their SVG. Sample a detached copy once per path-data revision, so animation
+    // frames never query geometry from a tree dirtied by particle writes.
+    const compactSignalGeometry = new WeakMap();
+    const getCompactSignalGeometry = (sourcePath) => {
+      const data = sourcePath.getAttribute('d');
+      const cached = compactSignalGeometry.get(sourcePath);
+      if (cached?.data === data) return cached;
+      const geometryPath = sourcePath.cloneNode(false);
+      const length = geometryPath.getTotalLength();
+      const steps = 256;
+      const points = Array.from({ length: steps + 1 }, (_, index) => {
+        const point = geometryPath.getPointAtLength(index / steps * length);
+        return { x: point.x, y: point.y };
+      });
+      const geometry = {
+        data,
+        pointAt(progress) {
+          const position = Math.min(1, Math.max(0, progress)) * steps;
+          const index = Math.min(steps - 1, Math.floor(position));
+          const mix = position - index;
+          const a = points[index];
+          const b = points[index + 1];
+          return { x: a.x + (b.x - a.x) * mix, y: a.y + (b.y - a.y) * mix };
+        }
+      };
+      compactSignalGeometry.set(sourcePath, geometry);
+      return geometry;
+    };
 
     const clearAmbientAwakening = () => {
       window.clearTimeout(ambientTimer);
@@ -1593,7 +1702,7 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
       const packetLayer = sourcePath?.closest('.system-demonstration__mobile-loop-beam')?.parentNode;
       if (!sourcePath || !packetLayer) return;
 
-      const pathLength = sourcePath.getTotalLength();
+      const geometry = getCompactSignalGeometry(sourcePath);
       const { startInset, coverage } = getCompactPacketTrainGeometry();
       const travelDistance = 1 - startInset;
       const renderedWidth = mobileSignalSvg.getBoundingClientRect().width || 100;
@@ -1658,7 +1767,7 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
             return;
           }
 
-          const point = sourcePath.getPointAtLength(positionProgress * pathLength);
+          const point = geometry.pointAt(positionProgress);
           element.style.opacity = '1';
           element.setAttribute('transform', `translate(${point.x} ${point.y})`);
         });
@@ -2459,6 +2568,8 @@ export function initSectionNavigation({ root = document } = {}) {
 
 export function initSite(root = document) {
   initColorTheme({ root });
+  initPartnerImages({ root });
+  initFutureImages({ root });
   initThemeImages({ root });
   initLanguageSelector({ root });
   initTwoLineHeadings({ root });

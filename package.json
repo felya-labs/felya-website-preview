@@ -14,7 +14,8 @@
     "verify:localized-build": "node --experimental-strip-types scripts/verify-localized-build.mjs",
     "verify:brand-logo": "node scripts/verify-brand-logo-geometry.mjs",
     "review:i18n": "node --experimental-strip-types scripts/generate-localization-review.mjs",
-    "verify": "node scripts/verify-repository.mjs && node scripts/verify-brand-logo-geometry.mjs && node --experimental-strip-types scripts/verify-localizations.mjs && astro build && node --experimental-strip-types scripts/verify-localized-build.mjs"
+    "verify": "node scripts/verify-repository.mjs && node scripts/verify-brand-logo-geometry.mjs && node --experimental-strip-types scripts/verify-localizations.mjs && astro build && node --experimental-strip-types scripts/verify-localized-build.mjs",
+    "generate:future-sketches": "node scripts/generate-future-sketches.mjs"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.2",
