@@ -56,26 +56,38 @@ script, or background.
   footer remains at 4.77 rem with no offset.
 - The stacked lockup is an official available asset but is not forced into the
   existing footer layout.
-- Favicons use the white V4 mark on a transparent canvas with the F050 black
-  edge treatment. There is no background square or continuous-corner tile.
-  F050 is a 20 px visible outer contour on the 1024 px master; the centered SVG
-  stroke is 40 px before scaling and the white fill is painted above its inner
-  half. The alpha bounds are 711 × 902 px (69.4% × 88.1%), leaving 156/157 px
-  horizontally and 61 px vertically. The previous mark occupied 535 × 689 px
-  (52.2% × 67.3%) with 245/244 px horizontal and 168/167 px vertical padding.
-- F0, F025 (12 px), F050 (20 px), and F075 (28 px) were reviewed at 16, 32,
-  48, 96, 180, and 512 px on white, browser gray, and black. F050 was selected:
-  F025 is too faint at 16 px on white while F075 reads as a deliberate outline
-  from 32 px upward. At output size, the selected contour scales to 0.3125 px,
-  0.625 px, 0.9375 px, 1.875 px, 3.5156 px, and 10 px respectively.
-- The 512 px maskable icon uses the same proportionate treatment around a
-  640 px-high inner mark so its complete silhouette remains inside the maskable
-  safe zone. The favicon edge is a functional small-size treatment only and is
-  not a new official FELYA logo variant.
+- Browser-tab favicons are two dedicated outline-free SVGs selected only by
+  HTML `media` conditions and the browser/OS `prefers-color-scheme` value:
+  `/assets/favicon/felya-favicon-black.svg` for light browser UI and
+  `/assets/favicon/felya-favicon-white.svg` for dark browser UI. The website
+  theme, theme toggle, `data-theme`, local storage, and JavaScript theme state
+  do not participate in this selection.
+- Both browser SVGs contain only the canonical V4 Pyra path on transparency:
+  no stroke, F050 contour, background tile, raster image, filter, or shadow.
+  Their square 582-unit viewBox preserves the mark geometry with a small,
+  symmetric safety margin for downsampling. Black and white therefore have
+  identical visible bounds. At a 1024 px reference render the visible bounds
+  are 760 × 978 px (74.22% × 95.51%) with 132 px left/right and 23 px top/bottom
+  padding.
+- The canonical mark SVG hashes used to generate the browser variants are
+  `ae9f85fb8f05bb4cb538a79000e2d1927df3e868bf3e297e64df6d5e272de32e`
+  (black) and
+  `127540557cadae97d654088f056067bb4551b376bab07fb65c0416b153a23997`
+  (white).
+- The generated adaptive SVG hashes are
+  `5b37176e535c39c1dd7fc0fd42a7a24fcc564d28a9a15fc6192c911022f0b349`
+  (black/light browser UI) and
+  `3ccc9aa3ec882f6adeaf5a2b7be630c58330889a4eb06efeb9c90bc05cdda984`
+  (white/dark browser UI).
+- The existing PNG, Apple touch, Android, maskable, and ICO files remain static
+  platform/legacy assets. They are not declared as browser-tab `rel="icon"`
+  candidates. `/favicon.ico` remains physically available for automatic legacy
+  fallback, while Apple touch and the web manifest retain their dedicated head
+  links.
 - JSON-LD continues to reference
   `/assets/brand/felya-labs-logo-square-512.png`. The favicon refinement does
-  not rewrite that organization asset. The manifest references the regenerated
-  transparent Android icons, including the safe-zone-adjusted maskable file.
+  not rewrite that organization asset. The manifest continues to reference the
+  existing static Android icons, including the maskable file.
 
 The generated family contains ICO frames at 16, 32, 48, and 256 px plus PNGs
 at 16, 32, 48, 96, 180 (Apple), 192, 256, and 512 px. Both the root ICO and
@@ -93,3 +105,10 @@ generator parameters, complete PNG/ICO/maskable output, and documentation are
 retained under
 `assets-source/brand/archive/2026-09-v4-rounded-favicon/`. These files are
 private build history and are likewise excluded from the public snapshot.
+
+The subsequent F050 family that used a white Pyra with a 20 px visible black
+contour is retained under
+`assets-source/brand/archive/2026-09-v4-f050-favicon/`, including its master,
+generator, complete PNG/ICO/platform output, and pre-adaptive documentation.
+It remains available for historical reconstruction but is no longer active in
+the browser-tab head definitions.

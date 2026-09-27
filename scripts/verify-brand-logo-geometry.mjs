@@ -80,6 +80,81 @@ for (const [stem, [width, height]] of variants) {
   }
 }
 
+const canonicalMarkSvg = await fs.readFile(path.join(logoRoot, 'felya-mark-black.svg'), 'utf8');
+const canonicalMarkPath = canonicalMarkSvg.match(/<path d="([^"]+)"/)?.[1];
+const adaptiveFavicons = new Map([
+  ['felya-favicon-black.svg', '#000000'],
+  ['felya-favicon-white.svg', '#FFFFFF']
+]);
+let adaptiveAlpha = null;
+for (const [fileName, fill] of adaptiveFavicons) {
+  const iconPath = path.join(root, 'public/assets/favicon', fileName);
+  const svg = await fs.readFile(iconPath, 'utf8');
+  const iconMarkPath = svg.match(/<path d="([^"]+)"/)?.[1];
+  if (
+    !svg.includes('width="582" height="582" viewBox="-72 -10 582 582"') ||
+    !svg.includes('preserveAspectRatio="xMidYMid meet"') ||
+    iconMarkPath !== canonicalMarkPath ||
+    !svg.includes(`fill="${fill}"`) ||
+    !svg.includes('stroke="none"') ||
+    forbiddenSvg.test(svg) ||
+    (svg.match(/<path\b/g) || []).length !== 1
+  ) throw new Error(`ADAPTIVE V4 FAVICON SVG: FAIL (${fileName})`);
+
+  const { data, info } = await sharp(Buffer.from(svg))
+    .resize(1024, 1024)
+    .ensureAlpha()
+    .extractChannel('alpha')
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  let left = info.width;
+  let top = info.height;
+  let right = -1;
+  let bottom = -1;
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      if (data[y * info.width + x] > 8) {
+        left = Math.min(left, x);
+        top = Math.min(top, y);
+        right = Math.max(right, x);
+        bottom = Math.max(bottom, y);
+      }
+    }
+  }
+  const geometry = {
+    left,
+    right: info.width - 1 - right,
+    top,
+    bottom: info.height - 1 - bottom,
+    width: right - left + 1,
+    height: bottom - top + 1
+  };
+  if (
+    geometry.width / info.width < 0.73 || geometry.height / info.height < 0.94 ||
+    Math.abs(geometry.left - geometry.right) > 2 || Math.abs(geometry.top - geometry.bottom) > 2 ||
+    data[0] > 8
+  ) throw new Error(`ADAPTIVE V4 FAVICON CANVAS: FAIL (${fileName})`);
+  if (adaptiveAlpha && !adaptiveAlpha.equals(data)) {
+    throw new Error('ADAPTIVE V4 FAVICON BLACK/WHITE GEOMETRY MATCH: FAIL');
+  }
+  adaptiveAlpha = Buffer.from(data);
+}
+
+const layoutSource = await fs.readFile(path.join(root, 'src/layouts/BaseLayout.astro'), 'utf8');
+const browserIconTags = [...layoutSource.matchAll(/<link\s+rel="icon"[^>]*>/g)].map(([tag]) => tag);
+const lightIconTag = '<link rel="icon" type="image/svg+xml" href="/assets/favicon/felya-favicon-black.svg" media="(prefers-color-scheme: light)">';
+const darkIconTag = '<link rel="icon" type="image/svg+xml" href="/assets/favicon/felya-favicon-white.svg" media="(prefers-color-scheme: dark)">';
+if (
+  browserIconTags.length !== 2 ||
+  !browserIconTags.includes(lightIconTag) ||
+  !browserIconTags.includes(darkIconTag) ||
+  browserIconTags.some((tag) => /\.png|favicon\.ico/.test(tag))
+) throw new Error('ADAPTIVE V4 FAVICON HEAD LINKS: FAIL');
+if (
+  !layoutSource.includes('<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">') ||
+  !layoutSource.includes('<link rel="manifest" href="/assets/favicon/site.webmanifest">')
+) throw new Error('ADAPTIVE V4 FAVICON PLATFORM LINKS: FAIL');
+
 const faviconDimensions = new Map([
   ['favicon-16x16.png', 16],
   ['favicon-32x32.png', 32],
@@ -164,12 +239,28 @@ for (const archivedFile of [
 ]) {
   await fs.access(path.join(root, 'assets-source/brand/archive/2026-09-v4-rounded-favicon', archivedFile));
 }
+for (const archivedFile of [
+  'README.md',
+  'build-brand-assets-f050.mjs',
+  'logo-assets-before-adaptive.md',
+  'public-root-favicon.ico',
+  'masters/felya-labs-app-icon-master.png',
+  'favicons/favicon.ico',
+  'favicons/favicon-16x16.png',
+  'favicons/favicon-32x32.png',
+  'favicons/favicon-48x48.png',
+  'favicons/favicon-96x96.png'
+]) {
+  await fs.access(path.join(root, 'assets-source/brand/archive/2026-09-v4-f050-favicon', archivedFile));
+}
 
 console.log('V4 SOURCE HASHES: PASS');
 console.log('V4 POSITIVE/NEGATIVE SOURCE PAIRS: PASS');
 console.log('V4 SVG GEOMETRY AND CONTENT: PASS');
+console.log('ADAPTIVE V4 BROWSER FAVICON SVG AND HEAD LINKS: PASS');
 console.log('V4 TRANSPARENT PNGS: PASS');
 console.log('V4 FAVICON FAMILY: PASS');
 console.log('V4 FAVICON F050 GEOMETRY AND TRANSPARENCY: PASS');
 console.log('PRE-V4 ARCHIVE: PASS');
 console.log('PRE-REFINEMENT V4 FAVICON ARCHIVE: PASS');
+console.log('PRE-ADAPTIVE V4 F050 FAVICON ARCHIVE: PASS');
