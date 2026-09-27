@@ -154,6 +154,9 @@ for (const initiallyReduced of [false, true]) {
 {
   const pending = new Map(), observers = new Set();
   let id = 0, updates = 0, time = 0;
+  const beyondVelocities = [];
+  const randomValues = [0.06, 0.82, 0.31, 0.57, 0.94, 0.18];
+  let randomIndex = 0;
   const container = {}, path = { setAttribute(name) { if (name === 'd') updates += 1; } };
   const reduce = hub({ matches: false });
   const compact = hub({ matches: true });
@@ -174,7 +177,11 @@ for (const initiallyReduced of [false, true]) {
     assert.ok(pending.size <= 1, 'mobile lite duplicate Earth RAF');
   };
   const visible = (state) => observers.forEach((observer) => observer.callback([{ target: container, isIntersecting: state }]));
-  init({ root: { querySelector(selector) { return selector === '.hero-earth' ? container : path; } } });
+  init({
+    root: { querySelector(selector) { return selector === '.hero-earth' ? container : path; } },
+    random: () => randomValues[(randomIndex += 1) % randomValues.length],
+    onBeyondVelocity: (velocity) => beyondVelocities.push(velocity)
+  });
   visible(true);
   assert.equal(pending.size, 1, 'mobile idle did not schedule Earth RAF');
   for (let index = 0; index < 300; index += 1) step(1000 / 60);
@@ -206,7 +213,17 @@ for (const initiallyReduced of [false, true]) {
   assert.equal(pending.size, 1, 'mobile Earth did not resume after reduced motion');
   doc.emit('felya:beyondearth', { detail: { active: true } });
   assert.equal(pending.size, 1, 'Beyond Earth created a duplicate RAF');
-  step(50);
+  for (let index = 0; index < 1200; index += 1) step(1000 / 60);
+  assert.ok(beyondVelocities.length >= 8, 'Beyond Earth did not create multiple random velocity events');
+  for (const velocity of beyondVelocities) {
+    assert.ok(Math.abs(velocity.multiplier) >= 0.85 && Math.abs(velocity.multiplier) <= 1.6, 'Beyond Earth speed escaped its fast band');
+    assert.ok(Math.abs(velocity.degreesPerSecond) >= 20.4, 'Beyond Earth slowed below its fast minimum');
+  }
+  assert.ok(new Set(beyondVelocities.map((velocity) => velocity.direction)).size === 2, 'Beyond Earth never reversed direction');
+  assert.ok(new Set(beyondVelocities.map((velocity) => velocity.multiplier)).size > 2, 'Beyond Earth speed did not vary');
+  for (let index = 1; index < beyondVelocities.length; index += 1) {
+    assert.equal(beyondVelocities[index].direction, -beyondVelocities[index - 1].direction, 'Beyond Earth reversal passed through a slow direction');
+  }
   doc.emit('felya:beyondearth', { detail: { active: false } });
   assert.equal(pending.size, 1, 'Beyond Earth reset did not return to mobile idle lifecycle');
   doc.emit('felya:mobileperfscroll', { detail: { variant: 'normal', active: true } });
