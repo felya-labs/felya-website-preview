@@ -3903,6 +3903,17 @@ html[data-theme="light"] .contact-section {
    cascade. The video mode intentionally preserves the cover, CTA and layout,
    while removing only expensive decorative compositing. */
 @media (hover: none), (pointer: coarse) {
+    /* The partner heading is the next-page cue after the prototypes film. It
+       must not inherit the large section container's 8%-threshold reveal: on
+       a phone that threshold can leave the heading inside the viewport while
+       its parent is still fully transparent. Logo loading remains independent
+       and the desktop reveal continues to use the normal .reveal-block rule. */
+    .partner-section > .section-inner.reveal-block {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
     :is(html[data-mobile-perf="system"], html[data-mobile-perf="max"])[data-mobile-perf-scrolling="true"] .system-demonstration *,
     :is(html[data-mobile-perf="system"], html[data-mobile-perf="max"])[data-mobile-perf-scrolling="true"] .system-demonstration::before,
     :is(html[data-mobile-perf="system"], html[data-mobile-perf="max"])[data-mobile-perf-scrolling="true"] .system-demonstration::after {
