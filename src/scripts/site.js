@@ -351,6 +351,10 @@ export function initHeroHeadlineLanguages({
   hitbox.__felyaHeroHeadlineCleanup?.();
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  // The compact touch Hero is intentionally quiet until the user interacts with
+  // its headline. Desktop and wider touch layouts keep the full language cycle.
+  const mobileHeroLite = window.matchMedia('(max-width: 767px)').matches
+    && (window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches);
   const timings = {
     firstIdleDelay: 12000,
     idleDelayMin: 16000,
@@ -580,6 +584,7 @@ export function initHeroHeadlineLanguages({
 
   const canRunIdle = () => (
     !isDestroyed
+    && !mobileHeroLite
     && !reduceMotion.matches
     && !document.hidden
     && !isIntroActive
@@ -683,6 +688,7 @@ export function initHeroHeadlineLanguages({
   };
 
   const runThemePreview = async () => {
+    if (mobileHeroLite) return;
     if (isEasterEggActive) return;
 
     cancelIntro();
@@ -746,6 +752,12 @@ export function initHeroHeadlineLanguages({
   };
 
   const scheduleIntro = async () => {
+    if (mobileHeroLite) {
+      hitbox.removeAttribute('data-hero-intro-pending');
+      restoreHeadline();
+      setState('static');
+      return;
+    }
     if (reduceMotion.matches) {
       hitbox.removeAttribute('data-hero-intro-pending');
       restoreHeadline();
@@ -791,7 +803,8 @@ export function initHeroHeadlineLanguages({
       document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: false } }));
       await transitionHeadline(restoreHeadline);
       resetLanguageCycle();
-      scheduleNormalIdle();
+      if (mobileHeroLite) setState('static');
+      else scheduleNormalIdle();
       return;
     }
     await transitionHeadline(showNextLanguage);
@@ -863,7 +876,7 @@ export function initHeroHeadlineLanguages({
   };
   const handleBlur = () => {
     isFocused = false;
-    if (!isEasterEggActive) scheduleNormalIdle();
+    if (!isEasterEggActive && !mobileHeroLite) scheduleNormalIdle();
   };
   // Always refit, not just while an intro/cycling language is showing: the resting default
   // headline needs this too whenever the hitbox's available width changes for any reason (a
@@ -879,8 +892,11 @@ export function initHeroHeadlineLanguages({
       cancelHeadlineTransition();
       restoreHeadline();
       resetLanguageCycle();
-      setState('intro');
-      scheduleIntro();
+      if (mobileHeroLite) setState('static');
+      else {
+        setState('intro');
+        scheduleIntro();
+      }
     }
   };
   const handleThemeChange = (event) => {
@@ -894,6 +910,11 @@ export function initHeroHeadlineLanguages({
     isFocused = false;
     cancelIntro();
     claimManualInteraction();
+    if (mobileHeroLite) {
+      restoreHeadline();
+      setState('static');
+      return;
+    }
     transitionHeadline(restoreEnglishHeadline).then(scheduleNormalIdle);
   };
   const handleVisibilityChange = () => {
@@ -906,7 +927,7 @@ export function initHeroHeadlineLanguages({
       }
       return;
     }
-    if (!isEasterEggActive) scheduleNormalIdle();
+    if (!isEasterEggActive && !mobileHeroLite) scheduleNormalIdle();
   };
   const handleReducedMotionChange = () => {
     cancelIdle();
@@ -916,7 +937,7 @@ export function initHeroHeadlineLanguages({
       setState('interaction');
       return;
     }
-    if (!reduceMotion.matches && !isEasterEggActive) scheduleNormalIdle();
+    if (!reduceMotion.matches && !isEasterEggActive && !mobileHeroLite) scheduleNormalIdle();
   };
 
   listen(hitbox, 'selectstart', (event) => event.preventDefault());
@@ -965,7 +986,7 @@ export function initHeroHeadlineLanguages({
   // loaded, since the very first fitHeadline() call above may have measured against fallback
   // font metrics.
   document.fonts?.ready.then(() => { if (!isDestroyed) fitHeadline(); });
-  setState('intro');
+  setState(mobileHeroLite ? 'static' : 'intro');
   scheduleIntro();
 }
 
@@ -1269,6 +1290,8 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // Keep desktop cadence; narrow viewports project at 30 Hz on the same RAF clock.
   const compactViewport = window.matchMedia('(max-width: 767px)');
   let compact = compactViewport.matches;
+  const mobileHeroLite = compact && (window.matchMedia('(hover: none)').matches
+    || window.matchMedia('(pointer: coarse)').matches);
   const DESKTOP_INTERVAL_MS = 16;
   const MOBILE_INTERVAL_MS = 1000 / 30;
 
@@ -1421,10 +1444,12 @@ export function initHeroEarthRotation({ root = document } = {}) {
     beyondIntensityAtToggle = currentIntensity(performance.now());
     beyondActive = active;
     beyondToggledAt = performance.now();
+    sync();
   });
 
   const canRun = () => !disposed && visible && pageActive && !frozen
-    && !mobilePerfScrolling && document.visibilityState === 'visible' && !reduceMotion.matches;
+    && !mobilePerfScrolling && document.visibilityState === 'visible' && !reduceMotion.matches
+    && (!mobileHeroLite || beyondActive);
 
   function tick(now) {
     frame = null;

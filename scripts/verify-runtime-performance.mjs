@@ -29,6 +29,7 @@ for (const initiallyReduced of [false, true]) {
   } };
   const reduce = hub({ matches: initiallyReduced });
   const mobile = hub({ matches: true });
+  const coarse = hub({ matches: false });
   const root = { querySelector(s) {
     return s === ".hero-earth" ? container : path;
   } };
@@ -44,7 +45,11 @@ for (const initiallyReduced of [false, true]) {
       observers.delete(this);
     }
   }
-  const win = hub({ IntersectionObserver: IO, innerWidth: 393, matchMedia: (q) => q.includes("reduced") ? reduce : mobile, requestAnimationFrame(cb) {
+  const win = hub({ IntersectionObserver: IO, innerWidth: 393, matchMedia: (q) => {
+    if (q.includes("reduced")) return reduce;
+    if (q.includes("hover") || q.includes("pointer")) return coarse;
+    return mobile;
+  }, requestAnimationFrame(cb) {
     pending.set(++id, cb);
     return id;
   }, cancelAnimationFrame(i) {
@@ -142,6 +147,50 @@ for (const initiallyReduced of [false, true]) {
   assert.equal(mobile.count(), 0);
   console.log("Lifecycle passed; initially reduced:", initiallyReduced);
 }
+
+// A compact coarse-pointer Hero is quiet in its normal state. It retains the
+// existing Earth implementation, but only schedules it after Beyond Earth.
+{
+  const pending = new Map(), observers = new Set();
+  let id = 0, updates = 0, time = 0;
+  const container = {}, path = { setAttribute(name) { if (name === 'd') updates += 1; } };
+  const reduce = hub({ matches: false });
+  const compact = hub({ matches: true });
+  const coarse = hub({ matches: true });
+  const doc = hub({ visibilityState: 'visible' });
+  class IO { constructor(callback) { this.callback = callback; observers.add(this); } observe() {} disconnect() { observers.delete(this); } }
+  const win = hub({ IntersectionObserver: IO, matchMedia(query) {
+    if (query.includes('reduced')) return reduce;
+    if (query.includes('hover') || query.includes('pointer')) return coarse;
+    return compact;
+  }, requestAnimationFrame(callback) { pending.set(++id, callback); return id; }, cancelAnimationFrame(frame) { pending.delete(frame); } });
+  const init = vm.runInNewContext('(' + globe + ')', { window: win, document: doc, IntersectionObserver: IO, heroEarthSegments, heroEarthRotationParams, performance: { now: () => time } });
+  const step = (delta) => {
+    time += delta;
+    const callbacks = [...pending.values()];
+    pending.clear();
+    callbacks.forEach((callback) => callback(time));
+    assert.ok(pending.size <= 1, 'mobile lite duplicate Earth RAF');
+  };
+  init({ root: { querySelector(selector) { return selector === '.hero-earth' ? container : path; } } });
+  observers.forEach((observer) => observer.callback([{ target: container, isIntersecting: true }]));
+  assert.equal(pending.size, 0, 'mobile normal state scheduled Earth RAF');
+  assert.equal(updates, 0, 'mobile normal state projected Earth');
+  doc.emit('felya:beyondearth', { detail: { active: true } });
+  assert.equal(pending.size, 1, 'Easter Egg did not start Earth');
+  step(16.7); step(40);
+  assert.ok(updates > 0, 'Easter Egg did not project Earth');
+  doc.emit('felya:beyondearth', { detail: { active: false } });
+  assert.equal(pending.size, 0, 'mobile reset left Earth RAF running');
+  container.__felyaEarthCleanup();
+  console.log('Mobile Hero Lite Earth lifecycle passed');
+}
+
+const headlineSource = source.slice(source.indexOf('export function initHeroHeadlineLanguages'), source.indexOf('export function setDevelopmentUpdatesStatus'));
+assert.match(headlineSource, /mobileHeroLite/);
+assert.match(headlineSource, /if \(mobileHeroLite\) \{\s*hitbox\.removeAttribute\('data-hero-intro-pending'\)/);
+assert.match(headlineSource, /!isEasterEggActive && !mobileHeroLite/);
+console.log('Mobile Hero Lite headline guards present');
 
 
 // Preserve the original 4px scroll curve, while proving that saturated scrolling
