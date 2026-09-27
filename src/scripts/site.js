@@ -1895,11 +1895,15 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
         const movementElapsed = Math.max(0, now - startedAt - compactPacketSpawnHold);
         const movementProgress = Math.min(1, movementElapsed / duration);
         packets.forEach(({ element, startProgress }) => {
-          const positionProgress = startProgress + movementProgress * travelDistance;
-          if (positionProgress > 1) {
-            element.style.opacity = '0';
-            return;
-          }
+          // Keep every point on the same exposed arc-length track. The former
+          // one-way progression let leading points leave the path early, so a
+          // seven-point train visibly collapsed into a cluster followed by an
+          // expanding empty arc. Individual modulo wrapping preserves the
+          // existing count and speed while keeping neighbour spacing constant.
+          const positionProgress = startInset + (
+            (startProgress - startInset + movementProgress * travelDistance)
+            % travelDistance
+          );
 
           const point = geometry.pointAt(positionProgress);
           element.style.opacity = '1';
