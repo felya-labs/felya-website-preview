@@ -1667,6 +1667,8 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
     let isAwakening = false;
     let hasPlayedAmbientFollowUp = false;
     let mobilePerfScrolling = false;
+    let mobileEntryScrolling = false;
+    let mobileEntryIdleTimer = 0;
     let rapidClickCount = 0;
     let lastSignalClickAt = 0;
     let sparkleUntil = 0;
@@ -2424,6 +2426,7 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
     };
 
     const requestCollisionGeometryUpdate = () => {
+      if (mobileEntryScrolling) return;
       if (collisionGeometryFrame) return;
       collisionGeometryFrame = window.requestAnimationFrame(updateCollisionGeometry);
     };
@@ -2601,13 +2604,36 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
       });
     });
 
+    const scheduleMobileEntry = () => {
+      if (!usesMobileSignalLoop()) {
+        playAwakening({ restart: true });
+        return;
+      }
+      window.clearTimeout(mobileEntryIdleTimer);
+      mobileEntryIdleTimer = window.setTimeout(() => {
+        mobileEntryScrolling = false;
+        if (!isVisible || reduceMotion.matches || isAwakening) return;
+        requestCollisionGeometryUpdate();
+        playAwakening({ restart: true });
+      }, 240);
+    };
+    const onMobileEntryScroll = () => {
+      if (!usesMobileSignalLoop()) return;
+      mobileEntryScrolling = true;
+      window.clearTimeout(mobileEntryIdleTimer);
+      clearAmbientAwakening();
+      mobileEntryIdleTimer = window.setTimeout(() => scheduleMobileEntry(), 240);
+    };
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.target !== demonstration) return;
         const wasVisible = isVisible;
         isVisible = entry.isIntersecting;
-        if (isVisible && !wasVisible) playAwakening({ restart: true });
-        else if (!isVisible) clearAmbientAwakening();
+        if (isVisible && !wasVisible) scheduleMobileEntry();
+        else if (!isVisible) {
+          window.clearTimeout(mobileEntryIdleTimer);
+          clearAmbientAwakening();
+        }
       });
     }, { rootMargin: '0px 0px -12% 0px', threshold: 0.32 });
 
@@ -2658,6 +2684,7 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
     reduceMotion.addEventListener?.('change', handlePreferenceChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('felya:mobileperfscroll', handleMobilePerfScroll);
+    window.addEventListener('scroll', onMobileEntryScroll, { passive: true });
   });
 }
 
