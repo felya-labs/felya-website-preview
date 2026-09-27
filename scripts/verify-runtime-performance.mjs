@@ -148,8 +148,9 @@ for (const initiallyReduced of [false, true]) {
   console.log("Lifecycle passed; initially reduced:", initiallyReduced);
 }
 
-// A compact coarse-pointer Hero is quiet in its normal state. It retains the
-// existing Earth implementation, but only schedules it after Beyond Earth.
+// A compact coarse-pointer Hero rotates at a light 20 Hz when idle. It uses
+// the existing scroll signal to pause all projections during active scroll,
+// then resumes without a duplicate RAF; Beyond Earth remains one lifecycle.
 {
   const pending = new Map(), observers = new Set();
   let id = 0, updates = 0, time = 0;
@@ -172,18 +173,48 @@ for (const initiallyReduced of [false, true]) {
     callbacks.forEach((callback) => callback(time));
     assert.ok(pending.size <= 1, 'mobile lite duplicate Earth RAF');
   };
+  const visible = (state) => observers.forEach((observer) => observer.callback([{ target: container, isIntersecting: state }]));
   init({ root: { querySelector(selector) { return selector === '.hero-earth' ? container : path; } } });
-  observers.forEach((observer) => observer.callback([{ target: container, isIntersecting: true }]));
-  assert.equal(pending.size, 0, 'mobile normal state scheduled Earth RAF');
-  assert.equal(updates, 0, 'mobile normal state projected Earth');
+  visible(true);
+  assert.equal(pending.size, 1, 'mobile idle did not schedule Earth RAF');
+  for (let index = 0; index < 300; index += 1) step(1000 / 60);
+  assert.ok(Math.abs(updates - 100) <= 1, 'mobile idle Earth update rate');
+  doc.emit('felya:mobileperfscroll', { detail: { variant: 'normal', active: true } });
+  assert.equal(pending.size, 0, 'mobile scroll left Earth RAF running');
+  const pausedUpdates = updates;
+  for (let index = 0; index < 120; index += 1) step(1000 / 60);
+  assert.equal(updates, pausedUpdates, 'mobile scroll projected Earth');
+  doc.emit('felya:mobileperfscroll', { detail: { variant: 'normal', active: false } });
+  assert.equal(pending.size, 1, 'mobile idle did not resume Earth RAF');
+  step(50);
+  assert.ok(updates > pausedUpdates, 'mobile idle after scroll did not project Earth');
+  visible(false);
+  assert.equal(pending.size, 0, 'offscreen mobile Earth RAF');
+  visible(true);
+  assert.equal(pending.size, 1, 'visible mobile Earth did not resume');
+  doc.visibilityState = 'hidden';
+  doc.emit('visibilitychange');
+  assert.equal(pending.size, 0, 'hidden mobile Earth RAF');
+  doc.visibilityState = 'visible';
+  doc.emit('visibilitychange');
+  assert.equal(pending.size, 1, 'visible mobile Earth did not resume after hidden');
+  reduce.matches = true;
+  reduce.emit('change');
+  assert.equal(pending.size, 0, 'reduced-motion mobile Earth RAF');
+  reduce.matches = false;
+  reduce.emit('change');
+  assert.equal(pending.size, 1, 'mobile Earth did not resume after reduced motion');
   doc.emit('felya:beyondearth', { detail: { active: true } });
-  assert.equal(pending.size, 1, 'Easter Egg did not start Earth');
-  step(16.7); step(40);
-  assert.ok(updates > 0, 'Easter Egg did not project Earth');
+  assert.equal(pending.size, 1, 'Beyond Earth created a duplicate RAF');
+  step(50);
   doc.emit('felya:beyondearth', { detail: { active: false } });
-  assert.equal(pending.size, 0, 'mobile reset left Earth RAF running');
+  assert.equal(pending.size, 1, 'Beyond Earth reset did not return to mobile idle lifecycle');
+  doc.emit('felya:mobileperfscroll', { detail: { variant: 'normal', active: true } });
+  assert.equal(pending.size, 0, 'mobile scroll did not pause Earth after Beyond Earth reset');
+  doc.emit('felya:mobileperfscroll', { detail: { variant: 'normal', active: false } });
+  assert.equal(pending.size, 1, 'mobile idle did not resume after Beyond Earth reset');
   container.__felyaEarthCleanup();
-  console.log('Mobile Hero Lite Earth lifecycle passed');
+  console.log('Mobile idle Earth lifecycle passed');
 }
 
 const headlineSource = source.slice(source.indexOf('export function initHeroHeadlineLanguages'), source.indexOf('export function setDevelopmentUpdatesStatus'));

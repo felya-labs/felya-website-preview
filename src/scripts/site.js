@@ -51,9 +51,9 @@ export function onDocumentReady(callback) {
 /**
  * Enables narrowly-scoped, mobile-only rendering experiments from the URL.
  * The normal page (including an invalid value) deliberately receives no data
- * attribute, so its cascade and runtime behaviour remain byte-for-byte on the
- * existing path. The scroll signal is a single passive listener and is only
- * installed for a non-baseline diagnostic variant on coarse/touch hardware.
+ * attribute, so its cascade remains unchanged. The one passive scroll listener
+ * also drives the normal coarse-pointer Hero Earth lifecycle; diagnostics keep
+ * their existing scoped variants on that same signal.
  */
 export function initMobilePerfVariants({ root = document } = {}) {
   const html = root.documentElement;
@@ -66,23 +66,26 @@ export function initMobilePerfVariants({ root = document } = {}) {
   const variant = params.get('heroPerf') ?? params.get('mobilePerf');
   const coarse = window.matchMedia('(hover: none)').matches
     || window.matchMedia('(pointer: coarse)').matches;
-  if (!coarse || !supported.has(variant)) return;
+  if (!coarse) return;
 
-  html.dataset.mobilePerf = variant;
-  if (variant === 'baseline') return;
+  const diagnosticVariant = supported.has(variant) ? variant : null;
+  if (diagnosticVariant) html.dataset.mobilePerf = diagnosticVariant;
+  // Preserve the baseline diagnostic's no-scroll-signal contract.
+  if (diagnosticVariant === 'baseline') return;
 
   let scrollTimer = 0;
+  const scrollVariant = diagnosticVariant ?? 'normal';
   const setScrolling = (active) => {
     if (active) html.dataset.mobilePerfScrolling = 'true';
     else delete html.dataset.mobilePerfScrolling;
     document.dispatchEvent(new CustomEvent('felya:mobileperfscroll', {
-      detail: { active, variant }
+      detail: { active, variant: scrollVariant }
     }));
   };
   const onScroll = () => {
     if (!html.dataset.mobilePerfScrolling) setScrolling(true);
     window.clearTimeout(scrollTimer);
-    scrollTimer = window.setTimeout(() => setScrolling(false), 220);
+    scrollTimer = window.setTimeout(() => setScrolling(false), 200);
   };
   window.addEventListener('scroll', onScroll, { passive: true });
 }
@@ -1331,13 +1334,15 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // Urals), then drifts west into Europe ~17s into the loop (matches the static heroEarthPath
   // default below, which is baked at this same longitude).
   const LON_START = 50;
-  // Keep desktop cadence; narrow viewports project at 30 Hz on the same RAF clock.
+  // Keep desktop (and narrow non-touch) cadence. The normal coarse-pointer
+  // Mobile Hero projects at a deliberately lighter 20 Hz on this same RAF.
   const compactViewport = window.matchMedia('(max-width: 767px)');
   let compact = compactViewport.matches;
-  const mobileHeroLite = compact && (window.matchMedia('(hover: none)').matches
+  const mobileHero = compact && (window.matchMedia('(hover: none)').matches
     || window.matchMedia('(pointer: coarse)').matches);
   const DESKTOP_INTERVAL_MS = 16;
-  const MOBILE_INTERVAL_MS = 1000 / 30;
+  const COMPACT_INTERVAL_MS = 1000 / 30;
+  const MOBILE_IDLE_INTERVAL_MS = 1000 / 20;
 
   // "Beyond Earth" easter egg (triggered elsewhere via the felya:beyondearth event): instead of
   // the calm equatorial west-to-east drift, the sub-viewer point itself wanders in latitude -- a
@@ -1492,8 +1497,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
   });
 
   const canRun = () => !disposed && visible && pageActive && !frozen
-    && !mobilePerfScrolling && document.visibilityState === 'visible' && !reduceMotion.matches
-    && (!mobileHeroLite || beyondActive);
+    && !mobilePerfScrolling && document.visibilityState === 'visible' && !reduceMotion.matches;
 
   function tick(now) {
     frame = null;
@@ -1520,10 +1524,11 @@ export function initHeroEarthRotation({ root = document } = {}) {
     const directionMultiplier = 1 + intensity * (wobble - 1);
     lon0 = (((lon0 - (360 / period) * dt * directionMultiplier) % 360) + 360) % 360;
 
-    const interval = compact ? MOBILE_INTERVAL_MS : DESKTOP_INTERVAL_MS;
+    const interval = mobileHero ? MOBILE_IDLE_INTERVAL_MS
+      : compact ? COMPACT_INTERVAL_MS : DESKTOP_INTERVAL_MS;
     const tolerance = compact ? 0.1 : 0;
     if (lastUpdate !== null && now - lastUpdate + tolerance < interval) { start(); return; }
-    // Preserve the fractional remainder at 30 Hz so timestamp rounding does not reduce cadence.
+    // Preserve the fractional remainder at compact cadences so timestamp rounding does not reduce cadence.
     lastUpdate = lastUpdate === null || !compact
       ? now : lastUpdate + Math.floor((now - lastUpdate + tolerance) / interval) * interval;
 
@@ -1566,7 +1571,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
   const onResume = () => { frozen = false; sync(); };
   const onMobilePerfScroll = (event) => {
     const variant = event.detail?.variant;
-    if (variant !== 'beyond' && variant !== 'max' && variant !== 'heroStatic') return;
+    if (variant !== 'normal' && variant !== 'beyond' && variant !== 'max' && variant !== 'heroStatic') return;
     mobilePerfScrolling = Boolean(event.detail?.active);
     sync();
   };
