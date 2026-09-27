@@ -1660,7 +1660,7 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
     const desktopSignalArrivalRatio = 0.82;
     const mobileSignalArrivalRatio = 0.96;
     const compactPacketCount = 7;
-    const compactPacketEdgeInset = 0.025;
+    const compactPacketEdgeInsetPx = 12;
     const compactPacketSpawnHold = 110;
     const getCompactShortViewportLift = () => (
       Math.min(18, Math.max(0, (720 - window.innerHeight) * 0.34))
@@ -1838,16 +1838,14 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
 
       const geometry = getCompactSignalGeometry(sourcePath);
       const { startInset, coverage } = getCompactPacketTrainGeometry();
-      const travelDistance = 1 - startInset;
+      const travelDistance = coverage;
       const renderedWidth = mobileSignalSvg.getBoundingClientRect().width || 100;
       const svgUnitsPerPixel = 100 / renderedWidth;
       const svgNamespace = 'http://www.w3.org/2000/svg';
       const packets = [];
 
       for (let packetIndex = 0; packetIndex < compactPacketCount; packetIndex += 1) {
-        const packetProgress = compactPacketCount > 1
-          ? packetIndex / (compactPacketCount - 1)
-          : 0;
+        const packetProgress = packetIndex / compactPacketCount;
         const packet = document.createElementNS(svgNamespace, 'g');
         packet.classList.add('system-demonstration__compact-packet');
         if (performance.now() < sparkleUntil) {
@@ -2122,8 +2120,9 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
        * right/left arc. Distribute the train from the first visible endpoint
        * to the last, retaining only enough room for the packet radius.
        */
-      const startInset = compactPacketEdgeInset;
-      const coverage = 1 - compactPacketEdgeInset * 2;
+      const renderedWidth = mobileSignalSvg?.getBoundingClientRect().width || 100;
+      const startInset = Math.min(0.08, Math.max(0.02, compactPacketEdgeInsetPx / renderedWidth));
+      const coverage = 1 - startInset * 2;
 
       return { startInset, coverage };
     };
