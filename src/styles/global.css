@@ -3898,6 +3898,38 @@ html[data-theme="light"] .contact-section {
     transform: translateY(0);
 }
 
+/* Diagnostic mobile A/B modes. They are inert without a validated URL mode on
+   a coarse/touch device; desktop and parameterless Preview retain their normal
+   cascade. The video mode intentionally preserves the cover, CTA and layout,
+   while removing only expensive decorative compositing. */
+@media (hover: none), (pointer: coarse) {
+    :is(html[data-mobile-perf="system"], html[data-mobile-perf="max"])[data-mobile-perf-scrolling="true"] .system-demonstration *,
+    :is(html[data-mobile-perf="system"], html[data-mobile-perf="max"])[data-mobile-perf-scrolling="true"] .system-demonstration::before,
+    :is(html[data-mobile-perf="system"], html[data-mobile-perf="max"])[data-mobile-perf-scrolling="true"] .system-demonstration::after {
+        animation-play-state: paused !important;
+    }
+
+    :is(html[data-mobile-perf="video"], html[data-mobile-perf="max"]) .prototypes-film-stage::before {
+        display: none;
+    }
+
+    :is(html[data-mobile-perf="video"], html[data-mobile-perf="max"]) .prototypes-film__reflection {
+        display: none;
+    }
+
+    :is(html[data-mobile-perf="video"], html[data-mobile-perf="max"]) .prototypes-film .video-play-cta {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background: rgba(248, 249, 251, 0.98);
+        box-shadow: 0 0.85rem 2.2rem rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+    }
+
+    :is(html[data-mobile-perf="beyond"], html[data-mobile-perf="max"])[data-mobile-perf-scrolling="true"] .hero-starfield,
+    :is(html[data-mobile-perf="beyond"], html[data-mobile-perf="max"])[data-mobile-perf-scrolling="true"] .hero-starfield * {
+        animation-play-state: paused !important;
+    }
+}
+
 @supports (corner-shape: squircle) {
     :where(
         .skip-link:focus,

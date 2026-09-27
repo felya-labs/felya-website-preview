@@ -48,6 +48,42 @@ export function onDocumentReady(callback) {
   callback();
 }
 
+/**
+ * Enables narrowly-scoped, mobile-only rendering experiments from the URL.
+ * The normal page (including an invalid value) deliberately receives no data
+ * attribute, so its cascade and runtime behaviour remain byte-for-byte on the
+ * existing path. The scroll signal is a single passive listener and is only
+ * installed for a non-baseline diagnostic variant on coarse/touch hardware.
+ */
+export function initMobilePerfVariants({ root = document } = {}) {
+  const html = root.documentElement;
+  if (!html || typeof window === 'undefined') return;
+
+  const supported = new Set(['baseline', 'system', 'video', 'beyond', 'max']);
+  const variant = new URLSearchParams(window.location.search).get('mobilePerf');
+  const coarse = window.matchMedia('(hover: none)').matches
+    || window.matchMedia('(pointer: coarse)').matches;
+  if (!coarse || !supported.has(variant)) return;
+
+  html.dataset.mobilePerf = variant;
+  if (variant === 'baseline') return;
+
+  let scrollTimer = 0;
+  const setScrolling = (active) => {
+    if (active) html.dataset.mobilePerfScrolling = 'true';
+    else delete html.dataset.mobilePerfScrolling;
+    document.dispatchEvent(new CustomEvent('felya:mobileperfscroll', {
+      detail: { active, variant }
+    }));
+  };
+  const onScroll = () => {
+    if (!html.dataset.mobilePerfScrolling) setScrolling(true);
+    window.clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(() => setScrolling(false), 220);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+}
+
 export function initColorTheme({ root = document, config = colorTheme } = {}) {
   const buttons = Array.from(root.querySelectorAll(config.selectors.buttons));
   if (!buttons.length) return;
@@ -1348,6 +1384,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
   let visible = !('IntersectionObserver' in window);
   let pageActive = true;
   let frozen = false;
+  let mobilePerfScrolling = false;
   let disposed = false;
   let lon0 = Number.isFinite(preservedLon) ? preservedLon : LON_START;
 
@@ -1375,7 +1412,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
   });
 
   const canRun = () => !disposed && visible && pageActive && !frozen
-    && document.visibilityState === 'visible' && !reduceMotion.matches;
+    && !mobilePerfScrolling && document.visibilityState === 'visible' && !reduceMotion.matches;
 
   function tick(now) {
     frame = null;
@@ -1446,6 +1483,12 @@ export function initHeroEarthRotation({ root = document } = {}) {
   const onViewportChange = () => { compact = compactViewport.matches; lastUpdate = null; sync(); };
   const onFreeze = () => { frozen = true; sync(); };
   const onResume = () => { frozen = false; sync(); };
+  const onMobilePerfScroll = (event) => {
+    const variant = event.detail?.variant;
+    if (variant !== 'beyond' && variant !== 'max') return;
+    mobilePerfScrolling = Boolean(event.detail?.active);
+    sync();
+  };
   function cleanup() {
     disposed = true;
     stop();
@@ -1455,6 +1498,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
     document.removeEventListener('visibilitychange', sync);
     document.removeEventListener('freeze', onFreeze);
     document.removeEventListener('resume', onResume);
+    document.removeEventListener('felya:mobileperfscroll', onMobilePerfScroll);
     window.removeEventListener('pagehide', onPageHide);
     window.removeEventListener('pageshow', onPageShow);
     if (container.__felyaEarthCleanup === cleanup) delete container.__felyaEarthCleanup;
@@ -1466,6 +1510,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
   document.addEventListener('visibilitychange', sync);
   document.addEventListener('freeze', onFreeze);
   document.addEventListener('resume', onResume);
+  document.addEventListener('felya:mobileperfscroll', onMobilePerfScroll);
   window.addEventListener('pagehide', onPageHide);
   window.addEventListener('pageshow', onPageShow);
   sync();
@@ -1540,6 +1585,7 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
     let isVisible = false;
     let isAwakening = false;
     let hasPlayedAmbientFollowUp = false;
+    let mobilePerfScrolling = false;
     let rapidClickCount = 0;
     let lastSignalClickAt = 0;
     let sparkleUntil = 0;
@@ -2389,6 +2435,7 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
     };
 
     const playAwakening = ({ restart = false, origin = '', forceMobileRestart = false } = {}) => {
+      if (mobilePerfScrolling) return;
       if (reduceMotion.matches) {
         finishAwakening();
         return;
@@ -2510,8 +2557,26 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
       }
     };
 
+    const handleMobilePerfScroll = (event) => {
+      const variant = event.detail?.variant;
+      if (variant !== 'system' && variant !== 'max') return;
+      mobilePerfScrolling = Boolean(event.detail?.active);
+      if (mobilePerfScrolling) {
+        clearAmbientAwakening();
+        clearSignalCycle();
+        clearHapticFeedback();
+        isAwakening = false;
+        demonstration.removeAttribute('data-awakening');
+        demonstration.removeAttribute('data-signal-origin');
+        demonstration.dataset.phase = 'rest';
+      } else if (isVisible) {
+        scheduleAmbientAwakening();
+      }
+    };
+
     reduceMotion.addEventListener?.('change', handlePreferenceChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('felya:mobileperfscroll', handleMobilePerfScroll);
   });
 }
 
@@ -2567,6 +2632,7 @@ export function initSectionNavigation({ root = document } = {}) {
 }
 
 export function initSite(root = document) {
+  initMobilePerfVariants({ root });
   initColorTheme({ root });
   initPartnerImages({ root });
   initFutureImages({ root });

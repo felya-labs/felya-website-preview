@@ -120,9 +120,10 @@ for (const initiallyReduced of [false, true]) {
   step(5e3);
   assert.equal(pathValue, angle, "reinitialization reset angle");
   assert.equal(win.count(), 2);
-  // The existing Beyond Earth interaction owns one persistent document listener
-  // per initialization; lifecycle cleanup leaves only those application listeners.
-  assert.equal(doc.count(), 5);
+  // Beyond Earth and the mobile diagnostic scroll gate each own one persistent
+  // document listener per initialization; lifecycle cleanup leaves only those
+  // application listeners.
+  assert.equal(doc.count(), 6);
   container.__felyaEarthCleanup();
   assert.equal(pending.size, 0);
   assert.equal(observers.size, 0);
