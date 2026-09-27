@@ -87,6 +87,50 @@ export function initMobilePerfVariants({ root = document } = {}) {
   window.addEventListener('scroll', onScroll, { passive: true });
 }
 
+// Preview-only, bounded capture for a real Brave toolbar/section-boundary investigation.
+export function initBraveHeroDiagnostics({ root = document } = {}) {
+  if (new URLSearchParams(window.location.search).get('braveHeroDiag') !== '1') return;
+  const hero = root.querySelector('.hero-section');
+  const stage = root.querySelector('.hero-product-stage');
+  const glove = root.querySelector('.hero-scroll-glove');
+  const image = root.querySelector('.hero-product-image');
+  const earth = root.querySelector('.hero-earth');
+  const headline = root.querySelector('.hero-headline-language-hitbox');
+  const next = root.querySelector('#system');
+  if (!hero || !stage || !glove || !next) return;
+  const samples = [];
+  const rect = (element) => {
+    if (!element) return null;
+    const value = element.getBoundingClientRect();
+    return { x: +value.x.toFixed(1), y: +value.y.toFixed(1), width: +value.width.toFixed(1), height: +value.height.toFixed(1) };
+  };
+  const record = (reason) => {
+    const viewport = window.visualViewport;
+    samples.push({
+      reason, time: +performance.now().toFixed(1), scrollY: +window.scrollY.toFixed(1),
+      innerWidth: window.innerWidth, innerHeight: window.innerHeight,
+      clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight,
+      visualViewport: viewport && { width: +viewport.width.toFixed(1), height: +viewport.height.toFixed(1), offsetTop: +viewport.offsetTop.toFixed(1), pageTop: +viewport.pageTop.toFixed(1), scale: viewport.scale },
+      hero: rect(hero), stage: rect(stage), glove: rect(glove), image: rect(image), earth: rect(earth), headline: rect(headline), next: rect(next),
+      gloveStyle: { width: getComputedStyle(glove).width, height: getComputedStyle(glove).height, transform: getComputedStyle(glove).transform, gloveY: stage.style.getPropertyValue('--hero-glove-y') || null },
+      heroState: { className: hero.className, data: { ...hero.dataset } }
+    });
+    if (samples.length > 160) samples.shift();
+  };
+  let lastScrollY = window.scrollY;
+  const onScroll = () => { if (Math.abs(window.scrollY - lastScrollY) >= 32) { lastScrollY = window.scrollY; record('scroll'); } };
+  const observer = new IntersectionObserver((entries) => entries.forEach((entry) => record(`intersection:${entry.target === hero ? 'hero' : 'next'}:${entry.isIntersecting}`)), { threshold: [0, 0.01, 0.5, 1] });
+  observer.observe(hero); observer.observe(next);
+  const resizeObserver = new ResizeObserver(() => record('resize-observer'));
+  [hero, stage, glove, next].forEach((element) => resizeObserver.observe(element));
+  window.addEventListener('resize', () => record('window-resize'));
+  window.visualViewport?.addEventListener('resize', () => record('visual-viewport-resize'));
+  window.visualViewport?.addEventListener('scroll', () => record('visual-viewport-scroll'));
+  window.addEventListener('scroll', onScroll, { passive: true });
+  record('init');
+  window.__felyaBraveHeroDiag = { samples, export: () => JSON.stringify(samples, null, 2), clear: () => { samples.length = 0; record('cleared'); } };
+}
+
 export function initColorTheme({ root = document, config = colorTheme } = {}) {
   const buttons = Array.from(root.querySelectorAll(config.selectors.buttons));
   if (!buttons.length) return;
@@ -2669,6 +2713,7 @@ export function initSectionNavigation({ root = document } = {}) {
 }
 
 export function initSite(root = document) {
+  initBraveHeroDiagnostics({ root });
   initMobilePerfVariants({ root });
   initColorTheme({ root });
   initPartnerImages({ root });
