@@ -93,11 +93,47 @@ const faviconDimensions = new Map([
 ]);
 
 for (const [fileName, size] of faviconDimensions) {
-  const metadata = await sharp(path.join(root, 'public/assets/favicon', fileName)).metadata();
-  if (metadata.width !== size || metadata.height !== size) {
+  const iconPath = path.join(root, 'public/assets/favicon', fileName);
+  const { data, info } = await sharp(iconPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  if (info.width !== size || info.height !== size || info.channels !== 4) {
     throw new Error(`V4 FAVICON DIMENSIONS: FAIL (${fileName})`);
   }
+  let transparentPixels = 0;
+  let whitePixels = 0;
+  let darkPixels = 0;
+  for (let index = 0; index < data.length; index += 4) {
+    const alpha = data[index + 3];
+    if (alpha <= 8) transparentPixels += 1;
+    if (alpha > 8 && data[index] > 220 && data[index + 1] > 220 && data[index + 2] > 220) whitePixels += 1;
+    if (alpha > 8 && data[index] < 80 && data[index + 1] < 80 && data[index + 2] < 80) darkPixels += 1;
+  }
+  if (!transparentPixels || !whitePixels || !darkPixels) {
+    throw new Error(`V4 FAVICON TRANSPARENT WHITE/BLACK TREATMENT: FAIL (${fileName})`);
+  }
+  if (data[3] > 8) throw new Error(`V4 FAVICON BACKGROUND TILE: FAIL (${fileName})`);
 }
+
+const { data: masterAlpha, info: masterInfo } = await sharp(
+  path.join(root, 'assets-source/brand/masters/felya-labs-app-icon-master.png')
+).ensureAlpha().extractChannel('alpha').raw().toBuffer({ resolveWithObject: true });
+let masterLeft = masterInfo.width;
+let masterTop = masterInfo.height;
+let masterRight = -1;
+let masterBottom = -1;
+for (let y = 0; y < masterInfo.height; y += 1) {
+  for (let x = 0; x < masterInfo.width; x += 1) {
+    if (masterAlpha[y * masterInfo.width + x] > 8) {
+      masterLeft = Math.min(masterLeft, x);
+      masterTop = Math.min(masterTop, y);
+      masterRight = Math.max(masterRight, x);
+      masterBottom = Math.max(masterBottom, y);
+    }
+  }
+}
+if (
+  masterInfo.width !== 1024 || masterInfo.height !== 1024 ||
+  masterLeft !== 156 || masterTop !== 61 || masterRight !== 866 || masterBottom !== 962
+) throw new Error('V4 FAVICON F050 MASTER GEOMETRY: FAIL');
 
 const [publicIco, assetIco] = await Promise.all([
   fs.readFile(path.join(root, 'public/favicon.ico')),
@@ -105,15 +141,35 @@ const [publicIco, assetIco] = await Promise.all([
 ]);
 if (!publicIco.equals(assetIco)) throw new Error('V4 FAVICON ICO MATCH: FAIL');
 
+const manifest = JSON.parse(await fs.readFile(path.join(root, 'public/assets/favicon/site.webmanifest'), 'utf8'));
+const maskable = manifest.icons?.find((icon) => icon.purpose === 'maskable');
+if (maskable?.src !== 'android-chrome-maskable-512x512.png' || maskable.sizes !== '512x512') {
+  throw new Error('V4 FAVICON MASKABLE MANIFEST: FAIL');
+}
+
 const archivedLogo = path.join(
   root,
   'assets-source/brand/archive/2026-09-pre-v4/website-logos/felya-logo-white-optical.svg'
 );
 await fs.access(archivedLogo);
+for (const archivedFile of [
+  'README.md',
+  'build-brand-assets.mjs',
+  'logo-assets-before-refinement.md',
+  'favicons/public-root-favicon.ico',
+  'masters/felya-labs-app-icon-master.png',
+  'masters/felya-labs-app-icon-continuous-master.png',
+  'favicons/favicon.ico',
+  'favicons/android-chrome-maskable-512x512.png'
+]) {
+  await fs.access(path.join(root, 'assets-source/brand/archive/2026-09-v4-rounded-favicon', archivedFile));
+}
 
 console.log('V4 SOURCE HASHES: PASS');
 console.log('V4 POSITIVE/NEGATIVE SOURCE PAIRS: PASS');
 console.log('V4 SVG GEOMETRY AND CONTENT: PASS');
 console.log('V4 TRANSPARENT PNGS: PASS');
 console.log('V4 FAVICON FAMILY: PASS');
+console.log('V4 FAVICON F050 GEOMETRY AND TRANSPARENCY: PASS');
 console.log('PRE-V4 ARCHIVE: PASS');
+console.log('PRE-REFINEMENT V4 FAVICON ARCHIVE: PASS');

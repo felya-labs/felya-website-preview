@@ -48,14 +48,38 @@ script, or background.
   composition suited to their compact horizontal layout.
 - Light mode uses the black positive SVG; dark mode uses the supplied white
   negative geometry without the former N025 compensation.
+- The header renders the lockup at 6.12 rem on desktop/laptop and 5.25 rem on
+  mobile (about 10% above the former 5.56/4.77 rem settings). A header-only
+  `-0.1875rem` vertical correction compensates for the lockup's visual mass.
+  Current, +5%, +10%, and +15% scale candidates were compared in both themes;
+  +10% improves presence without competing with navigation controls. The
+  footer remains at 4.77 rem with no offset.
 - The stacked lockup is an official available asset but is not forced into the
   existing footer layout.
-- Favicons use only the black V4 mark on the existing white continuous-corner
-  surface. The Apple and maskable variants remain opaque white as required by
-  their platform treatment.
+- Favicons use the white V4 mark on a transparent canvas with the F050 black
+  edge treatment. There is no background square or continuous-corner tile.
+  F050 is a 20 px visible outer contour on the 1024 px master; the centered SVG
+  stroke is 40 px before scaling and the white fill is painted above its inner
+  half. The alpha bounds are 711 × 902 px (69.4% × 88.1%), leaving 156/157 px
+  horizontally and 61 px vertically. The previous mark occupied 535 × 689 px
+  (52.2% × 67.3%) with 245/244 px horizontal and 168/167 px vertical padding.
+- F0, F025 (12 px), F050 (20 px), and F075 (28 px) were reviewed at 16, 32,
+  48, 96, 180, and 512 px on white, browser gray, and black. F050 was selected:
+  F025 is too faint at 16 px on white while F075 reads as a deliberate outline
+  from 32 px upward. At output size, the selected contour scales to 0.3125 px,
+  0.625 px, 0.9375 px, 1.875 px, 3.5156 px, and 10 px respectively.
+- The 512 px maskable icon uses the same proportionate treatment around a
+  640 px-high inner mark so its complete silhouette remains inside the maskable
+  safe zone. The favicon edge is a functional small-size treatment only and is
+  not a new official FELYA logo variant.
 - JSON-LD continues to reference
-  `/assets/brand/felya-labs-logo-square-512.png`, which is regenerated from the
-  V4 mark. The manifest continues to reference the regenerated Android icons.
+  `/assets/brand/felya-labs-logo-square-512.png`. The favicon refinement does
+  not rewrite that organization asset. The manifest references the regenerated
+  transparent Android icons, including the safe-zone-adjusted maskable file.
+
+The generated family contains ICO frames at 16, 32, 48, and 256 px plus PNGs
+at 16, 32, 48, 96, 180 (Apple), 192, 256, and 512 px. Both the root ICO and
+`public/assets/favicon/favicon.ico` are byte-identical.
 
 ## Archive
 
@@ -63,3 +87,9 @@ The complete former active logo SVG set, favicon family, public logo exports,
 their former masters, V2 designer intermediates, and N025 generator are
 retained under `assets-source/brand/archive/2026-09-pre-v4/`. These historical
 files are not copied to the public preview snapshot.
+
+The immediately preceding V4 rounded-square favicon family, its masters,
+generator parameters, complete PNG/ICO/maskable output, and documentation are
+retained under
+`assets-source/brand/archive/2026-09-v4-rounded-favicon/`. These files are
+private build history and are likewise excluded from the public snapshot.

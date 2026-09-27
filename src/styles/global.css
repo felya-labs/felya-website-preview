@@ -96,6 +96,11 @@ html[data-theme="light"] body {
     overflow: visible;
 }
 
+.site-header .theme-brand-logo {
+    --brand-logo-frame-width: 6.12rem;
+    top: -0.1875rem;
+}
+
 .theme-brand-logo__asset {
     position: absolute;
     inset: 0;
@@ -4535,8 +4540,8 @@ html[data-theme="light"] .contact-section {
 
 @media (max-width: 767px) {
     :root { --section-space: 6.5rem; }
-    .theme-brand-logo:not(.theme-brand-logo--footer) {
-        --brand-logo-frame-width: 4.77rem;
+    .site-header .theme-brand-logo {
+        --brand-logo-frame-width: 5.25rem;
     }
     .site-nav {
         border-radius: 2rem;
