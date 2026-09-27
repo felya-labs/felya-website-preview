@@ -1368,12 +1368,17 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
   const BEYOND_ROLL_DEG = 11;
   const BEYOND_ROLL_PHASE = Math.PI / 3;
   const BEYOND_TRANSITION_MS = 1400;
-  const BEYOND_SPEED_MIN_DEG_PER_SEC = 20.4;
-  const BEYOND_SPEED_MAX_DEG_PER_SEC = 38.4;
-  const BEYOND_STEER_ANGLE_MIN_DEG = 20;
-  const BEYOND_STEER_ANGLE_MAX_DEG = 70;
-  const BEYOND_STEER_DURATION_MIN_MS = 700;
-  const BEYOND_STEER_DURATION_MAX_MS = 1800;
+  // Three locally tuned candidates were compared with the deterministic motion
+  // probe. Dynamic keeps Fluid's small continuous curves, but gives the roll
+  // and tilt enough range to make the easter egg read as deliberately wild.
+  const BEYOND_FLUID_PRESETS = {
+    fluid: { speedBase: 27, speedAmplitude: [2.1, 1.4, 0.8], axisAmplitude: [0.09, 0.15, 0.12], response: 7.2, alphaResponse: 9.6 },
+    dynamic: { speedBase: 28.5, speedAmplitude: [3, 2, 1.1], axisAmplitude: [0.12, 0.21, 0.17], response: 7.8, alphaResponse: 10.4 },
+    chaoticFluid: { speedBase: 29, speedAmplitude: [3.6, 2.4, 1.5], axisAmplitude: [0.16, 0.27, 0.23], response: 8.4, alphaResponse: 11.2 }
+  };
+  const BEYOND_FLUID_PRESET = 'dynamic';
+  const BEYOND_SPEED_MIN_DEG_PER_SEC = 18;
+  const BEYOND_SPEED_MAX_DEG_PER_SEC = 36;
 
   function project(lon, lat, lon0) {
     const dlon = ((lon - lon0 + 540) % 360) - 180;
@@ -1454,14 +1459,10 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
   let beyondActive = false;
   let beyondToggledAt = 0;
   let beyondIntensityAtToggle = 0;
-  let beyondDirection = { x: 1, y: 0.3, z: 0.18 };
-  let beyondTargetDirection = beyondDirection;
-  let previousBeyondTarget = null;
-  let beyondSteerStartedAt = 0;
-  let beyondSteerDuration = BEYOND_STEER_DURATION_MIN_MS;
-  let beyondSpeed = BEYOND_SPEED_MIN_DEG_PER_SEC;
-  let beyondSpeedStart = beyondSpeed;
-  let beyondSpeedTarget = beyondSpeed;
+  let beyondDriver = null;
+  let beyondOmega = { x: 0, y: 0, z: 0 };
+  let beyondAlpha = { x: 0, y: 0, z: 0 };
+  let beyondPreviousAlpha = { x: 0, y: 0, z: 0 };
   let beyondTiltPhase = 0;
   let beyondRollPhase = 0;
 
@@ -1470,77 +1471,59 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
     const length = Math.hypot(direction.x, direction.y, direction.z) || 1;
     return { x: direction.x / length, y: direction.y / length, z: direction.z / length };
   };
-  const dotDirection = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
-  const smoothstep = (value) => value * value * (3 - 2 * value);
-  const slerpDirection = (from, to, progress) => {
-    const dot = clamp(dotDirection(from, to), -1, 1);
-    const angle = Math.acos(dot);
-    if (angle < 0.0001) return from;
-    const sin = Math.sin(angle);
-    const fromWeight = Math.sin((1 - progress) * angle) / sin;
-    const toWeight = Math.sin(progress * angle) / sin;
-    return normalizeDirection({
-      x: from.x * fromWeight + to.x * toWeight,
-      y: from.y * fromWeight + to.y * toWeight,
-      z: from.z * fromWeight + to.z * toWeight
+  const makeWave = (amplitude, minFrequency, maxFrequency) => ({
+    amplitude: amplitude * (0.72 + random() * 0.28),
+    frequency: minFrequency + random() * (maxFrequency - minFrequency),
+    phase: random() * Math.PI * 2
+  });
+  const waveValue = (waves, seconds) => waves.reduce((total, wave) => (
+    total + wave.amplitude * Math.sin(Math.PI * 2 * wave.frequency * seconds + wave.phase)
+  ), 0);
+  const createBeyondDriver = (now) => {
+    const preset = BEYOND_FLUID_PRESETS[BEYOND_FLUID_PRESET];
+    const makeAxis = (amplitude) => [
+      makeWave(amplitude * 0.54, 0.027, 0.061),
+      makeWave(amplitude * 0.31, 0.067, 0.133),
+      makeWave(amplitude * 0.15, 0.151, 0.247)
+    ];
+    return {
+      startedAt: now,
+      preset,
+      axes: preset.axisAmplitude.map(makeAxis),
+      speed: [
+        makeWave(preset.speedAmplitude[0], 0.021, 0.049),
+        makeWave(preset.speedAmplitude[1], 0.057, 0.109),
+        makeWave(preset.speedAmplitude[2], 0.127, 0.191)
+      ]
+    };
+  };
+  const targetBeyondOmega = (now) => {
+    const seconds = (now - beyondDriver.startedAt) / 1000;
+    // The positive yaw bias prevents an instant reversal. The incommensurate
+    // waves still let the axis travel substantially over time without any
+    // target arrival, boundary, or pendulum-like direction change.
+    const direction = normalizeDirection({
+      x: 0.86 + waveValue(beyondDriver.axes[0], seconds),
+      y: 0.31 + waveValue(beyondDriver.axes[1], seconds),
+      z: 0.19 + waveValue(beyondDriver.axes[2], seconds)
     });
+    const speed = clamp(
+      beyondDriver.preset.speedBase + waveValue(beyondDriver.speed, seconds),
+      BEYOND_SPEED_MIN_DEG_PER_SEC,
+      BEYOND_SPEED_MAX_DEG_PER_SEC
+    );
+    return { direction, speed, omega: { x: direction.x * speed, y: direction.y * speed, z: direction.z * speed } };
   };
-  const randomUnitDirection = () => {
-    const z = random() * 2 - 1;
-    const angle = random() * Math.PI * 2;
-    const radius = Math.sqrt(1 - z * z);
-    return { x: radius * Math.cos(angle), y: radius * Math.sin(angle), z };
-  };
-  const steerTargetFrom = (current) => {
-    const angle = (BEYOND_STEER_ANGLE_MIN_DEG
-      + random() * (BEYOND_STEER_ANGLE_MAX_DEG - BEYOND_STEER_ANGLE_MIN_DEG)) * D2R;
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const raw = randomUnitDirection();
-      const projection = dotDirection(raw, current);
-      const perpendicularRaw = {
-        x: raw.x - current.x * projection,
-        y: raw.y - current.y * projection,
-        z: raw.z - current.z * projection
-      };
-      if (Math.hypot(perpendicularRaw.x, perpendicularRaw.y, perpendicularRaw.z) < 0.001) continue;
-      const perpendicular = normalizeDirection(perpendicularRaw);
-      const candidate = normalizeDirection({
-        x: current.x * Math.cos(angle) + perpendicular.x * Math.sin(angle),
-        y: current.y * Math.cos(angle) + perpendicular.y * Math.sin(angle),
-        z: current.z * Math.cos(angle) + perpendicular.z * Math.sin(angle)
-      });
-      if (!previousBeyondTarget || dotDirection(candidate, previousBeyondTarget) > -0.25) return candidate;
-    }
-    return current;
-  };
-  const currentBeyondDirection = (now) => {
-    const progress = clamp((now - beyondSteerStartedAt) / beyondSteerDuration, 0, 1);
-    return slerpDirection(beyondDirection, beyondTargetDirection, smoothstep(progress));
-  };
-  const currentBeyondSpeed = (now) => {
-    const progress = clamp((now - beyondSteerStartedAt) / beyondSteerDuration, 0, 1);
-    return beyondSpeedStart + (beyondSpeedTarget - beyondSpeedStart) * smoothstep(progress);
-  };
-  const chooseBeyondSteering = (now, initial = false) => {
-    const current = initial ? normalizeDirection(beyondDirection) : currentBeyondDirection(now);
-    const speed = initial ? beyondSpeed : currentBeyondSpeed(now);
-    previousBeyondTarget = normalizeDirection(beyondTargetDirection);
-    beyondDirection = current;
-    beyondTargetDirection = steerTargetFrom(current);
-    beyondSteerStartedAt = now;
-    beyondSteerDuration = BEYOND_STEER_DURATION_MIN_MS
-      + random() * (BEYOND_STEER_DURATION_MAX_MS - BEYOND_STEER_DURATION_MIN_MS);
-    beyondSpeedStart = speed;
-    beyondSpeedTarget = BEYOND_SPEED_MIN_DEG_PER_SEC
-      + random() * (BEYOND_SPEED_MAX_DEG_PER_SEC - BEYOND_SPEED_MIN_DEG_PER_SEC);
-    beyondSpeed = speed;
-    onBeyondVelocity?.({
-      at: now,
-      speed: beyondSpeedTarget,
-      direction: current,
-      targetDirection: beyondTargetDirection,
-      steeringDuration: beyondSteerDuration
-    });
+  const beginBeyondFluid = (now) => {
+    beyondDriver = createBeyondDriver(now);
+    const initial = targetBeyondOmega(now);
+    // omega and alpha are persistent state thereafter. Starting omega on the
+    // continuous driver avoids an activation-only low-speed plateau; alpha is
+    // then filtered toward its continuously changing target each frame.
+    beyondOmega = { ...initial.omega };
+    beyondAlpha = { x: 0, y: 0, z: 0 };
+    beyondPreviousAlpha = { ...beyondAlpha };
+    onBeyondVelocity?.({ at: now, preset: BEYOND_FLUID_PRESET, speed: initial.speed, direction: initial.direction });
   };
 
   // Smoothstepped 0..1 ramp toward whichever state (active/inactive) was last requested,
@@ -1560,7 +1543,7 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
     beyondIntensityAtToggle = currentIntensity(performance.now());
     beyondActive = active;
     beyondToggledAt = performance.now();
-    if (active) chooseBeyondSteering(beyondToggledAt, true);
+    if (active) beginBeyondFluid(beyondToggledAt);
     sync();
   });
 
@@ -1574,23 +1557,54 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
     lastIntegration = now;
     const intensity = currentIntensity(now);
     const normalSpeed = 360000 / PERIOD_MS;
-    // Integrate the velocity vector from delta time rather than frame count so
-    // display refresh rate cannot change the physical Beyond Earth motion.
-    if (beyondActive && now - beyondSteerStartedAt >= beyondSteerDuration) chooseBeyondSteering(now);
-    const direction = currentBeyondDirection(now);
-    const fastSpeed = currentBeyondSpeed(now);
-    const speed = beyondActive ? fastSpeed : normalSpeed + intensity * (fastSpeed - normalSpeed);
-    if (beyondActive) onBeyondMotion?.({
-      at: now,
-      speed: fastSpeed,
-      direction,
-      targetDirection: beyondTargetDirection,
-      steeringProgress: clamp((now - beyondSteerStartedAt) / beyondSteerDuration, 0, 1)
-    });
-    lon0 = (((lon0 - direction.x * speed * dt / 1000) % 360) + 360) % 360;
+    // No target segments are used here. A continuous trigonometric driver
+    // yields a desired omega; alpha follows its target exponentially, and the
+    // persistent omega is integrated from alpha. This bounds jerk without
+    // flattening steering at artificial segment boundaries.
+    const dtSeconds = dt / 1000;
+    let direction = { x: 1, y: 0, z: 0 };
+    let speed = normalSpeed;
+    let target = null;
+    if (beyondActive && beyondDriver) {
+      target = targetBeyondOmega(now);
+      const alphaTarget = {
+        x: (target.omega.x - beyondOmega.x) * beyondDriver.preset.response,
+        y: (target.omega.y - beyondOmega.y) * beyondDriver.preset.response,
+        z: (target.omega.z - beyondOmega.z) * beyondDriver.preset.response
+      };
+      const alphaBlend = 1 - Math.exp(-beyondDriver.preset.alphaResponse * dtSeconds);
+      beyondPreviousAlpha = { ...beyondAlpha };
+      beyondAlpha.x += (alphaTarget.x - beyondAlpha.x) * alphaBlend;
+      beyondAlpha.y += (alphaTarget.y - beyondAlpha.y) * alphaBlend;
+      beyondAlpha.z += (alphaTarget.z - beyondAlpha.z) * alphaBlend;
+      beyondOmega.x += beyondAlpha.x * dtSeconds;
+      beyondOmega.y += beyondAlpha.y * dtSeconds;
+      beyondOmega.z += beyondAlpha.z * dtSeconds;
+      speed = Math.hypot(beyondOmega.x, beyondOmega.y, beyondOmega.z);
+      direction = normalizeDirection(beyondOmega);
+      onBeyondMotion?.({
+        at: now,
+        frameDelta: dt,
+        preset: BEYOND_FLUID_PRESET,
+        speed,
+        direction,
+        omega: { ...beyondOmega },
+        alpha: { ...beyondAlpha },
+        jerk: dtSeconds > 0 ? {
+          x: (beyondAlpha.x - beyondPreviousAlpha.x) / dtSeconds,
+          y: (beyondAlpha.y - beyondPreviousAlpha.y) / dtSeconds,
+          z: (beyondAlpha.z - beyondPreviousAlpha.z) / dtSeconds
+        } : { x: 0, y: 0, z: 0 },
+        alphaTarget,
+        targetDirection: target.direction,
+        targetSpeed: target.speed,
+        orientation: { longitude: lon0, tiltPhase: beyondTiltPhase, rollPhase: beyondRollPhase }
+      });
+    }
+    lon0 = (((lon0 - direction.x * speed * dtSeconds) % 360) + 360) % 360;
     if (intensity > 0) {
-      beyondTiltPhase += direction.y * speed * dt / 1000 * D2R;
-      beyondRollPhase += direction.z * speed * dt / 1000 * D2R;
+      beyondTiltPhase += direction.y * speed * dtSeconds * D2R;
+      beyondRollPhase += direction.z * speed * dtSeconds * D2R;
     }
 
     const interval = mobileHero ? MOBILE_IDLE_INTERVAL_MS

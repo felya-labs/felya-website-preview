@@ -215,34 +215,37 @@ for (const initiallyReduced of [false, true]) {
   assert.equal(pending.size, 1, 'mobile Earth did not resume after reduced motion');
   doc.emit('felya:beyondearth', { detail: { active: true } });
   assert.equal(pending.size, 1, 'Beyond Earth created a duplicate RAF');
-  for (let index = 0; index < 1800; index += 1) step(1000 / 60);
-  assert.ok(beyondVelocities.length >= 12, 'Beyond Earth did not create multiple steering events');
-  for (const velocity of beyondVelocities) {
-    assert.ok(velocity.speed >= 20.4 && velocity.speed <= 38.4, 'Beyond Earth speed escaped its fast band');
-    const targetAngle = Math.acos(Math.max(-1, Math.min(1,
-      velocity.direction.x * velocity.targetDirection.x
-      + velocity.direction.y * velocity.targetDirection.y
-      + velocity.direction.z * velocity.targetDirection.z))) * 180 / Math.PI;
-    assert.ok(targetAngle >= 19.9 && targetAngle <= 70.1, 'Beyond Earth target angle escaped its steering band');
-  }
-  assert.ok(new Set(beyondVelocities.map((velocity) => velocity.speed)).size > 2, 'Beyond Earth speed did not vary');
-  assert.ok(new Set(beyondMotion.map((motion) => motion.direction.x.toFixed(2) + ':' + motion.direction.y.toFixed(2))).size > 8, 'Beyond Earth direction did not vary');
+  // Sixty seconds at 60 Hz prove the continuous driver frame-by-frame instead
+  // of merely checking its endpoints. The bounds leave room for organic motion,
+  // but reject stop-start steering, vector kinks, and acceleration jumps.
+  for (let index = 0; index < 3600; index += 1) step(1000 / 60);
+  assert.equal(beyondVelocities.length, 1, 'Beyond Earth created a discrete steering event');
+  assert.equal(beyondVelocities[0].preset, 'dynamic', 'Beyond Earth did not use the selected fluid preset');
+  assert.ok(beyondMotion.length >= 3599, 'Beyond Earth did not emit the 60-second motion trace');
+  const magnitude = (vector) => Math.hypot(vector.x, vector.y, vector.z);
+  const directionAngle = (a, b) => Math.acos(Math.max(-1, Math.min(1,
+    a.x * b.x + a.y * b.y + a.z * b.z))) * 180 / Math.PI;
+  let maxDirectionDelta = 0;
+  let maxSpeedDelta = 0;
+  let maxJerk = 0;
   for (const motion of beyondMotion) {
-    assert.ok(motion.speed >= 20.4 && motion.speed <= 38.4, 'Beyond Earth motion slowed below its fast minimum');
+    assert.ok(motion.speed >= 18 && motion.speed <= 36, 'Beyond Earth speed escaped its continuous band');
+    assert.ok(Number.isFinite(motion.orientation.longitude), 'Beyond Earth did not log orientation');
+    assert.ok(Number.isFinite(magnitude(motion.omega)), 'Beyond Earth omega was not finite');
+    assert.ok(Number.isFinite(magnitude(motion.alpha)), 'Beyond Earth alpha was not finite');
+    maxJerk = Math.max(maxJerk, magnitude(motion.jerk));
   }
   for (let index = 1; index < beyondMotion.length; index += 1) {
-    const previous = beyondMotion[index - 1].direction;
-    const current = beyondMotion[index].direction;
-    const angle = Math.acos(Math.max(-1, Math.min(1,
-      previous.x * current.x + previous.y * current.y + previous.z * current.z))) * 180 / Math.PI;
-    assert.ok(angle <= 3, 'Beyond Earth direction changed too sharply in one frame');
+    const previous = beyondMotion[index - 1];
+    const current = beyondMotion[index];
+    maxDirectionDelta = Math.max(maxDirectionDelta, directionAngle(previous.direction, current.direction));
+    maxSpeedDelta = Math.max(maxSpeedDelta, Math.abs(current.speed - previous.speed));
   }
-  for (let index = 1; index < beyondVelocities.length; index += 1) {
-    const previous = beyondVelocities[index - 1].targetDirection;
-    const current = beyondVelocities[index].targetDirection;
-    const dot = previous.x * current.x + previous.y * current.y + previous.z * current.z;
-    assert.ok(dot > -0.25, 'Beyond Earth steering created a near-opposite pendulum target');
-  }
+  assert.ok(new Set(beyondMotion.map((motion) => motion.speed.toFixed(2))).size > 20, 'Beyond Earth speed did not vary continuously');
+  assert.ok(new Set(beyondMotion.map((motion) => motion.direction.x.toFixed(3) + ':' + motion.direction.y.toFixed(3))).size > 50, 'Beyond Earth direction did not vary continuously');
+  assert.ok(maxDirectionDelta <= 0.3, 'Beyond Earth direction changed too sharply in one frame');
+  assert.ok(maxSpeedDelta <= 0.08, 'Beyond Earth speed changed too sharply in one frame');
+  assert.ok(maxJerk <= 180, 'Beyond Earth angular jerk exceeded its continuous bound');
   doc.emit('felya:beyondearth', { detail: { active: false } });
   assert.equal(pending.size, 1, 'Beyond Earth reset did not return to mobile idle lifecycle');
   doc.emit('felya:mobileperfscroll', { detail: { variant: 'normal', active: true } });
