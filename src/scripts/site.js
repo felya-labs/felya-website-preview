@@ -1314,7 +1314,7 @@ export function initHeroCopyAlignment({ root = document } = {}) {
   desktopQuery.addEventListener?.('change', requestAlign);
 }
 
-export function initHeroEarthRotation({ root = document, random = Math.random, onBeyondVelocity } = {}) {
+export function initHeroEarthRotation({ root = document, random = Math.random, onBeyondVelocity, onBeyondMotion } = {}) {
   const container = root.querySelector('.hero-earth');
   const path = root.querySelector('.hero-earth__coastline path');
   if (!container || !path) return;
@@ -1344,18 +1344,8 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
   const COMPACT_INTERVAL_MS = 1000 / 30;
   const MOBILE_IDLE_INTERVAL_MS = 1000 / 20;
 
-  // "Beyond Earth" easter egg (triggered elsewhere via the felya:beyondearth event): instead of
-  // the calm equatorial west-to-east drift, the sub-viewer point itself wanders in latitude -- a
-  // real parameter of the same orthographic projection below, not a CSS trick -- while the
-  // visible strip also banks around its own center. Together these read as watching the planet
-  // from a moving, inclined vantage (an ISS-style orbit) rather than a fixed point on the
-  // equator. Two incommensurate periods (24s tilt / 17s roll) so the two motions drift in and out
-  // of phase with each other instead of repeating in lockstep, and the rotation itself spins up
-  // to a much shorter period -- all three ramp in/out together via `intensity`, see
-  // currentIntensity below, so entering/leaving the easter egg is one smooth transition rather
-  // than a jump-cut. 15s/turn (was 26s) for a noticeably faster base spin -- still just the
-  // *base* rate the direction wobble further speeds up or reverses below.
-  const BEYOND_PERIOD_MS = 15000;
+  // Beyond Earth steers a fast angular-velocity vector through yaw, tilt, and
+  // roll while preserving the existing orthographic projection.
   // Asymmetric on purpose, not a plain +/-34 swing around 0: the visible strip only ever shows
   // latitudes roughly [lat0+44, lat0+90] (it's a grazing near-limb crop, not a top-down view --
   // see project()'s coscMin cutoff), so a *symmetric* tilt centered on the equator never actually
@@ -1370,23 +1360,20 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
   // Australia and South America all land inside that band, not just a graze past the equator).
   const BEYOND_TILT_CENTER_DEG = -42;
   const BEYOND_TILT_AMPLITUDE_DEG = 42;
-  const BEYOND_TILT_PERIOD_MS = 24000;
   // Smaller than tilt: rolling around the true projection center (see projectBeyond below) moves
   // near-limb points a lot per degree -- points near the visible strip sit close to the sphere's
   // own radius from that center, so even a modest angle sweeps them by a large fraction of the
   // strip's own height. This is the angle, not the resulting on-screen motion, so it reads as a
   // properly "deutlich" bank without becoming an illegible blur.
   const BEYOND_ROLL_DEG = 11;
-  const BEYOND_ROLL_PERIOD_MS = 17000;
   const BEYOND_ROLL_PHASE = Math.PI / 3;
   const BEYOND_TRANSITION_MS = 1400;
-  // Keep every active Beyond Earth turn fast. Direction changes are direct
-  // (the effect is intentionally chaotic), so a reversal never interpolates
-  // through zero angular velocity.
-  const BEYOND_SPEED_MIN = 0.85;
-  const BEYOND_SPEED_MAX = 1.6;
-  const BEYOND_CHANGE_MIN_MS = 900;
-  const BEYOND_CHANGE_MAX_MS = 2200;
+  const BEYOND_SPEED_MIN_DEG_PER_SEC = 20.4;
+  const BEYOND_SPEED_MAX_DEG_PER_SEC = 38.4;
+  const BEYOND_STEER_ANGLE_MIN_DEG = 20;
+  const BEYOND_STEER_ANGLE_MAX_DEG = 70;
+  const BEYOND_STEER_DURATION_MIN_MS = 700;
+  const BEYOND_STEER_DURATION_MAX_MS = 1800;
 
   function project(lon, lat, lon0) {
     const dlon = ((lon - lon0 + 540) % 360) - 180;
@@ -1467,22 +1454,92 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
   let beyondActive = false;
   let beyondToggledAt = 0;
   let beyondIntensityAtToggle = 0;
-  let beyondDirection = 1;
-  let beyondSpeed = BEYOND_SPEED_MIN;
-  let nextBeyondVelocityChange = Infinity;
+  let beyondDirection = { x: 1, y: 0.3, z: 0.18 };
+  let beyondTargetDirection = beyondDirection;
+  let previousBeyondTarget = null;
+  let beyondSteerStartedAt = 0;
+  let beyondSteerDuration = BEYOND_STEER_DURATION_MIN_MS;
+  let beyondSpeed = BEYOND_SPEED_MIN_DEG_PER_SEC;
+  let beyondSpeedStart = beyondSpeed;
+  let beyondSpeedTarget = beyondSpeed;
+  let beyondTiltPhase = 0;
+  let beyondRollPhase = 0;
 
-  const chooseBeyondVelocity = (now, initial = false) => {
-    // Entering from the normal westward drift stays positive through the
-    // intensity ramp. Every later random event reverses directly at speed.
-    if (!initial) beyondDirection *= -1;
-    beyondSpeed = BEYOND_SPEED_MIN + random() * (BEYOND_SPEED_MAX - BEYOND_SPEED_MIN);
-    nextBeyondVelocityChange = now + BEYOND_CHANGE_MIN_MS
-      + random() * (BEYOND_CHANGE_MAX_MS - BEYOND_CHANGE_MIN_MS);
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const normalizeDirection = (direction) => {
+    const length = Math.hypot(direction.x, direction.y, direction.z) || 1;
+    return { x: direction.x / length, y: direction.y / length, z: direction.z / length };
+  };
+  const dotDirection = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const smoothstep = (value) => value * value * (3 - 2 * value);
+  const slerpDirection = (from, to, progress) => {
+    const dot = clamp(dotDirection(from, to), -1, 1);
+    const angle = Math.acos(dot);
+    if (angle < 0.0001) return from;
+    const sin = Math.sin(angle);
+    const fromWeight = Math.sin((1 - progress) * angle) / sin;
+    const toWeight = Math.sin(progress * angle) / sin;
+    return normalizeDirection({
+      x: from.x * fromWeight + to.x * toWeight,
+      y: from.y * fromWeight + to.y * toWeight,
+      z: from.z * fromWeight + to.z * toWeight
+    });
+  };
+  const randomUnitDirection = () => {
+    const z = random() * 2 - 1;
+    const angle = random() * Math.PI * 2;
+    const radius = Math.sqrt(1 - z * z);
+    return { x: radius * Math.cos(angle), y: radius * Math.sin(angle), z };
+  };
+  const steerTargetFrom = (current) => {
+    const angle = (BEYOND_STEER_ANGLE_MIN_DEG
+      + random() * (BEYOND_STEER_ANGLE_MAX_DEG - BEYOND_STEER_ANGLE_MIN_DEG)) * D2R;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const raw = randomUnitDirection();
+      const projection = dotDirection(raw, current);
+      const perpendicularRaw = {
+        x: raw.x - current.x * projection,
+        y: raw.y - current.y * projection,
+        z: raw.z - current.z * projection
+      };
+      if (Math.hypot(perpendicularRaw.x, perpendicularRaw.y, perpendicularRaw.z) < 0.001) continue;
+      const perpendicular = normalizeDirection(perpendicularRaw);
+      const candidate = normalizeDirection({
+        x: current.x * Math.cos(angle) + perpendicular.x * Math.sin(angle),
+        y: current.y * Math.cos(angle) + perpendicular.y * Math.sin(angle),
+        z: current.z * Math.cos(angle) + perpendicular.z * Math.sin(angle)
+      });
+      if (!previousBeyondTarget || dotDirection(candidate, previousBeyondTarget) > -0.25) return candidate;
+    }
+    return current;
+  };
+  const currentBeyondDirection = (now) => {
+    const progress = clamp((now - beyondSteerStartedAt) / beyondSteerDuration, 0, 1);
+    return slerpDirection(beyondDirection, beyondTargetDirection, smoothstep(progress));
+  };
+  const currentBeyondSpeed = (now) => {
+    const progress = clamp((now - beyondSteerStartedAt) / beyondSteerDuration, 0, 1);
+    return beyondSpeedStart + (beyondSpeedTarget - beyondSpeedStart) * smoothstep(progress);
+  };
+  const chooseBeyondSteering = (now, initial = false) => {
+    const current = initial ? normalizeDirection(beyondDirection) : currentBeyondDirection(now);
+    const speed = initial ? beyondSpeed : currentBeyondSpeed(now);
+    previousBeyondTarget = normalizeDirection(beyondTargetDirection);
+    beyondDirection = current;
+    beyondTargetDirection = steerTargetFrom(current);
+    beyondSteerStartedAt = now;
+    beyondSteerDuration = BEYOND_STEER_DURATION_MIN_MS
+      + random() * (BEYOND_STEER_DURATION_MAX_MS - BEYOND_STEER_DURATION_MIN_MS);
+    beyondSpeedStart = speed;
+    beyondSpeedTarget = BEYOND_SPEED_MIN_DEG_PER_SEC
+      + random() * (BEYOND_SPEED_MAX_DEG_PER_SEC - BEYOND_SPEED_MIN_DEG_PER_SEC);
+    beyondSpeed = speed;
     onBeyondVelocity?.({
       at: now,
-      direction: beyondDirection,
-      multiplier: beyondSpeed,
-      degreesPerSecond: beyondSpeed * 360000 / BEYOND_PERIOD_MS
+      speed: beyondSpeedTarget,
+      direction: current,
+      targetDirection: beyondTargetDirection,
+      steeringDuration: beyondSteerDuration
     });
   };
 
@@ -1503,7 +1560,7 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
     beyondIntensityAtToggle = currentIntensity(performance.now());
     beyondActive = active;
     beyondToggledAt = performance.now();
-    if (active) chooseBeyondVelocity(beyondToggledAt, true);
+    if (active) chooseBeyondSteering(beyondToggledAt, true);
     sync();
   });
 
@@ -1516,21 +1573,25 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
     const dt = lastIntegration === null ? 0 : now - lastIntegration;
     lastIntegration = now;
     const intensity = currentIntensity(now);
-    const period = PERIOD_MS + (BEYOND_PERIOD_MS - PERIOD_MS) * intensity;
-    // Integrated rather than derived fresh from absolute time each frame (as the plain-drift
-    // case above can afford to be): the period itself now varies continuously, and re-deriving
-    // an angle from `now / period` every frame would jump discontinuously whenever period
-    // changes. Accumulating angular velocity over dt keeps the turn smooth through the spin-up
-    // and spin-down alike.
-    //
-    // The initial Beyond velocity stays positive through the intensity ramp.
-    // Once fully active, velocity events reverse directly at a fast magnitude.
-    if (beyondActive && now >= nextBeyondVelocityChange) chooseBeyondVelocity(now);
-    const beyondMultiplier = beyondDirection * beyondSpeed;
-    // Reset is allowed to ease out to the normal drift. While active, the
-    // entry is positive and every later reversal is a direct fast switch.
-    const directionMultiplier = 1 + intensity * (beyondMultiplier - 1);
-    lon0 = (((lon0 - (360 / period) * dt * directionMultiplier) % 360) + 360) % 360;
+    const normalSpeed = 360000 / PERIOD_MS;
+    // Integrate the velocity vector from delta time rather than frame count so
+    // display refresh rate cannot change the physical Beyond Earth motion.
+    if (beyondActive && now - beyondSteerStartedAt >= beyondSteerDuration) chooseBeyondSteering(now);
+    const direction = currentBeyondDirection(now);
+    const fastSpeed = currentBeyondSpeed(now);
+    const speed = beyondActive ? fastSpeed : normalSpeed + intensity * (fastSpeed - normalSpeed);
+    if (beyondActive) onBeyondMotion?.({
+      at: now,
+      speed: fastSpeed,
+      direction,
+      targetDirection: beyondTargetDirection,
+      steeringProgress: clamp((now - beyondSteerStartedAt) / beyondSteerDuration, 0, 1)
+    });
+    lon0 = (((lon0 - direction.x * speed * dt / 1000) % 360) + 360) % 360;
+    if (intensity > 0) {
+      beyondTiltPhase += direction.y * speed * dt / 1000 * D2R;
+      beyondRollPhase += direction.z * speed * dt / 1000 * D2R;
+    }
 
     const interval = mobileHero ? MOBILE_IDLE_INTERVAL_MS
       : compact ? COMPACT_INTERVAL_MS : DESKTOP_INTERVAL_MS;
@@ -1541,9 +1602,9 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
       ? now : lastUpdate + Math.floor((now - lastUpdate + tolerance) / interval) * interval;
 
     const tiltDeg = intensity * (BEYOND_TILT_CENTER_DEG
-      + BEYOND_TILT_AMPLITUDE_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2));
+      + BEYOND_TILT_AMPLITUDE_DEG * Math.sin(beyondTiltPhase));
     const rollDeg = intensity * BEYOND_ROLL_DEG
-      * Math.sin((now / BEYOND_ROLL_PERIOD_MS) * Math.PI * 2 + BEYOND_ROLL_PHASE);
+      * Math.sin(beyondRollPhase + BEYOND_ROLL_PHASE);
     const lat0R = tiltDeg * D2R;
     const rollR = rollDeg * D2R;
     path.setAttribute('d', buildPath(lon0, lat0R, Math.cos(rollR), Math.sin(rollR)));
