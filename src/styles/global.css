@@ -135,14 +135,14 @@ html[data-theme="light"] .theme-brand-logo__asset--black { display: block; }
 }
 
 .hero-product-stage::after {
-    right: 10%;
+    right: 9%;
     bottom: 5%;
-    width: 42%;
-    height: 11%;
+    width: 44%;
+    height: 10%;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.34);
-    filter: blur(28px);
-    opacity: 0.72;
+    background: rgba(29, 40, 56, 0.13);
+    filter: blur(32px);
+    opacity: 0.7;
 }
 
 .hero-product-stage .hero-product-composite {
@@ -151,16 +151,6 @@ html[data-theme="light"] .theme-brand-logo__asset--black { display: block; }
     filter:
             drop-shadow(0 22px 34px rgba(19, 28, 42, 0.105))
             drop-shadow(0 6px 12px rgba(42, 66, 101, 0.055));
-}
-
-html[data-theme="light"] .hero-product-stage::after {
-    right: 9%;
-    bottom: 5%;
-    width: 44%;
-    height: 10%;
-    background: rgba(29, 40, 56, 0.13);
-    filter: blur(32px);
-    opacity: 0.7;
 }
 
 .theme-toggle,
