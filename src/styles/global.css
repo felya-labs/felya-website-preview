@@ -182,11 +182,11 @@ html[data-theme="light"] .hero-product-stage::before {
    measured value, since the product image's relative horizontal position barely moves across
    breakpoints -- tuned to finish right around the same 600ms the main wipe does. */
 html[data-theme-wipe-direction="ltr"] .hero-product-stage::before {
-    animation: hero-section-after-wipe-ltr 260ms cubic-bezier(.4, 0, .2, 1) 320ms forwards;
+    animation: hero-section-after-wipe-ltr 600ms cubic-bezier(.4, 0, .2, 1) forwards;
 }
 
 html[data-theme-wipe-direction="rtl"] .hero-product-stage::before {
-    animation: hero-section-after-wipe-rtl 260ms cubic-bezier(.4, 0, .2, 1) forwards;
+    animation: hero-section-after-wipe-rtl 600ms cubic-bezier(.4, 0, .2, 1) forwards;
 }
 
 html[data-theme="light"] .hero-product-stage::after {
@@ -2132,8 +2132,10 @@ html[data-theme="light"] .hero-earth__orb {
 @media (max-width: 1023px) {
     .hero-headline-language-hitbox {
         width: 100%;
-        overflow: clip;
-        clip-path: inset(-0.2em 0);
+        /* The static mobile line no longer needs a clipping window. Leave
+           enough vertical ink room for accented German glyph details. */
+        overflow: visible;
+        clip-path: none;
     }
 
     .hero-headline-language-reference {
@@ -2274,6 +2276,15 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     pointer-events: none;
     transition: opacity 360ms cubic-bezier(.22,.75,.25,1);
     will-change: opacity;
+}
+
+/* Browser chrome can change a portrait phone's visual height during a gesture.
+   Keep the glove itself width-bound in that tier so the address bar cannot
+   resize the image mid-scroll; landscape keeps the existing height safeguard. */
+@media (max-width: 767px) and (orientation: portrait) {
+    .hero-product-stage {
+        height: clamp(13rem, 84vw, 26rem);
+    }
 }
 
 html[data-theme="light"] .hero-reveal::before {
