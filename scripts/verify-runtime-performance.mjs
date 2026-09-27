@@ -97,6 +97,15 @@ for (const initiallyReduced of [false, true]) {
   reduce.matches = false;
   reduce.emit("change");
   resumeCheck();
+  // heroStatic reuses the existing mobilePerf scroll signal. Pausing clears the
+  // integration clock, so a long scroll never causes a catch-up rotation.
+  doc.emit('felya:mobileperfscroll', { detail: { variant: 'heroStatic', active: true } });
+  assert.equal(pending.size, 0);
+  const pausedPath = pathValue;
+  step(5e3);
+  assert.equal(pathValue, pausedPath, 'heroStatic scroll advanced earth');
+  doc.emit('felya:mobileperfscroll', { detail: { variant: 'heroStatic', active: false } });
+  resumeCheck();
   win.emit("pagehide", { persisted: true });
   assert.equal(pending.size, 0);
   win.emit("pageshow", { persisted: true });
@@ -163,7 +172,8 @@ const hero = source.slice(source.indexOf('export function initHeroMobileGloveScr
   let observer;
   class IO { constructor(callback) { observer = callback; } observe() {} }
   win.IntersectionObserver = IO;
-  const init = vm.runInNewContext('(' + hero + ')', { window: win, IntersectionObserver: IO });
+  const doc = { documentElement: { dataset: {} } };
+  const init = vm.runInNewContext('(' + hero + ')', { window: win, document: doc, IntersectionObserver: IO });
   init({ root: { querySelectorAll: () => [stage] } });
   const flush = () => { const callbacks = [...pending.values()]; pending.clear(); callbacks.forEach((callback) => callback()); };
   const scroll = (y) => {
@@ -215,5 +225,19 @@ const hero = source.slice(source.indexOf('export function initHeroMobileGloveScr
   reduce.emit('change');
   flush();
   assert.equal(properties.get('--hero-glove-y'), '-2.00px');
+
+  // Both glove-only and full-hero diagnostics leave the normal CSS position
+  // untouched and add no scroll work to the existing glove controller.
+  for (const variant of ['gloveStatic', 'heroStatic']) {
+    properties.clear();
+    doc.documentElement.dataset.mobilePerf = variant;
+    const staticStage = { closest() { return staticStage; }, style: {
+      setProperty(name, value) { properties.set(name, value); },
+      removeProperty(name) { properties.delete(name); }
+    } };
+    init({ root: { querySelectorAll: () => [staticStage] } });
+    assert.equal(properties.has('--hero-glove-y'), false, `${variant} sets glove translation`);
+    assert.equal(pending.size, 0, `${variant} schedules glove RAF`);
+  }
   console.log('Hero curve, saturation, resize/orientation and reduced motion passed');
 }

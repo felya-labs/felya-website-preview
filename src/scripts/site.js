@@ -59,8 +59,11 @@ export function initMobilePerfVariants({ root = document } = {}) {
   const html = root.documentElement;
   if (!html || typeof window === 'undefined') return;
 
-  const supported = new Set(['baseline', 'system', 'video', 'beyond', 'max']);
-  const variant = new URLSearchParams(window.location.search).get('mobilePerf');
+  const supported = new Set(['baseline', 'system', 'video', 'beyond', 'max', 'gloveStatic', 'heroStatic']);
+  const params = new URLSearchParams(window.location.search);
+  // heroPerf is the focused Hero isolation-test contract; mobilePerf remains
+  // available for the earlier section diagnostics.
+  const variant = params.get('heroPerf') ?? params.get('mobilePerf');
   const coarse = window.matchMedia('(hover: none)').matches
     || window.matchMedia('(pointer: coarse)').matches;
   if (!coarse || !supported.has(variant)) return;
@@ -1119,6 +1122,11 @@ export function initHeroMobileGloveScroll({ root = document } = {}) {
   if (!stages.length) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  // Preview-only mobile diagnosis: leave the glove at its normal CSS position so
+  // real-device testing can isolate the existing 0..-4px scroll translation.
+  // initMobilePerfVariants only sets this value on coarse/touch hardware.
+  const staticGlove = document.documentElement?.dataset.mobilePerf === 'gloveStatic'
+    || document.documentElement?.dataset.mobilePerf === 'heroStatic';
   const hero = stages[0].closest('.hero-section') || stages[0];
   let frame = null;
   let measureViewport = true;
@@ -1135,6 +1143,10 @@ export function initHeroMobileGloveScroll({ root = document } = {}) {
     });
     lastValue = null;
   };
+  if (staticGlove) {
+    reset();
+    return;
+  }
   const applyPosition = (scrollY) => {
     const progress = Math.min(Math.max(scrollY / travel, 0), 1);
     const value = `${(progress * -4).toFixed(2)}px`;
@@ -1485,7 +1497,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
   const onResume = () => { frozen = false; sync(); };
   const onMobilePerfScroll = (event) => {
     const variant = event.detail?.variant;
-    if (variant !== 'beyond' && variant !== 'max') return;
+    if (variant !== 'beyond' && variant !== 'max' && variant !== 'heroStatic') return;
     mobilePerfScrolling = Boolean(event.detail?.active);
     sync();
   };
