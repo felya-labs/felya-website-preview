@@ -2428,6 +2428,22 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
         '.system-demonstration__collision-label--paton',
         patonLabel,
       );
+      // The compact side zones deliberately follow the measured, localized
+      // label boxes. Masking a small clearance around them is the last-resort
+      // guard for narrow screens where a full label cannot fit beside the
+      // circle: the visible arc can never run through text in any locale.
+      setCollisionLabelGeometry(
+        activeSvg,
+        '.system-demonstration__collision-label--forward',
+        forwardLabel,
+        compact ? 7 : 0,
+      );
+      setCollisionLabelGeometry(
+        activeSvg,
+        '.system-demonstration__collision-label--return',
+        returnLabel,
+        compact ? 7 : 0,
+      );
     };
 
     const requestCollisionGeometryUpdate = () => {
@@ -2499,6 +2515,11 @@ export function initPatonSystemDemonstration({ root = document } = {}) {
       if (origin === 'return') {
         animateSignal('return', 0, returnDuration, cycleGeneration);
         scheduleHapticAtReturnArrival(0, returnDuration);
+        const forwardDelay = isMobileSignalLoop
+          ? getCompactLeadingArrivalDelay(0, returnDuration)
+          : getLandscapeLeadingArrivalDelay(0, returnDuration);
+        animateSignal('forward', forwardDelay, forwardDuration, cycleGeneration);
+        scheduleGlovesAtForwardStart(forwardDelay);
         return;
       }
 
