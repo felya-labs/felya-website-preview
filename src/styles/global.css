@@ -1132,7 +1132,6 @@ html[data-theme="light"] .future-scenario::after {
     left: 13%;
     bottom: 0;
     width: min(41%, 30rem);
-    transform: scaleX(-1);
 }
 
 .future-presence-robot {

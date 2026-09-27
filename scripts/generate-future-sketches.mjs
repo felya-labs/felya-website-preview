@@ -4,8 +4,8 @@ import sharp from 'sharp';
 // Derive from the exact deployed artwork, not an older archived sketch.
 // Lossless WebP preserves the resized RGB and alpha without another lossy encode.
 const root = new URL('../public/assets/images/possible-futures/sketches/', import.meta.url);
-const motifs = ['vr-hydrogen-engine-touch', 'humanoid-arms-knipex-pliers', 'operator-vr-paton-glove', 'humanoid-with-rose'];
-const names = [...motifs.flatMap((name) => [`${name}-black`, `${name}-white`]), 'static-haptic-refined-mask'];
+const motifs = ['vr-hydrogen-engine-touch', 'static-haptic', 'humanoid-arms-knipex-pliers', 'operator-vr-paton-glove', 'humanoid-with-rose'];
+const names = motifs.flatMap((name) => [`${name}-black`, `${name}-white`]);
 const widths = [320, 480, 640, 768, 960, 1120, 1440, 1680];
 await mkdir(new URL('responsive/', root), { recursive: true });
 const manifest = {};
