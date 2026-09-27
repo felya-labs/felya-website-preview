@@ -1314,7 +1314,7 @@ export function initHeroCopyAlignment({ root = document } = {}) {
   desktopQuery.addEventListener?.('change', requestAlign);
 }
 
-export function initHeroEarthRotation({ root = document, random = Math.random, onBeyondVelocity, onBeyondMotion } = {}) {
+export function initHeroEarthRotation({ root = document } = {}) {
   const container = root.querySelector('.hero-earth');
   const path = root.querySelector('.hero-earth__coastline path');
   if (!container || !path) return;
@@ -1344,8 +1344,18 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
   const COMPACT_INTERVAL_MS = 1000 / 30;
   const MOBILE_IDLE_INTERVAL_MS = 1000 / 20;
 
-  // Beyond Earth steers a fast angular-velocity vector through yaw, tilt, and
-  // roll while preserving the existing orthographic projection.
+  // "Beyond Earth" easter egg (triggered elsewhere via the felya:beyondearth event): instead of
+  // the calm equatorial west-to-east drift, the sub-viewer point itself wanders in latitude -- a
+  // real parameter of the same orthographic projection below, not a CSS trick -- while the
+  // visible strip also banks around its own center. Together these read as watching the planet
+  // from a moving, inclined vantage (an ISS-style orbit) rather than a fixed point on the
+  // equator. Two incommensurate periods (24s tilt / 17s roll) so the two motions drift in and out
+  // of phase with each other instead of repeating in lockstep, and the rotation itself spins up
+  // to a much shorter period -- all three ramp in/out together via `intensity`, see
+  // currentIntensity below, so entering/leaving the easter egg is one smooth transition rather
+  // than a jump-cut. 15s/turn (was 26s) for a noticeably faster base spin -- still just the
+  // *base* rate the direction wobble further speeds up or reverses below.
+  const BEYOND_PERIOD_MS = 15000;
   // Asymmetric on purpose, not a plain +/-34 swing around 0: the visible strip only ever shows
   // latitudes roughly [lat0+44, lat0+90] (it's a grazing near-limb crop, not a top-down view --
   // see project()'s coscMin cutoff), so a *symmetric* tilt centered on the equator never actually
@@ -1360,25 +1370,31 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
   // Australia and South America all land inside that band, not just a graze past the equator).
   const BEYOND_TILT_CENTER_DEG = -42;
   const BEYOND_TILT_AMPLITUDE_DEG = 42;
+  const BEYOND_TILT_PERIOD_MS = 24000;
   // Smaller than tilt: rolling around the true projection center (see projectBeyond below) moves
   // near-limb points a lot per degree -- points near the visible strip sit close to the sphere's
   // own radius from that center, so even a modest angle sweeps them by a large fraction of the
   // strip's own height. This is the angle, not the resulting on-screen motion, so it reads as a
   // properly "deutlich" bank without becoming an illegible blur.
   const BEYOND_ROLL_DEG = 11;
+  const BEYOND_ROLL_PERIOD_MS = 17000;
   const BEYOND_ROLL_PHASE = Math.PI / 3;
   const BEYOND_TRANSITION_MS = 1400;
-  // Three locally tuned candidates were compared with the deterministic motion
-  // probe. Dynamic keeps Fluid's small continuous curves, but gives the roll
-  // and tilt enough range to make the easter egg read as deliberately wild.
-  const BEYOND_FLUID_PRESETS = {
-    fluid: { speedBase: 27, speedAmplitude: [2.1, 1.4, 0.8], axisAmplitude: [0.09, 0.15, 0.12], response: 7.2, alphaResponse: 9.6 },
-    dynamic: { speedBase: 28.5, speedAmplitude: [3, 2, 1.1], axisAmplitude: [0.12, 0.21, 0.17], response: 7.8, alphaResponse: 10.4 },
-    chaoticFluid: { speedBase: 29, speedAmplitude: [3.6, 2.4, 1.5], axisAmplitude: [0.16, 0.27, 0.23], response: 8.4, alphaResponse: 11.2 }
-  };
-  const BEYOND_FLUID_PRESET = 'dynamic';
-  const BEYOND_SPEED_MIN_DEG_PER_SEC = 18;
-  const BEYOND_SPEED_MAX_DEG_PER_SEC = 36;
+  // Direction wobble: rather than always drifting the same way (however fast), the spin's own
+  // *velocity* is scaled by a sum of two incommensurate sine waves plus a DC offset -- still
+  // spinning forward most of the time, but every so often both waves dip negative together and
+  // the globe smoothly decelerates, stops, and reverses for a while before turning forward again.
+  // This is a continuous, differentiable function of time (a sum of sines), so the reversal is
+  // never a jump -- lon0 is its time-integral, and that integral stays perfectly smooth through
+  // every slow-down/reverse/speed-up, however erratic the direction feels. Periods incommensurate
+  // with each other and with BEYOND_TILT_PERIOD_MS/BEYOND_ROLL_PERIOD_MS/BEYOND_PERIOD_MS above so
+  // reversals land at unpredictable points in the tilt/roll cycle instead of always coinciding.
+  const BEYOND_SPIN_WOBBLE_PERIOD_A_MS = 19500;
+  const BEYOND_SPIN_WOBBLE_PERIOD_B_MS = 31000;
+  const BEYOND_SPIN_WOBBLE_PHASE = Math.PI / 5;
+  const BEYOND_SPIN_WOBBLE_DC = 0.7;
+  const BEYOND_SPIN_WOBBLE_AMP_A = 0.55;
+  const BEYOND_SPIN_WOBBLE_AMP_B = 0.4;
 
   function project(lon, lat, lon0) {
     const dlon = ((lon - lon0 + 540) % 360) - 180;
@@ -1459,72 +1475,6 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
   let beyondActive = false;
   let beyondToggledAt = 0;
   let beyondIntensityAtToggle = 0;
-  let beyondDriver = null;
-  let beyondOmega = { x: 0, y: 0, z: 0 };
-  let beyondAlpha = { x: 0, y: 0, z: 0 };
-  let beyondPreviousAlpha = { x: 0, y: 0, z: 0 };
-  let beyondTiltPhase = 0;
-  let beyondRollPhase = 0;
-
-  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-  const normalizeDirection = (direction) => {
-    const length = Math.hypot(direction.x, direction.y, direction.z) || 1;
-    return { x: direction.x / length, y: direction.y / length, z: direction.z / length };
-  };
-  const makeWave = (amplitude, minFrequency, maxFrequency) => ({
-    amplitude: amplitude * (0.72 + random() * 0.28),
-    frequency: minFrequency + random() * (maxFrequency - minFrequency),
-    phase: random() * Math.PI * 2
-  });
-  const waveValue = (waves, seconds) => waves.reduce((total, wave) => (
-    total + wave.amplitude * Math.sin(Math.PI * 2 * wave.frequency * seconds + wave.phase)
-  ), 0);
-  const createBeyondDriver = (now) => {
-    const preset = BEYOND_FLUID_PRESETS[BEYOND_FLUID_PRESET];
-    const makeAxis = (amplitude) => [
-      makeWave(amplitude * 0.54, 0.027, 0.061),
-      makeWave(amplitude * 0.31, 0.067, 0.133),
-      makeWave(amplitude * 0.15, 0.151, 0.247)
-    ];
-    return {
-      startedAt: now,
-      preset,
-      axes: preset.axisAmplitude.map(makeAxis),
-      speed: [
-        makeWave(preset.speedAmplitude[0], 0.021, 0.049),
-        makeWave(preset.speedAmplitude[1], 0.057, 0.109),
-        makeWave(preset.speedAmplitude[2], 0.127, 0.191)
-      ]
-    };
-  };
-  const targetBeyondOmega = (now) => {
-    const seconds = (now - beyondDriver.startedAt) / 1000;
-    // The positive yaw bias prevents an instant reversal. The incommensurate
-    // waves still let the axis travel substantially over time without any
-    // target arrival, boundary, or pendulum-like direction change.
-    const direction = normalizeDirection({
-      x: 0.86 + waveValue(beyondDriver.axes[0], seconds),
-      y: 0.31 + waveValue(beyondDriver.axes[1], seconds),
-      z: 0.19 + waveValue(beyondDriver.axes[2], seconds)
-    });
-    const speed = clamp(
-      beyondDriver.preset.speedBase + waveValue(beyondDriver.speed, seconds),
-      BEYOND_SPEED_MIN_DEG_PER_SEC,
-      BEYOND_SPEED_MAX_DEG_PER_SEC
-    );
-    return { direction, speed, omega: { x: direction.x * speed, y: direction.y * speed, z: direction.z * speed } };
-  };
-  const beginBeyondFluid = (now) => {
-    beyondDriver = createBeyondDriver(now);
-    const initial = targetBeyondOmega(now);
-    // omega and alpha are persistent state thereafter. Starting omega on the
-    // continuous driver avoids an activation-only low-speed plateau; alpha is
-    // then filtered toward its continuously changing target each frame.
-    beyondOmega = { ...initial.omega };
-    beyondAlpha = { x: 0, y: 0, z: 0 };
-    beyondPreviousAlpha = { ...beyondAlpha };
-    onBeyondVelocity?.({ at: now, preset: BEYOND_FLUID_PRESET, speed: initial.speed, direction: initial.direction });
-  };
 
   // Smoothstepped 0..1 ramp toward whichever state (active/inactive) was last requested,
   // starting from wherever the ramp actually was at the moment it was last toggled -- so
@@ -1543,7 +1493,6 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
     beyondIntensityAtToggle = currentIntensity(performance.now());
     beyondActive = active;
     beyondToggledAt = performance.now();
-    if (active) beginBeyondFluid(beyondToggledAt);
     sync();
   });
 
@@ -1556,56 +1505,24 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
     const dt = lastIntegration === null ? 0 : now - lastIntegration;
     lastIntegration = now;
     const intensity = currentIntensity(now);
-    const normalSpeed = 360000 / PERIOD_MS;
-    // No target segments are used here. A continuous trigonometric driver
-    // yields a desired omega; alpha follows its target exponentially, and the
-    // persistent omega is integrated from alpha. This bounds jerk without
-    // flattening steering at artificial segment boundaries.
-    const dtSeconds = dt / 1000;
-    let direction = { x: 1, y: 0, z: 0 };
-    let speed = normalSpeed;
-    let target = null;
-    if (beyondActive && beyondDriver) {
-      target = targetBeyondOmega(now);
-      const alphaTarget = {
-        x: (target.omega.x - beyondOmega.x) * beyondDriver.preset.response,
-        y: (target.omega.y - beyondOmega.y) * beyondDriver.preset.response,
-        z: (target.omega.z - beyondOmega.z) * beyondDriver.preset.response
-      };
-      const alphaBlend = 1 - Math.exp(-beyondDriver.preset.alphaResponse * dtSeconds);
-      beyondPreviousAlpha = { ...beyondAlpha };
-      beyondAlpha.x += (alphaTarget.x - beyondAlpha.x) * alphaBlend;
-      beyondAlpha.y += (alphaTarget.y - beyondAlpha.y) * alphaBlend;
-      beyondAlpha.z += (alphaTarget.z - beyondAlpha.z) * alphaBlend;
-      beyondOmega.x += beyondAlpha.x * dtSeconds;
-      beyondOmega.y += beyondAlpha.y * dtSeconds;
-      beyondOmega.z += beyondAlpha.z * dtSeconds;
-      speed = Math.hypot(beyondOmega.x, beyondOmega.y, beyondOmega.z);
-      direction = normalizeDirection(beyondOmega);
-      onBeyondMotion?.({
-        at: now,
-        frameDelta: dt,
-        preset: BEYOND_FLUID_PRESET,
-        speed,
-        direction,
-        omega: { ...beyondOmega },
-        alpha: { ...beyondAlpha },
-        jerk: dtSeconds > 0 ? {
-          x: (beyondAlpha.x - beyondPreviousAlpha.x) / dtSeconds,
-          y: (beyondAlpha.y - beyondPreviousAlpha.y) / dtSeconds,
-          z: (beyondAlpha.z - beyondPreviousAlpha.z) / dtSeconds
-        } : { x: 0, y: 0, z: 0 },
-        alphaTarget,
-        targetDirection: target.direction,
-        targetSpeed: target.speed,
-        orientation: { longitude: lon0, tiltPhase: beyondTiltPhase, rollPhase: beyondRollPhase }
-      });
-    }
-    lon0 = (((lon0 - direction.x * speed * dtSeconds) % 360) + 360) % 360;
-    if (intensity > 0) {
-      beyondTiltPhase += direction.y * speed * dtSeconds * D2R;
-      beyondRollPhase += direction.z * speed * dtSeconds * D2R;
-    }
+    const period = PERIOD_MS + (BEYOND_PERIOD_MS - PERIOD_MS) * intensity;
+    // Integrated rather than derived fresh from absolute time each frame (as the plain-drift
+    // case above can afford to be): the period itself now varies continuously, and re-deriving
+    // an angle from `now / period` every frame would jump discontinuously whenever period
+    // changes. Accumulating angular velocity over dt keeps the turn smooth through the spin-up
+    // and spin-down alike.
+    //
+    // directionMultiplier blends from a flat 1 (calm mode: always the plain westward drift above)
+    // toward the wobble sum as intensity ramps to 1, so the reversal effect itself fades in/out
+    // with the easter egg rather than snapping on. Blending the multiplier (not just adding the
+    // wobble on top) keeps this a lerp between two continuous functions of time, so it's still
+    // smooth through the ramp -- see the wobble constants' own comment above for why the wobble
+    // itself never introduces a discontinuity either.
+    const wobble = BEYOND_SPIN_WOBBLE_DC
+      + BEYOND_SPIN_WOBBLE_AMP_A * Math.sin((now / BEYOND_SPIN_WOBBLE_PERIOD_A_MS) * Math.PI * 2)
+      + BEYOND_SPIN_WOBBLE_AMP_B * Math.sin((now / BEYOND_SPIN_WOBBLE_PERIOD_B_MS) * Math.PI * 2 + BEYOND_SPIN_WOBBLE_PHASE);
+    const directionMultiplier = 1 + intensity * (wobble - 1);
+    lon0 = (((lon0 - (360 / period) * dt * directionMultiplier) % 360) + 360) % 360;
 
     const interval = mobileHero ? MOBILE_IDLE_INTERVAL_MS
       : compact ? COMPACT_INTERVAL_MS : DESKTOP_INTERVAL_MS;
@@ -1616,9 +1533,9 @@ export function initHeroEarthRotation({ root = document, random = Math.random, o
       ? now : lastUpdate + Math.floor((now - lastUpdate + tolerance) / interval) * interval;
 
     const tiltDeg = intensity * (BEYOND_TILT_CENTER_DEG
-      + BEYOND_TILT_AMPLITUDE_DEG * Math.sin(beyondTiltPhase));
+      + BEYOND_TILT_AMPLITUDE_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2));
     const rollDeg = intensity * BEYOND_ROLL_DEG
-      * Math.sin(beyondRollPhase + BEYOND_ROLL_PHASE);
+      * Math.sin((now / BEYOND_ROLL_PERIOD_MS) * Math.PI * 2 + BEYOND_ROLL_PHASE);
     const lat0R = tiltDeg * D2R;
     const rollR = rollDeg * D2R;
     path.setAttribute('d', buildPath(lon0, lat0R, Math.cos(rollR), Math.sin(rollR)));
