@@ -89,25 +89,20 @@ html[data-theme="light"] body {
 
 .theme-brand-logo {
     --brand-logo-frame-width: 5.56rem;
-    --brand-logo-frame-height: 1.75rem;
-    --brand-logo-canvas-width: 7.82rem;
-    --brand-logo-canvas-offset-x: -1.12rem;
-    --brand-logo-canvas-offset-y: -1.31rem;
     position: relative;
     display: block;
     width: var(--brand-logo-frame-width);
-    height: var(--brand-logo-frame-height);
+    aspect-ratio: 879 / 284;
     overflow: visible;
 }
 
 .theme-brand-logo__asset {
     position: absolute;
-    top: var(--brand-logo-canvas-offset-y);
-    left: var(--brand-logo-canvas-offset-x);
+    inset: 0;
     display: block;
-    width: var(--brand-logo-canvas-width);
-    max-width: none;
-    height: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .theme-brand-logo__asset--black { display: none; }
@@ -3844,10 +3839,6 @@ html[data-theme="light"] .contact-section {
 
 .theme-brand-logo--footer {
     --brand-logo-frame-width: 4.77rem;
-    --brand-logo-frame-height: 1.5rem;
-    --brand-logo-canvas-width: 6.71rem;
-    --brand-logo-canvas-offset-x: -0.96rem;
-    --brand-logo-canvas-offset-y: -1.12rem;
 }
 
 .footer-socials {
@@ -4546,10 +4537,6 @@ html[data-theme="light"] .contact-section {
     :root { --section-space: 6.5rem; }
     .theme-brand-logo:not(.theme-brand-logo--footer) {
         --brand-logo-frame-width: 4.77rem;
-        --brand-logo-frame-height: 1.5rem;
-        --brand-logo-canvas-width: 6.71rem;
-        --brand-logo-canvas-offset-x: -0.96rem;
-        --brand-logo-canvas-offset-y: -1.12rem;
     }
     .site-nav {
         border-radius: 2rem;
@@ -4642,10 +4629,6 @@ html[data-theme="light"] .contact-section {
     .footer-identity { justify-items: center; text-align: center; }
     .theme-brand-logo--footer {
         --brand-logo-frame-width: 4.37rem;
-        --brand-logo-frame-height: 1.375rem;
-        --brand-logo-canvas-width: 6.15rem;
-        --brand-logo-canvas-offset-x: -0.88rem;
-        --brand-logo-canvas-offset-y: -1.03rem;
     }
     .footer-copyright { text-align: center; }
     .footer-socials { gap: 0.45rem; }

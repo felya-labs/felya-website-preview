@@ -6,10 +6,10 @@ const imageSrcset = (directory, fileStem, widths = responsiveImageWidths) =>
 export const brand = {
   name: 'FELYA',
   logo: {
-    blackSrc: '/assets/images/brand/felya-logo/felya-logo-black.svg',
-    whiteSrc: '/assets/images/brand/felya-logo/felya-logo-white-optical.svg',
-    width: 1920,
-    height: 1080
+    blackSrc: '/assets/images/brand/felya-logo/felya-logo-horizontal-black.svg',
+    whiteSrc: '/assets/images/brand/felya-logo/felya-logo-horizontal-white.svg',
+    width: 879,
+    height: 284
   }
 };
 
