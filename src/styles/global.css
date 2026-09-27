@@ -588,6 +588,15 @@ body:has(.mobile-navigation[open])::before {
 }
 
 @media (max-width: 767px) {
+    /* The explanatory PATON copy must orient the reader before the reserved
+       system graphic reaches its own visibility/idle-animation lifecycle. */
+    .system-intro.reveal-block {
+        opacity: 1;
+        transform: none;
+        filter: none;
+        transition: none;
+    }
+
     .hero-mobile-glove-stage {
         justify-content: center;
         animation-name: hero-product-mobile-in;
