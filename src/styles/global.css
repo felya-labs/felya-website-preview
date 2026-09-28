@@ -3387,7 +3387,8 @@ html[data-theme="light"] #development-updates-form .development-updates-button:f
 .point-of-view-portrait img {
     display: block;
     width: 100%;
-    height: 46rem;
+    height: auto;
+    aspect-ratio: 3 / 2;
     object-fit: cover;
     object-position: center 28%;
     filter: saturate(0.94) contrast(1.04) brightness(0.99);
@@ -4210,7 +4211,7 @@ html[data-theme="light"] .contact-section {
     .system-intro > * { min-width: 0; }
     .system-intro .section-lead { grid-column: 1; grid-row: auto; margin-top: 2.5rem; }
     .prototypes-intro__copy { justify-self: start; }
-    .point-of-view-portrait img { height: 34rem; }
+    .point-of-view-portrait img { height: auto; }
 }
 
 @media (max-width: 767px) {
@@ -4596,7 +4597,7 @@ html[data-theme="light"] .contact-section {
         line-height: 0.98;
     }
     .point-of-view-portrait { margin-top: 3.5rem; }
-    .point-of-view-portrait img { height: auto; aspect-ratio: 3568 / 2585; object-fit: cover; }
+    .point-of-view-portrait img { height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
     .prototypes-chapters { grid-template-columns: 1fr; }
     .prototypes-chapters li + li { border-top: 1px solid rgba(255,255,255,.13); border-left: 0; }
     .contact-description {
