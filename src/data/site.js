@@ -70,9 +70,9 @@ export const gloveDarkImage = {
 
 // Retained warm treatment, including all existing source and responsive files.
 export const gloveWarmImage = {
-  src: '/assets/images/hero/paton-glove/paton-glove-light-premium-v1.webp',
+  src: '/assets/images/hero/paton-glove/paton-glove-warm-aligned-v1.webp',
   srcset: [
-    ...imageSrcset('hero/paton-glove', 'paton-glove-light-premium-v1', [640, 768, 960, 1200])
+    ...imageSrcset('hero/paton-glove', 'paton-glove-warm-aligned-v1', [640, 768, 960, 1200])
   ],
   sizes: '(min-width: 1536px) 760px, (min-width: 1024px) 680px, (min-width: 768px) 620px, 300px',
   width: 1200,
