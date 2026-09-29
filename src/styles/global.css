@@ -2230,6 +2230,27 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     will-change: opacity;
 }
 
+/* The warm original is intentionally not requested during the normal hero. It is loaded only
+   after the Beyond Earth easter egg starts, then slowly replaces the neutral-grey treatment as
+   though the glove's illumination is powering up. */
+.hero-product-image--warm {
+    opacity: 0;
+    filter: brightness(0.84) saturate(0.82);
+    transition:
+        opacity 1900ms cubic-bezier(.22,.75,.25,1),
+        filter 1900ms cubic-bezier(.22,.75,.25,1);
+    will-change: opacity, filter;
+}
+
+.hero-section--easter-egg .hero-product-image--warm.is-ready {
+    opacity: 1;
+    filter: brightness(1.12) saturate(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-product-image--warm { transition: none; }
+}
+
 /* Browser chrome can change a portrait phone's visual height during a gesture.
    Keep the glove itself width-bound in that tier so the address bar cannot
    resize the image mid-scroll; landscape keeps the existing height safeguard. */

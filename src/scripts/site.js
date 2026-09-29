@@ -394,6 +394,8 @@ export function initHeroHeadlineLanguages({
   const hitbox = root.querySelector('[data-hero-headline-languages]');
   const headline = hitbox?.querySelector('.hero-headline-language-text');
   if (!hitbox || !headline || !priority.length || !secondary.length) return;
+  const hero = hitbox.closest('.hero-section');
+  const warmGlove = hero?.querySelector('[data-hero-warm-glove]');
 
   hitbox.__felyaHeroHeadlineCleanup?.();
 
@@ -426,6 +428,7 @@ export function initHeroHeadlineLanguages({
   let secondaryQueue = [];
   let shouldShowEnglishFirst = false;
   let isEasterEggActive = false;
+  let warmGloveLoadId = 0;
   let isPointerInside = false;
   let isFocused = false;
   let touchTapCount = 0;
@@ -600,6 +603,21 @@ export function initHeroHeadlineLanguages({
 
   const showEasterEgg = () => {
     isEasterEggActive = true;
+    const loadId = ++warmGloveLoadId;
+    hero?.classList.add('hero-section--easter-egg');
+    if (warmGlove) {
+      const revealWarmGlove = () => {
+        if (loadId === warmGloveLoadId && isEasterEggActive) warmGlove.classList.add('is-ready');
+      };
+      if (!warmGlove.getAttribute('src')) {
+        warmGlove.srcset = warmGlove.dataset.srcset || '';
+        warmGlove.src = warmGlove.dataset.src || '';
+      }
+      if (warmGlove.complete) {
+        if (typeof warmGlove.decode === 'function') warmGlove.decode().then(revealWarmGlove).catch(revealWarmGlove);
+        else revealWarmGlove();
+      } else warmGlove.addEventListener('load', revealWarmGlove, { once: true });
+    }
     setState('easter-egg');
     headline.textContent = 'Beyond Earth. ✨';
     headline.lang = 'en';
@@ -846,6 +864,9 @@ export function initHeroHeadlineLanguages({
     claimManualInteraction();
     if (isEasterEggActive) {
       isEasterEggActive = false;
+      warmGloveLoadId += 1;
+      hero?.classList.remove('hero-section--easter-egg');
+      warmGlove?.classList.remove('is-ready');
       setState('interaction');
       document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: false } }));
       await transitionHeadline(restoreHeadline);

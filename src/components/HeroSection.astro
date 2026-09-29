@@ -1,5 +1,5 @@
 ---
-import { gloveLightImage } from '../data/site.js';
+import { gloveLightImage, gloveWarmImage } from '../data/site.js';
 import { heroEarthPath, heroEarthLimbPath, heroEarthClipPath, heroEarthViewBox } from '../data/hero-earth-coastline.js';
 import type { Locale } from '../i18n/config';
 import { t } from '../i18n/translations';
@@ -7,6 +7,7 @@ import { t } from '../i18n/translations';
 const { locale } = Astro.props as { locale: Locale };
 
 const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
+const gloveWarmSrcset = gloveWarmImage.srcset.map(([src, width]) => `${src} ${width}w`).join(',\n                     ');
 ---
 
 <section id="paton" class="hero-reveal hero-section">
@@ -59,6 +60,13 @@ const gloveCutoutSrcset = gloveLightImage.srcset.map(([src, width]) => `${src} $
                      width={gloveLightImage.width} height={gloveLightImage.height}
                      alt={t(locale, 'hero.imageAlt')} loading="eager" decoding="async" fetchpriority="high"
                      class="hero-product-image">
+                <img data-hero-warm-glove
+                     data-src={gloveWarmImage.src}
+                     data-srcset={gloveWarmSrcset}
+                     sizes="(min-width: 1280px) 540px, (min-width: 1024px) 460px, (min-width: 640px) 430px, calc(100vw - 48px)"
+                     width={gloveWarmImage.width} height={gloveWarmImage.height}
+                     alt="" aria-hidden="true" decoding="async"
+                     class="hero-product-image hero-product-image--warm">
             </div>
         </div>
     </div>
