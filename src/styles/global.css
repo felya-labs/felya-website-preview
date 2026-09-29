@@ -125,6 +125,13 @@ html[data-theme="light"] .theme-brand-logo__asset--black { display: block; }
        image than before. */
     position: relative;
     isolation: isolate;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.hero-product-stage:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 0.35rem;
 }
 
 .hero-product-stage::after {
@@ -2237,14 +2244,19 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     opacity: 0;
     filter: brightness(0.84) saturate(0.82);
     transition:
-        opacity 1900ms cubic-bezier(.22,.75,.25,1),
-        filter 1900ms cubic-bezier(.22,.75,.25,1);
+        opacity 460ms cubic-bezier(.22,.75,.25,1),
+        filter 460ms cubic-bezier(.22,.75,.25,1);
     will-change: opacity, filter;
 }
 
+.hero-section--glove-lit .hero-product-image--warm.is-ready,
 .hero-section--easter-egg .hero-product-image--warm.is-ready {
     opacity: 1;
     filter: brightness(1.12) saturate(1.08);
+}
+
+.hero-section--easter-egg .hero-product-image--warm {
+    transition-duration: 2700ms;
 }
 
 @media (prefers-reduced-motion: reduce) {

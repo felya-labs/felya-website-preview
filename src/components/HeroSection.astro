@@ -52,7 +52,7 @@ const gloveWarmSrcset = gloveWarmImage.srcset.map(([src, width]) => `${src} ${wi
             </div>
         </div>
 
-        <div class="hero-product-stage hero-mobile-glove-stage">
+        <div class="hero-product-stage hero-mobile-glove-stage" data-hero-glove-toggle tabindex="0" role="button" aria-label={t(locale, 'hero.imageAlt')}>
             <div class="hero-product-composite hero-scroll-glove" data-hero-product-composite>
                 <img src={gloveLightImage.src}
                      srcset={gloveCutoutSrcset}

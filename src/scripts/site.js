@@ -396,6 +396,7 @@ export function initHeroHeadlineLanguages({
   if (!hitbox || !headline || !priority.length || !secondary.length) return;
   const hero = hitbox.closest('.hero-section');
   const warmGlove = hero?.querySelector('[data-hero-warm-glove]');
+  const gloveToggle = hero?.querySelector('[data-hero-glove-toggle]');
 
   hitbox.__felyaHeroHeadlineCleanup?.();
 
@@ -429,6 +430,8 @@ export function initHeroHeadlineLanguages({
   let shouldShowEnglishFirst = false;
   let isEasterEggActive = false;
   let warmGloveLoadId = 0;
+  let gloveLightTimer = 0;
+  let gloveTapPending = false;
   let isPointerInside = false;
   let isFocused = false;
   let touchTapCount = 0;
@@ -601,13 +604,17 @@ export function initHeroHeadlineLanguages({
     return true;
   };
 
-  const showEasterEgg = () => {
-    isEasterEggActive = true;
-    const loadId = ++warmGloveLoadId;
-    hero?.classList.add('hero-section--easter-egg');
+  const prepareWarmGlove = () => {
     if (warmGlove) {
+      const loadId = ++warmGloveLoadId;
       const revealWarmGlove = () => {
-        if (loadId === warmGloveLoadId && isEasterEggActive) warmGlove.classList.add('is-ready');
+        if (loadId !== warmGloveLoadId) return;
+        warmGlove.classList.add('is-ready');
+        if (gloveTapPending) {
+          gloveTapPending = false;
+          window.clearTimeout(gloveLightTimer);
+          gloveLightTimer = window.setTimeout(() => hero?.classList.remove('hero-section--glove-lit'), 340);
+        }
       };
       if (!warmGlove.getAttribute('src')) {
         warmGlove.srcset = warmGlove.dataset.srcset || '';
@@ -618,6 +625,28 @@ export function initHeroHeadlineLanguages({
         else revealWarmGlove();
       } else warmGlove.addEventListener('load', revealWarmGlove, { once: true });
     }
+  };
+
+  const lightGlove = () => {
+    window.clearTimeout(gloveLightTimer);
+    gloveTapPending = false;
+    hero?.classList.add('hero-section--glove-lit');
+    prepareWarmGlove();
+  };
+
+  const dimGlove = (delay = 0) => {
+    window.clearTimeout(gloveLightTimer);
+    if (!warmGlove?.classList.contains('is-ready')) {
+      gloveTapPending = true;
+      return;
+    }
+    gloveLightTimer = window.setTimeout(() => hero?.classList.remove('hero-section--glove-lit'), delay);
+  };
+
+  const showEasterEgg = () => {
+    isEasterEggActive = true;
+    hero?.classList.add('hero-section--easter-egg');
+    prepareWarmGlove();
     setState('easter-egg');
     headline.textContent = 'Beyond Earth. ✨';
     headline.lang = 'en';
@@ -864,9 +893,7 @@ export function initHeroHeadlineLanguages({
     claimManualInteraction();
     if (isEasterEggActive) {
       isEasterEggActive = false;
-      warmGloveLoadId += 1;
       hero?.classList.remove('hero-section--easter-egg');
-      warmGlove?.classList.remove('is-ready');
       setState('interaction');
       document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: false } }));
       await transitionHeadline(restoreHeadline);
@@ -1022,6 +1049,26 @@ export function initHeroHeadlineLanguages({
   listen(document, 'felya:themechange', handleThemeChange);
   listen(document, 'pointerdown', handleDocumentPointerDown);
   listen(document, 'visibilitychange', handleVisibilityChange);
+  if (gloveToggle) {
+    const releaseGlove = () => dimGlove(260);
+    listen(gloveToggle, 'pointerdown', (event) => {
+      gloveToggle.setPointerCapture?.(event.pointerId);
+      lightGlove();
+    });
+    listen(gloveToggle, 'pointerup', (event) => {
+      gloveToggle.releasePointerCapture?.(event.pointerId);
+      releaseGlove();
+    });
+    listen(gloveToggle, 'pointercancel', () => dimGlove());
+    listen(gloveToggle, 'keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      lightGlove();
+    });
+    listen(gloveToggle, 'keyup', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') releaseGlove();
+    });
+  }
   reduceMotion.addEventListener?.('change', handleReducedMotionChange);
 
   // Belt-and-suspenders alongside the resize listener above: a window resize is only one way
@@ -1035,6 +1082,7 @@ export function initHeroHeadlineLanguages({
 
   const cleanup = () => {
     isDestroyed = true;
+    window.clearTimeout(gloveLightTimer);
     cancelPreview();
     cancelTimers();
     listeners.splice(0).forEach((removeListener) => removeListener());
