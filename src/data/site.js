@@ -68,7 +68,8 @@ export const gloveDarkImage = {
   alt: 'Close-up of the FELYA haptic glove with blue finger mechanisms over a fabric glove.'
 };
 
-export const gloveLightImage = {
+// Retained warm treatment, including all existing source and responsive files.
+export const gloveWarmImage = {
   src: '/assets/images/hero/paton-glove/paton-glove-light-premium-v1.webp',
   srcset: [
     ...imageSrcset('hero/paton-glove', 'paton-glove-light-premium-v1', [640, 768, 960, 1200])
@@ -78,6 +79,14 @@ export const gloveLightImage = {
   height: 1343,
   alt: 'Close-up of the FELYA haptic glove with blue finger mechanisms over a fabric glove.'
 };
+
+export const gloveNeutralImage = {
+  ...gloveWarmImage,
+  src: '/assets/images/hero/paton-glove/paton-glove-neutral-grey-v1.webp',
+  srcset: imageSrcset('hero/paton-glove', 'paton-glove-neutral-grey-v1', [640, 768, 960, 1200])
+};
+// Switch to gloveWarmImage to restore the original yellow/warm lighting.
+export const gloveLightImage = gloveNeutralImage;
 
 const developmentUpdatesFormAction = 'https://submit-form.com/5I3xX6ZMl';
 
