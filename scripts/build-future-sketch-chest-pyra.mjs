@@ -11,9 +11,15 @@ const sha256 = (contents) => crypto.createHash('sha256').update(contents).digest
 // The white masters are the unchanged, hand-drawn originals from
 // brand-assets/06_Designstudien/Anwendung/Skizzen. The light-theme variants
 // retain their turquoise line work while converting neutral drawing lines to
-// black, matching the established Possible Futures asset contract.
+// black, matching the established Possible Futures asset contract. The remote
+// sketch instead uses the approved presentation pair directly: its isolated
+// chest Pyra has intentionally reduced opacity in both themes.
 const masters = [
-  { name: 'vr-hydrogen-engine-touch', sha256: '7f1401ba8a953a1d0fd48d8b3c9df5d50e18615c3d7d7ff75bb335d9ac5838ba' },
+  {
+    name: 'vr-hydrogen-engine-touch',
+    whiteSha256: 'ceb3f26bd808825efa65c4aae2324603b18c1bb4079b05c26ef7fcd7e023a456',
+    blackSha256: 'afd6e268985581e481db6b3566604de5042998957670afb2e5a7adcfcc3c0030'
+  },
   { name: 'static-haptic', sha256: '3164eb17a14e3792d48172e56b36525730d55878dc85360f99f0508ff3c48db2' },
   { name: 'operator-vr-paton-glove', sha256: 'f94a73e43f0fc307a6125fdec34a653d844d0cae7f3fbd4227a204639e249cd4' }
 ];
@@ -38,9 +44,18 @@ for (const master of masters) {
   const whitePng = path.join(sourceDirectory, `${master.name}-white.png`);
   const blackPng = path.join(sourceDirectory, `${master.name}-black.png`);
   const white = await fs.readFile(whitePng);
-  if (sha256(white) !== master.sha256) throw new Error(`Unexpected canonical master: ${master.name}-white.png`);
+  if (sha256(white) !== (master.whiteSha256 ?? master.sha256)) {
+    throw new Error(`Unexpected canonical master: ${master.name}-white.png`);
+  }
 
-  await buildLightThemeMaster(whitePng, blackPng);
+  if (master.blackSha256) {
+    const black = await fs.readFile(blackPng);
+    if (sha256(black) !== master.blackSha256) {
+      throw new Error(`Unexpected canonical master: ${master.name}-black.png`);
+    }
+  } else {
+    await buildLightThemeMaster(whitePng, blackPng);
+  }
   await Promise.all([
     sharp(whitePng).webp({ lossless: true, effort: 6 }).toFile(path.join(runtimeDirectory, `${master.name}-white.webp`)),
     sharp(blackPng).webp({ lossless: true, effort: 6 }).toFile(path.join(runtimeDirectory, `${master.name}-black.webp`))
