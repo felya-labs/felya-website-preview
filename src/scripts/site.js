@@ -1433,7 +1433,8 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // currentIntensity below, so entering/leaving the easter egg is one smooth transition rather
   // than a jump-cut. 15s/turn (was 26s) for a noticeably faster base spin -- still just the
   // *base* rate the direction wobble further speeds up or reverses below.
-  const BEYOND_PERIOD_MS = 15000;
+  // 45s is 3.33x the normal 150s cadence: energetic without becoming unreadable.
+  const BEYOND_PERIOD_MS = 45000;
   // Asymmetric on purpose, not a plain +/-34 swing around 0: the visible strip only ever shows
   // latitudes roughly [lat0+44, lat0+90] (it's a grazing near-limb crop, not a top-down view --
   // see project()'s coscMin cutoff), so a *symmetric* tilt centered on the equator never actually
@@ -1765,7 +1766,7 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
 
   const compact = window.matchMedia('(max-width: 767px)').matches;
   // Bounded, static DOM: CSS owns every animation frame. About 90% cool tones, 10% gold accents.
-  const STREAK_COUNT = compact ? 30 : 44;
+  const STREAK_COUNT = compact ? 54 : 96;
   let built = false;
 
   const build = () => {
@@ -1774,20 +1775,22 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
     const fragment = document.createDocumentFragment();
     for (let i = 0; i < STREAK_COUNT; i += 1) {
       const streak = document.createElement('span');
-      const depth = random() < 0.48 ? 'far' : random() < 0.88 ? 'mid' : 'near';
+      const depth = random() < 0.38 ? 'far' : random() < 0.78 ? 'mid' : random() < 0.95 ? 'near' : 'ultra';
       const gold = random() < 0.1;
       const rare = !gold && random() < 0.07;
       streak.className = `hero-starfield__streak hero-starfield__streak--${depth}${gold ? ' hero-starfield__streak--gold' : ''}${rare ? ' hero-starfield__streak--rare' : ''}`;
-      const duration = depth === 'far' ? 6.2 + random() * 3.6 : depth === 'near' ? 2.9 + random() * 2.1 : 4.1 + random() * 3;
+      const duration = depth === 'far' ? 6.6 + random() * 3.4 : depth === 'ultra' ? 1.7 + random() * 1.2 : depth === 'near' ? 2.5 + random() * 1.9 : 3.8 + random() * 2.7;
       streak.style.setProperty('--x', `${(random() * 100).toFixed(2)}%`);
-      streak.style.setProperty('--len', `${Math.round(depth === 'far' ? 38 + random() * 48 : depth === 'near' ? 88 + random() * 104 : 58 + random() * 80)}px`);
-      streak.style.setProperty('--width', `${(depth === 'near' ? 1.6 + random() * 1.2 : 0.8 + random() * 1.1).toFixed(1)}px`);
-      streak.style.setProperty('--drift', `${Math.round(-22 + random() * 44)}px`);
+      streak.style.setProperty('--len', `${Math.round(depth === 'far' ? 5 + random() * 28 : depth === 'ultra' ? 145 + random() * 125 : depth === 'near' ? 78 + random() * 120 : 30 + random() * 76)}px`);
+      streak.style.setProperty('--width', `${(depth === 'ultra' ? 2 + random() * 1.4 : depth === 'near' ? 1.4 + random() * 1.1 : 0.7 + random() * 1).toFixed(1)}px`);
+      streak.style.setProperty('--drift', `${Math.round(-38 + random() * 76)}px`);
       streak.style.setProperty('--dur', `${duration.toFixed(2)}s`);
       // Negative delay starts each streak mid-flight instead of every streak launching from the
       // same point in unison the moment the easter egg activates.
       streak.style.setProperty('--delay', `${(-random() * duration).toFixed(2)}s`);
-      streak.style.setProperty('--peak', (depth === 'far' ? 0.14 + random() * 0.2 : depth === 'near' ? 0.34 + random() * 0.3 : 0.23 + random() * 0.3).toFixed(2));
+      const cool = random() < 0.35 ? '#e8f8ff' : random() < 0.7 ? '#aee9ff' : random() < 0.88 ? '#73c9ff' : '#86aef8';
+      streak.style.setProperty('--particle-color', gold ? '#e3bd68' : cool);
+      streak.style.setProperty('--peak', (depth === 'far' ? 0.2 + random() * 0.22 : depth === 'ultra' ? 0.48 + random() * 0.24 : depth === 'near' ? 0.38 + random() * 0.3 : 0.28 + random() * 0.3).toFixed(2));
       fragment.appendChild(streak);
     }
     container.appendChild(fragment);
