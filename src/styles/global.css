@@ -1846,8 +1846,7 @@ html[data-theme="light"] .hero-starfield { --hero-starfield-peak-scale: 0.55; }
     animation: hero-starfield-streak var(--dur, 5s) linear var(--delay, 0s) infinite;
 }
 
-.hero-starfield__streak--gold { --particle-color: #d4a94c; }
-.hero-starfield__streak--rare { --particle-color: #8abfff; }
+.hero-starfield__streak--rare { --particle-color: #d9f7ff; }
 
 @keyframes hero-starfield-streak {
     0% { transform: translate3d(0, 0, 0) scaleY(0.4); opacity: 0; }
@@ -2254,9 +2253,8 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     will-change: opacity;
 }
 
-/* The warm original is intentionally not requested during the normal hero. It is loaded only
-   after the Beyond Earth easter egg starts, then slowly replaces the neutral-grey treatment as
-   though the glove's illumination is powering up. */
+/* The warm original is requested only when the initial breathing treatment or a manual light-on
+   state needs it. The short opacity/filter transition makes manual switching feel like light. */
 .hero-product-image--warm {
     opacity: 0;
     filter: brightness(0.84) saturate(0.82);

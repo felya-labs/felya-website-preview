@@ -432,11 +432,11 @@ export function initHeroHeadlineLanguages({
   let warmGloveLoadId = 0;
   let gloveLightTimer = 0;
   let ignoreGloveTouchClickUntil = 0;
-  // The warm glove is a presentation layer, not the source of truth. Keep the state that
-  // determines it independent from the temporary breathing effect and the Beyond Earth context.
-  // Light has one global meaning: on is the established 5.6s breathing treatment; off is dark.
-  // The Easter Egg deliberately does not own or restore a separate glove state.
-  const gloveState = { lit: !reduceMotion.matches };
+  // The warm glove is a presentation layer, not the source of truth. It begins as a
+  // self-running 5.6s presentation treatment, then the first user interaction hands control
+  // to a persistent manual on/off state for this page session. Beyond Earth never owns or
+  // restores a separate glove state.
+  const gloveState = { mode: reduceMotion.matches ? 'manual-off' : 'auto-breathing' };
   let isPointerInside = false;
   let isFocused = false;
   let touchTapCount = 0;
@@ -628,15 +628,19 @@ export function initHeroHeadlineLanguages({
   };
 
   const applyGloveState = () => {
-    const breathing = gloveState.lit && !reduceMotion.matches;
-    hero?.classList.remove('hero-section--glove-lit', 'hero-section--easter-egg-glove-off');
+    const breathing = gloveState.mode === 'auto-breathing' && !reduceMotion.matches;
+    const manuallyLit = gloveState.mode === 'manual-on';
+    hero?.classList.remove('hero-section--easter-egg-glove-off');
     hero?.classList.toggle('hero-section--glove-breathing', breathing);
-    if (gloveState.lit) prepareWarmGlove();
+    hero?.classList.toggle('hero-section--glove-lit', manuallyLit);
+    if (breathing || manuallyLit) prepareWarmGlove();
   };
 
   const toggleGloveLight = () => {
     window.clearTimeout(gloveLightTimer);
-    gloveState.lit = !gloveState.lit;
+    gloveState.mode = gloveState.mode === 'auto-breathing'
+      ? 'manual-off'
+      : gloveState.mode === 'manual-on' ? 'manual-off' : 'manual-on';
     applyGloveState();
   };
 
@@ -1431,10 +1435,10 @@ export function initHeroEarthRotation({ root = document } = {}) {
   // of phase with each other instead of repeating in lockstep, and the rotation itself spins up
   // to a much shorter period -- all three ramp in/out together via `intensity`, see
   // currentIntensity below, so entering/leaving the easter egg is one smooth transition rather
-  // than a jump-cut. 15s/turn (was 26s) for a noticeably faster base spin -- still just the
-  // *base* rate the direction wobble further speeds up or reverses below.
-  // 45s is 3.33x the normal 150s cadence: energetic without becoming unreadable.
-  const BEYOND_PERIOD_MS = 45000;
+  // than a jump-cut. The dedicated Easter Egg cadence is 12s/turn: substantially faster than
+  // the calm 150s base and the prior 45s V3 cadence, while leaving enough time to observe the
+  // geography as the direction wobble further speeds up or reverses it below.
+  const BEYOND_PERIOD_MS = 12000;
   // Asymmetric on purpose, not a plain +/-34 swing around 0: the visible strip only ever shows
   // latitudes roughly [lat0+44, lat0+90] (it's a grazing near-limb crop, not a top-down view --
   // see project()'s coscMin cutoff), so a *symmetric* tilt centered on the equator never actually
@@ -1765,8 +1769,9 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
   if (reduceMotion.matches) return; // static/absent starfield, no motion to opt out of
 
   const compact = window.matchMedia('(max-width: 767px)').matches;
-  // Bounded, static DOM: CSS owns every animation frame. About 90% cool tones, 10% gold accents.
-  const STREAK_COUNT = compact ? 54 : 96;
+  // Bounded, static DOM: CSS owns every animation frame. The four depth layers share one
+  // cool near-white/cyan/ice-blue family so brightness, not a warm accent colour, creates variety.
+  const STREAK_COUNT = compact ? 70 : 128;
   let built = false;
 
   const build = () => {
@@ -1776,9 +1781,8 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
     for (let i = 0; i < STREAK_COUNT; i += 1) {
       const streak = document.createElement('span');
       const depth = random() < 0.38 ? 'far' : random() < 0.78 ? 'mid' : random() < 0.95 ? 'near' : 'ultra';
-      const gold = random() < 0.1;
-      const rare = !gold && random() < 0.07;
-      streak.className = `hero-starfield__streak hero-starfield__streak--${depth}${gold ? ' hero-starfield__streak--gold' : ''}${rare ? ' hero-starfield__streak--rare' : ''}`;
+      const rare = random() < 0.07;
+      streak.className = `hero-starfield__streak hero-starfield__streak--${depth}${rare ? ' hero-starfield__streak--rare' : ''}`;
       const duration = depth === 'far' ? 6.6 + random() * 3.4 : depth === 'ultra' ? 1.7 + random() * 1.2 : depth === 'near' ? 2.5 + random() * 1.9 : 3.8 + random() * 2.7;
       streak.style.setProperty('--x', `${(random() * 100).toFixed(2)}%`);
       streak.style.setProperty('--len', `${Math.round(depth === 'far' ? 5 + random() * 28 : depth === 'ultra' ? 145 + random() * 125 : depth === 'near' ? 78 + random() * 120 : 30 + random() * 76)}px`);
@@ -1788,8 +1792,8 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
       // Negative delay starts each streak mid-flight instead of every streak launching from the
       // same point in unison the moment the easter egg activates.
       streak.style.setProperty('--delay', `${(-random() * duration).toFixed(2)}s`);
-      const cool = random() < 0.35 ? '#e8f8ff' : random() < 0.7 ? '#aee9ff' : random() < 0.88 ? '#73c9ff' : '#86aef8';
-      streak.style.setProperty('--particle-color', gold ? '#e3bd68' : cool);
+      const cool = random() < 0.35 ? '#f4fcff' : random() < 0.7 ? '#d8f6ff' : random() < 0.88 ? '#b3edff' : '#8ed8ff';
+      streak.style.setProperty('--particle-color', cool);
       streak.style.setProperty('--peak', (depth === 'far' ? 0.2 + random() * 0.22 : depth === 'ultra' ? 0.48 + random() * 0.24 : depth === 'near' ? 0.38 + random() * 0.3 : 0.28 + random() * 0.3).toFixed(2));
       fragment.appendChild(streak);
     }
