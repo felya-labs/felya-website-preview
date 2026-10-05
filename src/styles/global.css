@@ -1077,7 +1077,7 @@ html[data-theme="light"] .future-scenario::after {
     aspect-ratio: 1345 / 982;
     left: 7%;
     bottom: 9%;
-    width: min(40%, 30rem);
+    width: min(36%, 27rem);
 }
 
 .future-sketch--hazard-right {
@@ -1404,7 +1404,7 @@ html:not([data-theme="light"]) .future-scenario--hazard .future-scenario__visual
         right: auto;
         bottom: auto;
         left: auto;
-        width: min(100%, 16rem);
+        width: min(100%, 15rem);
         transform: none;
         justify-self: center;
     }
@@ -1456,7 +1456,9 @@ html:not([data-theme="light"]) .future-scenario--hazard .future-scenario__visual
         gap: 1.5rem;
     }
 
-    .future-sketch--hazard-left,
+    .future-sketch--hazard-left {
+        width: min(70%, 15rem);
+    }
     .future-sketch--hazard-right {
         width: min(76%, 17rem);
     }
