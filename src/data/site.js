@@ -8,8 +8,8 @@ export const brand = {
   logo: {
     blackSrc: '/assets/images/brand/felya-logo/felya-logo-horizontal-black.svg',
     whiteSrc: '/assets/images/brand/felya-logo/felya-logo-horizontal-white.svg',
-    width: 879,
-    height: 284
+    width: 152.098426159726,
+    height: 53.412775534962
   }
 };
 

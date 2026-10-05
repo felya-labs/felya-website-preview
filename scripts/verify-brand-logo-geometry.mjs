@@ -4,263 +4,73 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 const root = path.resolve(import.meta.dirname, '..');
-const sourceRoot = path.join(root, 'assets-source/brand/source/logo-v4');
+const sourceRoot = path.join(root, 'assets-source/brand/source/logo-v5');
 const logoRoot = path.join(root, 'public/assets/images/brand/felya-logo');
-const sha256 = (source) => crypto.createHash('sha256').update(source).digest('hex');
-
-const sources = new Map([
-  ['V4_Pyra_black.png', 'fe06d1ec16fd9952a47bbe2685afa817e2915860f6d51a02c699acfeaca59368'],
-  ['V4_Pyra_white.png', '6a6c0e4ef33c7811af1b2380cfad350c1a11240702f53a589e605654f40b0e1e'],
-  ['V4_Pyra+FELYA_black_horizontal.png', '84ac38ae9ebe73c52584d2ff4a3edde6d6823ee303ecd8c3b7f7c53e9672673d'],
-  ['V4_Pyra+FELYA_white_horizontal.png', 'fb1b8fd301869502acae06c989c02020af0a7d19230db66ac2fff22cbb19f68d'],
-  ['V4_Pyra+FELYA_black_vertikal.png', '8135340a95e550d52b4c74c9a06aac97bd3af1a6c5bfee83a3c2bcfafae43219'],
-  ['V4_Pyra+FELYA_white_vertikal.png', 'd90090646b72a81a81f77d915e1c8f766cac630f10cf1966fb8ad649280e7efd']
-]);
-
-const pairs = [
-  ['V4_Pyra_black.png', 'V4_Pyra_white.png'],
-  ['V4_Pyra+FELYA_black_horizontal.png', 'V4_Pyra+FELYA_white_horizontal.png'],
-  ['V4_Pyra+FELYA_black_vertikal.png', 'V4_Pyra+FELYA_white_vertikal.png']
+const sha256 = (contents) => crypto.createHash('sha256').update(contents).digest('hex');
+const masters = [
+  { source: 'pyra.svg', stem: 'felya-mark', pngWidth: 1200, sha256: 'db062249ca74e99c510de058e2d2e7d38711943176a7aa096f8394f46bee446c' },
+  { source: 'felya-horizontal.svg', stem: 'felya-logo-horizontal', pngWidth: 1800, sha256: '6b79774f998f2c8c5d01eb2dc499a00232d27a655ae44898f910c7a1bb195cdf' },
+  { source: 'felya-vertical.svg', stem: 'felya-logo-vertical', pngWidth: 1200, sha256: 'dbb28ed0c403cee703aafaa560dd7bb8716021652a13f35a0efdca947b3caf87' }
 ];
+const explicitColor = (source, color) => source.replace('fill="currentColor"', `fill="${color}"`);
 
-for (const [fileName, expectedHash] of sources) {
-  const contents = await fs.readFile(path.join(sourceRoot, fileName));
-  if (sha256(contents) !== expectedHash) throw new Error(`V4 SOURCE HASH: FAIL (${fileName})`);
-}
-
-for (const [blackName, whiteName] of pairs) {
-  const [black, white] = await Promise.all([
-    sharp(path.join(sourceRoot, blackName)).raw().toBuffer({ resolveWithObject: true }),
-    sharp(path.join(sourceRoot, whiteName)).raw().toBuffer({ resolveWithObject: true })
-  ]);
-  if (
-    black.info.width !== white.info.width ||
-    black.info.height !== white.info.height ||
-    black.info.channels !== 3 ||
-    white.info.channels !== 3
-  ) throw new Error(`V4 SOURCE PAIR FORMAT: FAIL (${blackName})`);
-  for (let index = 0; index < black.data.length; index += 1) {
-    if (black.data[index] + white.data[index] !== 255) {
-      throw new Error(`V4 SOURCE PAIR INVERSE: FAIL (${blackName})`);
-    }
+for (const master of masters) {
+  const source = await fs.readFile(path.join(sourceRoot, master.source));
+  if (sha256(source) !== master.sha256) throw new Error(`V5 SOURCE HASH: FAIL (${master.source})`);
+  for (const [variant, color] of [['black', '#000000'], ['white', '#FFFFFF']]) {
+    const svg = await fs.readFile(path.join(logoRoot, `${master.stem}-${variant}.svg`), 'utf8');
+    if (svg !== explicitColor(source.toString('utf8'), color)) throw new Error(`V5 SVG PROVENANCE: FAIL (${master.stem}-${variant})`);
+    const metadata = await sharp(path.join(logoRoot, `${master.stem}-${variant}.png`)).metadata();
+    if (metadata.width !== master.pngWidth || !metadata.hasAlpha) throw new Error(`V5 PNG EXPORT: FAIL (${master.stem}-${variant})`);
   }
 }
 
-const variants = new Map([
-  ['felya-mark', [439, 562]],
-  ['felya-logo-horizontal', [879, 284]],
-  ['felya-logo-vertical', [390, 373]]
+const faviconRoot = path.join(root, 'public/assets/favicon');
+const frozenFaviconFiles = new Map([
+  ['felya-favicon-black.svg', '5b37176e535c39c1dd7fc0fd42a7a24fcc564d28a9a15fc6192c911022f0b349'],
+  ['felya-favicon-white.svg', '3ccc9aa3ec882f6adeaf5a2b7be630c58330889a4eb06efeb9c90bc05cdda984'],
+  ['favicon-16x16.png', 'aa22c94de397a9c070b38c3298b03d76fd27be33c356188026ee156ebb02c04d'],
+  ['favicon-32x32.png', 'abdc48d89d9e32078019c131b4bf6a96b9fb23c9f414a5be80bbf7f9995a56f5'],
+  ['favicon-48x48.png', '3c54647f2e996c8faddea3655ad23520397649a10af0a1bd03d19967a86a2768'],
+  ['favicon-96x96.png', '65ab517ebcbc14f4f77b67f901ac1a0ca987df7ab4c585e2740a98f6e694bad7'],
+  ['favicon-256x256.png', '6ee9b77ee45890dd3c47c5b4ad8fef1a6373f45d49b02d5733363fa1583a0c2c'],
+  ['apple-touch-icon.png', 'a325f490e3fdbf6e601632120db28f3d0f9dcd169a7c7e215cd3fc02a2b47315'],
+  ['android-chrome-192x192.png', 'f9a3237a3638d8c1dc5df1f2aa26899c1a152cb8f1f346d054534b656597d2ed'],
+  ['android-chrome-512x512.png', 'ba461c5c11e794e647bb0a26288fb00366d3800f91a19f9b11f8fd16e2d22ff6'],
+  ['android-chrome-maskable-512x512.png', 'f658827654375ca40c0edf03fd611a5514476004549033f50ac5c60a4900eed3'],
+  ['favicon.ico', '6f13d0d11e98d7833ef07966af8b3f5a1ecc68a5b77326e5fee8aa21e0ba1e69'],
+  ['site.webmanifest', '408fe608b28097b2e531c5dc2e6ab864250ed3f66a78f0e628cb4206f654c074']
 ]);
-const forbiddenSvg = /<(?:image|filter|style|script|text|rect|circle|ellipse|polygon|polyline|line)\b/i;
+for (const [fileName, expectedHash] of frozenFaviconFiles) {
+  const contents = await fs.readFile(path.join(faviconRoot, fileName));
+  if (sha256(contents) !== expectedHash) throw new Error(`V5 FAVICON PACKAGE: FAIL (${fileName})`);
+}
+const rootIco = await fs.readFile(path.join(root, 'public/favicon.ico'));
+if (sha256(rootIco) !== frozenFaviconFiles.get('favicon.ico')) throw new Error('V5 FAVICON ROOT ICO: FAIL');
 
-for (const [stem, [width, height]] of variants) {
-  const [blackSvg, whiteSvg] = await Promise.all([
-    fs.readFile(path.join(logoRoot, `${stem}-black.svg`), 'utf8'),
-    fs.readFile(path.join(logoRoot, `${stem}-white.svg`), 'utf8')
-  ]);
-  const expectedFrame = `width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"`;
-  const blackPath = blackSvg.match(/<path d="([^"]+)"/)?.[1];
-  const whitePath = whiteSvg.match(/<path d="([^"]+)"/)?.[1];
-  if (!blackSvg.includes(expectedFrame) || !whiteSvg.includes(expectedFrame)) {
-    throw new Error(`V4 SVG VIEWBOX: FAIL (${stem})`);
-  }
-  if (!blackPath || blackPath !== whitePath) throw new Error(`V4 SVG GEOMETRY MATCH: FAIL (${stem})`);
-  if (!blackSvg.includes('fill="#000000"') || !whiteSvg.includes('fill="#FFFFFF"')) {
-    throw new Error(`V4 SVG COLOR: FAIL (${stem})`);
-  }
-  if (forbiddenSvg.test(blackSvg) || forbiddenSvg.test(whiteSvg)) {
-    throw new Error(`V4 SVG CLEAN CONTENT: FAIL (${stem})`);
-  }
-
-  for (const color of ['black', 'white']) {
-    const metadata = await sharp(path.join(logoRoot, `${stem}-${color}.png`)).metadata();
-    if (metadata.width !== width || metadata.height !== height || !metadata.hasAlpha) {
-      throw new Error(`V4 PNG FORMAT: FAIL (${stem}-${color})`);
-    }
-  }
+const alphaShape = async (input) => {
+  const { data, info } = await sharp(input, { density: 300, limitInputPixels: false }).ensureAlpha().extractChannel('alpha').raw().toBuffer({ resolveWithObject: true });
+  let left = info.width, top = info.height, right = -1, bottom = -1;
+  for (let y = 0; y < info.height; y += 1) for (let x = 0; x < info.width; x += 1) if (data[y * info.width + x] > 8) { left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y); }
+  return sharp(data, { raw: info }).extract({ left, top, width: right - left + 1, height: bottom - top + 1 }).resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).raw().toBuffer();
+};
+const pyra = await alphaShape(path.join(sourceRoot, 'pyra.svg'));
+for (const fileName of ['felya-favicon-black.svg', 'felya-favicon-white.svg']) {
+  const favicon = await alphaShape(path.join(faviconRoot, fileName));
+  let intersection = 0, union = 0;
+  for (let index = 0; index < pyra.length; index += 4) { const a = pyra[index + 3] > 8; const b = favicon[index + 3] > 8; if (a && b) intersection += 1; if (a || b) union += 1; }
+  if (intersection / union < 0.98) throw new Error(`V5 PYRA FAVICON GEOMETRY: FAIL (${fileName})`);
 }
 
-const canonicalMarkSvg = await fs.readFile(path.join(logoRoot, 'felya-mark-black.svg'), 'utf8');
-const canonicalMarkPath = canonicalMarkSvg.match(/<path d="([^"]+)"/)?.[1];
-const adaptiveFavicons = new Map([
-  ['felya-favicon-black.svg', '#000000'],
-  ['felya-favicon-white.svg', '#FFFFFF']
-]);
-let adaptiveAlpha = null;
-for (const [fileName, fill] of adaptiveFavicons) {
-  const iconPath = path.join(root, 'public/assets/favicon', fileName);
-  const svg = await fs.readFile(iconPath, 'utf8');
-  const iconMarkPath = svg.match(/<path d="([^"]+)"/)?.[1];
-  if (
-    !svg.includes('width="582" height="582" viewBox="-72 -10 582 582"') ||
-    !svg.includes('preserveAspectRatio="xMidYMid meet"') ||
-    iconMarkPath !== canonicalMarkPath ||
-    !svg.includes(`fill="${fill}"`) ||
-    !svg.includes('stroke="none"') ||
-    forbiddenSvg.test(svg) ||
-    (svg.match(/<path\b/g) || []).length !== 1
-  ) throw new Error(`ADAPTIVE V4 FAVICON SVG: FAIL (${fileName})`);
+const layout = await fs.readFile(path.join(root, 'src/layouts/BaseLayout.astro'), 'utf8');
+const lightIcon = '<link rel="icon" type="image/svg+xml" href="/assets/favicon/felya-favicon-black.svg" media="(prefers-color-scheme: light)">';
+const darkIcon = '<link rel="icon" type="image/svg+xml" href="/assets/favicon/felya-favicon-white.svg" media="(prefers-color-scheme: dark)">';
+if (!layout.includes(lightIcon) || !layout.includes(darkIcon) || !layout.includes('<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">') || !layout.includes('<link rel="manifest" href="/assets/favicon/site.webmanifest">')) throw new Error('V5 FAVICON HEAD CONTRACT: FAIL');
+const manifest = JSON.parse(await fs.readFile(path.join(faviconRoot, 'site.webmanifest'), 'utf8'));
+if (manifest.icons?.find((icon) => icon.purpose === 'maskable')?.src !== 'android-chrome-maskable-512x512.png') throw new Error('V5 FAVICON MASKABLE CONTRACT: FAIL');
 
-  const { data, info } = await sharp(Buffer.from(svg))
-    .resize(1024, 1024)
-    .ensureAlpha()
-    .extractChannel('alpha')
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  let left = info.width;
-  let top = info.height;
-  let right = -1;
-  let bottom = -1;
-  for (let y = 0; y < info.height; y += 1) {
-    for (let x = 0; x < info.width; x += 1) {
-      if (data[y * info.width + x] > 8) {
-        left = Math.min(left, x);
-        top = Math.min(top, y);
-        right = Math.max(right, x);
-        bottom = Math.max(bottom, y);
-      }
-    }
-  }
-  const geometry = {
-    left,
-    right: info.width - 1 - right,
-    top,
-    bottom: info.height - 1 - bottom,
-    width: right - left + 1,
-    height: bottom - top + 1
-  };
-  if (
-    geometry.width / info.width < 0.73 || geometry.height / info.height < 0.94 ||
-    Math.abs(geometry.left - geometry.right) > 2 || Math.abs(geometry.top - geometry.bottom) > 2 ||
-    data[0] > 8
-  ) throw new Error(`ADAPTIVE V4 FAVICON CANVAS: FAIL (${fileName})`);
-  if (adaptiveAlpha && !adaptiveAlpha.equals(data)) {
-    throw new Error('ADAPTIVE V4 FAVICON BLACK/WHITE GEOMETRY MATCH: FAIL');
-  }
-  adaptiveAlpha = Buffer.from(data);
-}
-
-const layoutSource = await fs.readFile(path.join(root, 'src/layouts/BaseLayout.astro'), 'utf8');
-const browserIconTags = [...layoutSource.matchAll(/<link\s+rel="icon"[^>]*>/g)].map(([tag]) => tag);
-const lightIconTag = '<link rel="icon" type="image/svg+xml" href="/assets/favicon/felya-favicon-black.svg" media="(prefers-color-scheme: light)">';
-const darkIconTag = '<link rel="icon" type="image/svg+xml" href="/assets/favicon/felya-favicon-white.svg" media="(prefers-color-scheme: dark)">';
-if (
-  browserIconTags.length !== 2 ||
-  !browserIconTags.includes(lightIconTag) ||
-  !browserIconTags.includes(darkIconTag) ||
-  browserIconTags.some((tag) => /\.png|favicon\.ico/.test(tag))
-) throw new Error('ADAPTIVE V4 FAVICON HEAD LINKS: FAIL');
-if (
-  !layoutSource.includes('<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">') ||
-  !layoutSource.includes('<link rel="manifest" href="/assets/favicon/site.webmanifest">')
-) throw new Error('ADAPTIVE V4 FAVICON PLATFORM LINKS: FAIL');
-
-const faviconDimensions = new Map([
-  ['favicon-16x16.png', 16],
-  ['favicon-32x32.png', 32],
-  ['favicon-48x48.png', 48],
-  ['favicon-96x96.png', 96],
-  ['apple-touch-icon.png', 180],
-  ['android-chrome-192x192.png', 192],
-  ['favicon-256x256.png', 256],
-  ['android-chrome-512x512.png', 512],
-  ['android-chrome-maskable-512x512.png', 512]
-]);
-
-for (const [fileName, size] of faviconDimensions) {
-  const iconPath = path.join(root, 'public/assets/favicon', fileName);
-  const { data, info } = await sharp(iconPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  if (info.width !== size || info.height !== size || info.channels !== 4) {
-    throw new Error(`V4 FAVICON DIMENSIONS: FAIL (${fileName})`);
-  }
-  let transparentPixels = 0;
-  let whitePixels = 0;
-  let darkPixels = 0;
-  for (let index = 0; index < data.length; index += 4) {
-    const alpha = data[index + 3];
-    if (alpha <= 8) transparentPixels += 1;
-    if (alpha > 8 && data[index] > 220 && data[index + 1] > 220 && data[index + 2] > 220) whitePixels += 1;
-    if (alpha > 8 && data[index] < 80 && data[index + 1] < 80 && data[index + 2] < 80) darkPixels += 1;
-  }
-  if (!transparentPixels || !whitePixels || !darkPixels) {
-    throw new Error(`V4 FAVICON TRANSPARENT WHITE/BLACK TREATMENT: FAIL (${fileName})`);
-  }
-  if (data[3] > 8) throw new Error(`V4 FAVICON BACKGROUND TILE: FAIL (${fileName})`);
-}
-
-const { data: masterAlpha, info: masterInfo } = await sharp(
-  path.join(root, 'assets-source/brand/masters/felya-labs-app-icon-master.png')
-).ensureAlpha().extractChannel('alpha').raw().toBuffer({ resolveWithObject: true });
-let masterLeft = masterInfo.width;
-let masterTop = masterInfo.height;
-let masterRight = -1;
-let masterBottom = -1;
-for (let y = 0; y < masterInfo.height; y += 1) {
-  for (let x = 0; x < masterInfo.width; x += 1) {
-    if (masterAlpha[y * masterInfo.width + x] > 8) {
-      masterLeft = Math.min(masterLeft, x);
-      masterTop = Math.min(masterTop, y);
-      masterRight = Math.max(masterRight, x);
-      masterBottom = Math.max(masterBottom, y);
-    }
-  }
-}
-if (
-  masterInfo.width !== 1024 || masterInfo.height !== 1024 ||
-  masterLeft !== 156 || masterTop !== 61 || masterRight !== 866 || masterBottom !== 962
-) throw new Error('V4 FAVICON F050 MASTER GEOMETRY: FAIL');
-
-const [publicIco, assetIco] = await Promise.all([
-  fs.readFile(path.join(root, 'public/favicon.ico')),
-  fs.readFile(path.join(root, 'public/assets/favicon/favicon.ico'))
-]);
-if (!publicIco.equals(assetIco)) throw new Error('V4 FAVICON ICO MATCH: FAIL');
-
-const manifest = JSON.parse(await fs.readFile(path.join(root, 'public/assets/favicon/site.webmanifest'), 'utf8'));
-const maskable = manifest.icons?.find((icon) => icon.purpose === 'maskable');
-if (maskable?.src !== 'android-chrome-maskable-512x512.png' || maskable.sizes !== '512x512') {
-  throw new Error('V4 FAVICON MASKABLE MANIFEST: FAIL');
-}
-
-const archivedLogo = path.join(
-  root,
-  'assets-source/brand/archive/2026-09-pre-v4/website-logos/felya-logo-white-optical.svg'
-);
-await fs.access(archivedLogo);
-for (const archivedFile of [
-  'README.md',
-  'build-brand-assets.mjs',
-  'logo-assets-before-refinement.md',
-  'favicons/public-root-favicon.ico',
-  'masters/felya-labs-app-icon-master.png',
-  'masters/felya-labs-app-icon-continuous-master.png',
-  'favicons/favicon.ico',
-  'favicons/android-chrome-maskable-512x512.png'
-]) {
-  await fs.access(path.join(root, 'assets-source/brand/archive/2026-09-v4-rounded-favicon', archivedFile));
-}
-for (const archivedFile of [
-  'README.md',
-  'build-brand-assets-f050.mjs',
-  'logo-assets-before-adaptive.md',
-  'public-root-favicon.ico',
-  'masters/felya-labs-app-icon-master.png',
-  'favicons/favicon.ico',
-  'favicons/favicon-16x16.png',
-  'favicons/favicon-32x32.png',
-  'favicons/favicon-48x48.png',
-  'favicons/favicon-96x96.png'
-]) {
-  await fs.access(path.join(root, 'assets-source/brand/archive/2026-09-v4-f050-favicon', archivedFile));
-}
-
-console.log('V4 SOURCE HASHES: PASS');
-console.log('V4 POSITIVE/NEGATIVE SOURCE PAIRS: PASS');
-console.log('V4 SVG GEOMETRY AND CONTENT: PASS');
-console.log('ADAPTIVE V4 BROWSER FAVICON SVG AND HEAD LINKS: PASS');
-console.log('V4 TRANSPARENT PNGS: PASS');
-console.log('V4 FAVICON FAMILY: PASS');
-console.log('V4 FAVICON F050 GEOMETRY AND TRANSPARENCY: PASS');
-console.log('PRE-V4 ARCHIVE: PASS');
-console.log('PRE-REFINEMENT V4 FAVICON ARCHIVE: PASS');
-console.log('PRE-ADAPTIVE V4 F050 FAVICON ARCHIVE: PASS');
+console.log('V5 SOURCE MASTERS AND WEBSITE EXPORTS: PASS');
+console.log('V5 WORDMARK PROVENANCE: PASS');
+console.log('V5-COMPATIBLE FAVICON PACKAGE: PASS');
+console.log('V5 PYRA-TO-FAVICON GEOMETRY: PASS');
+console.log('FAVICON PLATFORM AND HEAD CONTRACT: PASS');
