@@ -431,18 +431,12 @@ export function initHeroHeadlineLanguages({
   let isEasterEggActive = false;
   let warmGloveLoadId = 0;
   let gloveLightTimer = 0;
-  let gloveTapPending = false;
-  let gloveGestureTimer = 0;
-  let touchGloveTapCount = 0;
   let ignoreGloveTouchClickUntil = 0;
   // The warm glove is a presentation layer, not the source of truth. Keep the state that
   // determines it independent from the temporary breathing effect and the Beyond Earth context.
-  const gloveState = {
-    baseLit: false,
-    breathing: false,
-    context: 'normal',
-    savedNormalBaseLit: false
-  };
+  // Light has one global meaning: on is the established 5.6s breathing treatment; off is dark.
+  // The Easter Egg deliberately does not own or restore a separate glove state.
+  const gloveState = { lit: !reduceMotion.matches };
   let isPointerInside = false;
   let isFocused = false;
   let touchTapCount = 0;
@@ -621,14 +615,6 @@ export function initHeroHeadlineLanguages({
       const revealWarmGlove = () => {
         if (loadId !== warmGloveLoadId) return;
         warmGlove.classList.add('is-ready');
-        if (gloveTapPending) {
-          gloveTapPending = false;
-          window.clearTimeout(gloveLightTimer);
-          gloveLightTimer = window.setTimeout(() => {
-            gloveState.baseLit = false;
-            applyGloveState();
-          }, 340);
-        }
       };
       if (!warmGlove.getAttribute('src')) {
         warmGlove.srcset = warmGlove.dataset.srcset || '';
@@ -642,51 +628,22 @@ export function initHeroHeadlineLanguages({
   };
 
   const applyGloveState = () => {
-    const inEasterEgg = gloveState.context === 'easter-egg';
-    const breathing = gloveState.breathing && !reduceMotion.matches;
-    hero?.classList.toggle('hero-section--glove-lit', !inEasterEgg && gloveState.baseLit);
-    hero?.classList.toggle('hero-section--easter-egg-glove-off', inEasterEgg && !gloveState.baseLit);
+    const breathing = gloveState.lit && !reduceMotion.matches;
+    hero?.classList.remove('hero-section--glove-lit', 'hero-section--easter-egg-glove-off');
     hero?.classList.toggle('hero-section--glove-breathing', breathing);
-    if (gloveState.baseLit || breathing || inEasterEgg) prepareWarmGlove();
+    if (gloveState.lit) prepareWarmGlove();
   };
 
-  const lightGlove = () => {
+  const toggleGloveLight = () => {
     window.clearTimeout(gloveLightTimer);
-    gloveTapPending = false;
-    gloveState.baseLit = true;
+    gloveState.lit = !gloveState.lit;
     applyGloveState();
   };
 
-  const dimGlove = (delay = 0) => {
-    window.clearTimeout(gloveLightTimer);
-    if (!warmGlove?.classList.contains('is-ready')) {
-      gloveTapPending = true;
-      return;
-    }
-    gloveLightTimer = window.setTimeout(() => {
-      gloveState.baseLit = false;
-      applyGloveState();
-    }, delay);
-  };
-
-  const toggleBreathing = () => {
-    gloveState.breathing = !gloveState.breathing;
-    applyGloveState();
-  };
-
-  const toggleEasterEggGlove = () => {
-    if (gloveState.context !== 'easter-egg') return;
-    gloveState.baseLit = !gloveState.baseLit;
-    applyGloveState();
-  };
+  applyGloveState();
 
   const showEasterEgg = () => {
     isEasterEggActive = true;
-    // Capture before any egg-local light or breathing interaction can mutate it.
-    gloveState.savedNormalBaseLit = gloveState.baseLit;
-    gloveState.context = 'easter-egg';
-    gloveState.baseLit = true;
-    gloveState.breathing = false;
     hero?.classList.add('hero-section--easter-egg');
     applyGloveState();
     setState('easter-egg');
@@ -696,6 +653,13 @@ export function initHeroHeadlineLanguages({
     headline.dataset.heroLanguage = 'Easter egg';
     fitHeadline();
     document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: true } }));
+  };
+
+  const activateEasterEgg = () => {
+    if (isEasterEggActive) return;
+    cancelIntro();
+    claimManualInteraction();
+    transitionHeadline(showEasterEgg);
   };
 
   const cancelIntro = () => {
@@ -935,9 +899,6 @@ export function initHeroHeadlineLanguages({
     claimManualInteraction();
     if (isEasterEggActive) {
       isEasterEggActive = false;
-      gloveState.context = 'normal';
-      gloveState.baseLit = gloveState.savedNormalBaseLit;
-      gloveState.breathing = false;
       hero?.classList.remove('hero-section--easter-egg');
       applyGloveState();
       setState('interaction');
@@ -984,7 +945,7 @@ export function initHeroHeadlineLanguages({
 
     if (touchTapCount === 1) handleStandardActivation();
     if (touchTapCount === 3) {
-      transitionHeadline(showEasterEgg);
+      activateEasterEgg();
       touchTapCount = 0;
       return;
     }
@@ -997,7 +958,7 @@ export function initHeroHeadlineLanguages({
     if (performance.now() < ignoreTouchClickUntil) return;
     if (event.detail === 3) {
       claimManualInteraction();
-      transitionHeadline(showEasterEgg);
+      activateEasterEgg();
       return;
     }
     if (event.detail > 1) return;
@@ -1071,10 +1032,7 @@ export function initHeroHeadlineLanguages({
     if (!isEasterEggActive && !mobileHeroLite) scheduleNormalIdle();
   };
   const handleReducedMotionChange = () => {
-    if (reduceMotion.matches && gloveState.breathing) {
-      gloveState.breathing = false;
-      applyGloveState();
-    }
+    applyGloveState();
     cancelIdle();
     if (reduceMotion.matches && interactionState === 'idle-active') {
       cancelHeadlineTransition();
@@ -1097,65 +1055,27 @@ export function initHeroHeadlineLanguages({
   listen(window, 'resize', handleResize, { passive: true });
   listen(document, 'felya:languagechange', handleLanguageChange);
   listen(document, 'felya:themechange', handleThemeChange);
+  listen(document, 'felya:activate-beyondearth', activateEasterEgg);
   listen(document, 'pointerdown', handleDocumentPointerDown);
   listen(document, 'visibilitychange', handleVisibilityChange);
   if (gloveToggle) {
-    const releaseGlove = () => dimGlove(260);
-    const cancelGloveGesture = () => {
-      window.clearTimeout(gloveGestureTimer);
-      gloveGestureTimer = 0;
-    };
-    const scheduleEasterEggGloveToggle = () => {
-      cancelGloveGesture();
-      gloveGestureTimer = window.setTimeout(() => {
-        gloveGestureTimer = 0;
-        toggleEasterEggGlove();
-      }, 240);
-    };
     listen(gloveToggle, 'pointerdown', (event) => {
       gloveToggle.setPointerCapture?.(event.pointerId);
-      if (gloveState.context === 'normal') lightGlove();
     });
     listen(gloveToggle, 'pointerup', (event) => {
       gloveToggle.releasePointerCapture?.(event.pointerId);
-      if (event.pointerType !== 'touch') {
-        if (gloveState.context === 'normal') releaseGlove();
-        return;
+      if (event.pointerType === 'touch') {
+        ignoreGloveTouchClickUntil = performance.now() + 700;
+        toggleGloveLight();
       }
-
-      ignoreGloveTouchClickUntil = performance.now() + 700;
-      touchGloveTapCount += 1;
-      if (touchGloveTapCount === 1) {
-        if (gloveState.context === 'normal') releaseGlove();
-        if (gloveState.context === 'easter-egg') scheduleEasterEggGloveToggle();
-      } else if (touchGloveTapCount === 2) {
-        cancelGloveGesture();
-        toggleBreathing();
-        touchGloveTapCount = 0;
-        return;
-      }
-      window.setTimeout(() => { touchGloveTapCount = 0; }, 280);
-    });
-    listen(gloveToggle, 'pointercancel', () => {
-      if (gloveState.context === 'normal') dimGlove();
     });
     listen(gloveToggle, 'click', (event) => {
-      if (performance.now() < ignoreGloveTouchClickUntil || gloveState.context !== 'easter-egg') return;
-      if (event.detail === 1) scheduleEasterEggGloveToggle();
-    });
-    listen(gloveToggle, 'dblclick', (event) => {
-      event.preventDefault();
-      cancelGloveGesture();
-      toggleBreathing();
+      if (performance.now() >= ignoreGloveTouchClickUntil) toggleGloveLight();
     });
     listen(gloveToggle, 'keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
-      if (gloveState.context === 'easter-egg') toggleEasterEggGlove();
-      else lightGlove();
-    });
-    listen(gloveToggle, 'keyup', (event) => {
-      if ((event.key === 'Enter' || event.key === ' ') && gloveState.context === 'normal') releaseGlove();
+      toggleGloveLight();
     });
   }
   reduceMotion.addEventListener?.('change', handleReducedMotionChange);
@@ -1172,7 +1092,6 @@ export function initHeroHeadlineLanguages({
   const cleanup = () => {
     isDestroyed = true;
     window.clearTimeout(gloveLightTimer);
-    window.clearTimeout(gloveGestureTimer);
     cancelPreview();
     cancelTimers();
     listeners.splice(0).forEach((removeListener) => removeListener());
@@ -1640,6 +1559,11 @@ export function initHeroEarthRotation({ root = document } = {}) {
   let dragStartY = 0;
   let dragLastX = 0;
   let dragLastY = 0;
+  // 0.32°/px horizontally and 0.22°/px vertically means 1,440° requires deliberate,
+  // repeated spinning (about four full turns), not ordinary geographical exploration.
+  const EASTER_EGG_DRAG_THRESHOLD_DEG = 1440;
+  let dragRotationTravelDeg = 0;
+  let dragEasterEggTriggered = false;
 
   let beyondActive = false;
   let beyondToggledAt = 0;
@@ -1742,6 +1666,8 @@ export function initHeroEarthRotation({ root = document } = {}) {
     dragStarted = false;
     dragStartX = dragLastX = event.clientX;
     dragStartY = dragLastY = event.clientY;
+    dragRotationTravelDeg = 0;
+    dragEasterEggTriggered = false;
     manualPaused = true;
     container.setPointerCapture?.(event.pointerId);
     stop();
@@ -1759,6 +1685,11 @@ export function initHeroEarthRotation({ root = document } = {}) {
     dragLastY = event.clientY;
     lon0 = (((lon0 - deltaX * 0.32) % 360) + 360) % 360;
     manualLatitudeDeg = Math.max(-78, Math.min(78, manualLatitudeDeg + deltaY * 0.22));
+    dragRotationTravelDeg += Math.abs(deltaX * 0.32) + Math.abs(deltaY * 0.22);
+    if (!dragEasterEggTriggered && dragRotationTravelDeg >= EASTER_EGG_DRAG_THRESHOLD_DEG) {
+      dragEasterEggTriggered = true;
+      document.dispatchEvent(new CustomEvent('felya:activate-beyondearth'));
+    }
     renderPath(performance.now());
     event.preventDefault();
   };
@@ -1832,7 +1763,9 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   if (reduceMotion.matches) return; // static/absent starfield, no motion to opt out of
 
-  const STREAK_COUNT = 56;
+  const compact = window.matchMedia('(max-width: 767px)').matches;
+  // Bounded, static DOM: CSS owns every animation frame. About 90% cool tones, 10% gold accents.
+  const STREAK_COUNT = compact ? 30 : 44;
   let built = false;
 
   const build = () => {
@@ -1841,15 +1774,20 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
     const fragment = document.createDocumentFragment();
     for (let i = 0; i < STREAK_COUNT; i += 1) {
       const streak = document.createElement('span');
-      streak.className = 'hero-starfield__streak';
-      const duration = 3.4 + random() * 3.6;
+      const depth = random() < 0.48 ? 'far' : random() < 0.88 ? 'mid' : 'near';
+      const gold = random() < 0.1;
+      const rare = !gold && random() < 0.07;
+      streak.className = `hero-starfield__streak hero-starfield__streak--${depth}${gold ? ' hero-starfield__streak--gold' : ''}${rare ? ' hero-starfield__streak--rare' : ''}`;
+      const duration = depth === 'far' ? 6.2 + random() * 3.6 : depth === 'near' ? 2.9 + random() * 2.1 : 4.1 + random() * 3;
       streak.style.setProperty('--x', `${(random() * 100).toFixed(2)}%`);
-      streak.style.setProperty('--len', `${Math.round(60 + random() * 100)}px`);
+      streak.style.setProperty('--len', `${Math.round(depth === 'far' ? 38 + random() * 48 : depth === 'near' ? 88 + random() * 104 : 58 + random() * 80)}px`);
+      streak.style.setProperty('--width', `${(depth === 'near' ? 1.6 + random() * 1.2 : 0.8 + random() * 1.1).toFixed(1)}px`);
+      streak.style.setProperty('--drift', `${Math.round(-22 + random() * 44)}px`);
       streak.style.setProperty('--dur', `${duration.toFixed(2)}s`);
       // Negative delay starts each streak mid-flight instead of every streak launching from the
       // same point in unison the moment the easter egg activates.
       streak.style.setProperty('--delay', `${(-random() * duration).toFixed(2)}s`);
-      streak.style.setProperty('--peak', (0.32 + random() * 0.38).toFixed(2));
+      streak.style.setProperty('--peak', (depth === 'far' ? 0.14 + random() * 0.2 : depth === 'near' ? 0.34 + random() * 0.3 : 0.23 + random() * 0.3).toFixed(2));
       fragment.appendChild(streak);
     }
     container.appendChild(fragment);
