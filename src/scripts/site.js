@@ -432,6 +432,17 @@ export function initHeroHeadlineLanguages({
   let warmGloveLoadId = 0;
   let gloveLightTimer = 0;
   let gloveTapPending = false;
+  let gloveGestureTimer = 0;
+  let touchGloveTapCount = 0;
+  let ignoreGloveTouchClickUntil = 0;
+  // The warm glove is a presentation layer, not the source of truth. Keep the state that
+  // determines it independent from the temporary breathing effect and the Beyond Earth context.
+  const gloveState = {
+    baseLit: false,
+    breathing: false,
+    context: 'normal',
+    savedNormalBaseLit: false
+  };
   let isPointerInside = false;
   let isFocused = false;
   let touchTapCount = 0;
@@ -613,7 +624,10 @@ export function initHeroHeadlineLanguages({
         if (gloveTapPending) {
           gloveTapPending = false;
           window.clearTimeout(gloveLightTimer);
-          gloveLightTimer = window.setTimeout(() => hero?.classList.remove('hero-section--glove-lit'), 340);
+          gloveLightTimer = window.setTimeout(() => {
+            gloveState.baseLit = false;
+            applyGloveState();
+          }, 340);
         }
       };
       if (!warmGlove.getAttribute('src')) {
@@ -627,11 +641,20 @@ export function initHeroHeadlineLanguages({
     }
   };
 
+  const applyGloveState = () => {
+    const inEasterEgg = gloveState.context === 'easter-egg';
+    const breathing = gloveState.breathing && !reduceMotion.matches;
+    hero?.classList.toggle('hero-section--glove-lit', !inEasterEgg && gloveState.baseLit);
+    hero?.classList.toggle('hero-section--easter-egg-glove-off', inEasterEgg && !gloveState.baseLit);
+    hero?.classList.toggle('hero-section--glove-breathing', breathing);
+    if (gloveState.baseLit || breathing || inEasterEgg) prepareWarmGlove();
+  };
+
   const lightGlove = () => {
     window.clearTimeout(gloveLightTimer);
     gloveTapPending = false;
-    hero?.classList.add('hero-section--glove-lit');
-    prepareWarmGlove();
+    gloveState.baseLit = true;
+    applyGloveState();
   };
 
   const dimGlove = (delay = 0) => {
@@ -640,13 +663,32 @@ export function initHeroHeadlineLanguages({
       gloveTapPending = true;
       return;
     }
-    gloveLightTimer = window.setTimeout(() => hero?.classList.remove('hero-section--glove-lit'), delay);
+    gloveLightTimer = window.setTimeout(() => {
+      gloveState.baseLit = false;
+      applyGloveState();
+    }, delay);
+  };
+
+  const toggleBreathing = () => {
+    gloveState.breathing = !gloveState.breathing;
+    applyGloveState();
+  };
+
+  const toggleEasterEggGlove = () => {
+    if (gloveState.context !== 'easter-egg') return;
+    gloveState.baseLit = !gloveState.baseLit;
+    applyGloveState();
   };
 
   const showEasterEgg = () => {
     isEasterEggActive = true;
+    // Capture before any egg-local light or breathing interaction can mutate it.
+    gloveState.savedNormalBaseLit = gloveState.baseLit;
+    gloveState.context = 'easter-egg';
+    gloveState.baseLit = true;
+    gloveState.breathing = false;
     hero?.classList.add('hero-section--easter-egg');
-    prepareWarmGlove();
+    applyGloveState();
     setState('easter-egg');
     headline.textContent = 'Beyond Earth. ✨';
     headline.lang = 'en';
@@ -893,7 +935,11 @@ export function initHeroHeadlineLanguages({
     claimManualInteraction();
     if (isEasterEggActive) {
       isEasterEggActive = false;
+      gloveState.context = 'normal';
+      gloveState.baseLit = gloveState.savedNormalBaseLit;
+      gloveState.breathing = false;
       hero?.classList.remove('hero-section--easter-egg');
+      applyGloveState();
       setState('interaction');
       document.dispatchEvent(new CustomEvent('felya:beyondearth', { detail: { active: false } }));
       await transitionHeadline(restoreHeadline);
@@ -1025,6 +1071,10 @@ export function initHeroHeadlineLanguages({
     if (!isEasterEggActive && !mobileHeroLite) scheduleNormalIdle();
   };
   const handleReducedMotionChange = () => {
+    if (reduceMotion.matches && gloveState.breathing) {
+      gloveState.breathing = false;
+      applyGloveState();
+    }
     cancelIdle();
     if (reduceMotion.matches && interactionState === 'idle-active') {
       cancelHeadlineTransition();
@@ -1051,22 +1101,61 @@ export function initHeroHeadlineLanguages({
   listen(document, 'visibilitychange', handleVisibilityChange);
   if (gloveToggle) {
     const releaseGlove = () => dimGlove(260);
+    const cancelGloveGesture = () => {
+      window.clearTimeout(gloveGestureTimer);
+      gloveGestureTimer = 0;
+    };
+    const scheduleEasterEggGloveToggle = () => {
+      cancelGloveGesture();
+      gloveGestureTimer = window.setTimeout(() => {
+        gloveGestureTimer = 0;
+        toggleEasterEggGlove();
+      }, 240);
+    };
     listen(gloveToggle, 'pointerdown', (event) => {
       gloveToggle.setPointerCapture?.(event.pointerId);
-      lightGlove();
+      if (gloveState.context === 'normal') lightGlove();
     });
     listen(gloveToggle, 'pointerup', (event) => {
       gloveToggle.releasePointerCapture?.(event.pointerId);
-      releaseGlove();
+      if (event.pointerType !== 'touch') {
+        if (gloveState.context === 'normal') releaseGlove();
+        return;
+      }
+
+      ignoreGloveTouchClickUntil = performance.now() + 700;
+      touchGloveTapCount += 1;
+      if (touchGloveTapCount === 1) {
+        if (gloveState.context === 'normal') releaseGlove();
+        if (gloveState.context === 'easter-egg') scheduleEasterEggGloveToggle();
+      } else if (touchGloveTapCount === 2) {
+        cancelGloveGesture();
+        toggleBreathing();
+        touchGloveTapCount = 0;
+        return;
+      }
+      window.setTimeout(() => { touchGloveTapCount = 0; }, 280);
     });
-    listen(gloveToggle, 'pointercancel', () => dimGlove());
+    listen(gloveToggle, 'pointercancel', () => {
+      if (gloveState.context === 'normal') dimGlove();
+    });
+    listen(gloveToggle, 'click', (event) => {
+      if (performance.now() < ignoreGloveTouchClickUntil || gloveState.context !== 'easter-egg') return;
+      if (event.detail === 1) scheduleEasterEggGloveToggle();
+    });
+    listen(gloveToggle, 'dblclick', (event) => {
+      event.preventDefault();
+      cancelGloveGesture();
+      toggleBreathing();
+    });
     listen(gloveToggle, 'keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
-      lightGlove();
+      if (gloveState.context === 'easter-egg') toggleEasterEggGlove();
+      else lightGlove();
     });
     listen(gloveToggle, 'keyup', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') releaseGlove();
+      if ((event.key === 'Enter' || event.key === ' ') && gloveState.context === 'normal') releaseGlove();
     });
   }
   reduceMotion.addEventListener?.('change', handleReducedMotionChange);
@@ -1083,6 +1172,7 @@ export function initHeroHeadlineLanguages({
   const cleanup = () => {
     isDestroyed = true;
     window.clearTimeout(gloveLightTimer);
+    window.clearTimeout(gloveGestureTimer);
     cancelPreview();
     cancelTimers();
     listeners.splice(0).forEach((removeListener) => removeListener());
@@ -1384,7 +1474,7 @@ export function initHeroCopyAlignment({ root = document } = {}) {
 }
 
 export function initHeroEarthRotation({ root = document } = {}) {
-  const container = root.querySelector('.hero-earth');
+  const container = root.querySelector('[data-hero-earth-drag]');
   const path = root.querySelector('.hero-earth__coastline path');
   if (!container || !path) return;
 
@@ -1540,6 +1630,16 @@ export function initHeroEarthRotation({ root = document } = {}) {
   let mobilePerfScrolling = false;
   let disposed = false;
   let lon0 = Number.isFinite(preservedLon) ? preservedLon : LON_START;
+  // Manual orientation is intentionally accumulated separately from the clock-driven longitude.
+  // Releasing a drag therefore resumes the same renderer from the exact projection the user left.
+  let manualLatitudeDeg = 0;
+  let manualPaused = false;
+  let activePointerId = null;
+  let dragStarted = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragLastX = 0;
+  let dragLastY = 0;
 
   let beyondActive = false;
   let beyondToggledAt = 0;
@@ -1565,8 +1665,19 @@ export function initHeroEarthRotation({ root = document } = {}) {
     sync();
   });
 
-  const canRun = () => !disposed && visible && pageActive && !frozen
+  const canRun = () => !disposed && visible && pageActive && !frozen && !manualPaused
     && !mobilePerfScrolling && document.visibilityState === 'visible' && !reduceMotion.matches;
+
+  const renderPath = (now) => {
+    const intensity = currentIntensity(now);
+    const tiltDeg = manualLatitudeDeg + intensity * (BEYOND_TILT_CENTER_DEG
+      + BEYOND_TILT_AMPLITUDE_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2));
+    const rollDeg = intensity * BEYOND_ROLL_DEG
+      * Math.sin((now / BEYOND_ROLL_PERIOD_MS) * Math.PI * 2 + BEYOND_ROLL_PHASE);
+    const lat0R = tiltDeg * D2R;
+    const rollR = rollDeg * D2R;
+    path.setAttribute('d', buildPath(lon0, lat0R, Math.cos(rollR), Math.sin(rollR)));
+  };
 
   function tick(now) {
     frame = null;
@@ -1601,13 +1712,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
     lastUpdate = lastUpdate === null || !compact
       ? now : lastUpdate + Math.floor((now - lastUpdate + tolerance) / interval) * interval;
 
-    const tiltDeg = intensity * (BEYOND_TILT_CENTER_DEG
-      + BEYOND_TILT_AMPLITUDE_DEG * Math.sin((now / BEYOND_TILT_PERIOD_MS) * Math.PI * 2));
-    const rollDeg = intensity * BEYOND_ROLL_DEG
-      * Math.sin((now / BEYOND_ROLL_PERIOD_MS) * Math.PI * 2 + BEYOND_ROLL_PHASE);
-    const lat0R = tiltDeg * D2R;
-    const rollR = rollDeg * D2R;
-    path.setAttribute('d', buildPath(lon0, lat0R, Math.cos(rollR), Math.sin(rollR)));
+    renderPath(now);
     start();
   }
 
@@ -1621,6 +1726,46 @@ export function initHeroEarthRotation({ root = document } = {}) {
     lastUpdate = null;
   }
   const sync = () => { if (canRun()) start(); else stop(); };
+  const endDrag = (event) => {
+    if (event.pointerId !== activePointerId) return;
+    container.releasePointerCapture?.(event.pointerId);
+    activePointerId = null;
+    manualPaused = false;
+    dragStarted = false;
+    container.classList.remove('is-dragging');
+    // start() resets integration on the paused frame, preventing a catch-up jump.
+    sync();
+  };
+  const onPointerDown = (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    activePointerId = event.pointerId;
+    dragStarted = false;
+    dragStartX = dragLastX = event.clientX;
+    dragStartY = dragLastY = event.clientY;
+    manualPaused = true;
+    container.setPointerCapture?.(event.pointerId);
+    stop();
+  };
+  const onPointerMove = (event) => {
+    if (event.pointerId !== activePointerId) return;
+    const totalX = event.clientX - dragStartX;
+    const totalY = event.clientY - dragStartY;
+    if (!dragStarted && Math.hypot(totalX, totalY) < 5) return;
+    dragStarted = true;
+    container.classList.add('is-dragging');
+    const deltaX = event.clientX - dragLastX;
+    const deltaY = event.clientY - dragLastY;
+    dragLastX = event.clientX;
+    dragLastY = event.clientY;
+    lon0 = (((lon0 - deltaX * 0.32) % 360) + 360) % 360;
+    manualLatitudeDeg = Math.max(-78, Math.min(78, manualLatitudeDeg + deltaY * 0.22));
+    renderPath(performance.now());
+    event.preventDefault();
+  };
+  container.addEventListener?.('pointerdown', onPointerDown);
+  container.addEventListener?.('pointermove', onPointerMove);
+  container.addEventListener?.('pointerup', endDrag);
+  container.addEventListener?.('pointercancel', endDrag);
   const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.target === container) visible = entry.isIntersecting;
@@ -1654,6 +1799,10 @@ export function initHeroEarthRotation({ root = document } = {}) {
     document.removeEventListener('freeze', onFreeze);
     document.removeEventListener('resume', onResume);
     document.removeEventListener('felya:mobileperfscroll', onMobilePerfScroll);
+    container.removeEventListener?.('pointerdown', onPointerDown);
+    container.removeEventListener?.('pointermove', onPointerMove);
+    container.removeEventListener?.('pointerup', endDrag);
+    container.removeEventListener?.('pointercancel', endDrag);
     window.removeEventListener('pagehide', onPageHide);
     window.removeEventListener('pageshow', onPageShow);
     if (container.__felyaEarthCleanup === cleanup) delete container.__felyaEarthCleanup;

@@ -1854,8 +1854,16 @@ html[data-theme="light"] .hero-starfield { --hero-starfield-peak-scale: 0.55; }
     inset: 0;
     z-index: 1;
     overflow: hidden;
-    pointer-events: none;
+    /* The planet is the drag target. Restricting pointer input to this layer keeps the
+       composition and headline selectable/interactive as before. */
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grab;
 }
+
+.hero-earth.is-dragging { cursor: grabbing; }
 
 .hero-earth__horizon {
     position: absolute;
@@ -2261,8 +2269,32 @@ html[data-theme="light"] .hero-headline-language-hitbox {
     transition-duration: 2700ms;
 }
 
+/* The warm image is the existing light treatment. Breathing only changes its opacity, so its
+   brightest phase remains exactly the established light intensity. One cycle is 5.6 seconds. */
+.hero-section--glove-breathing .hero-product-image--warm.is-ready {
+    opacity: 1;
+    filter: brightness(1.12) saturate(1.08);
+    animation: hero-glove-light-breathe 5.6s ease-in-out infinite;
+}
+
+.hero-section--easter-egg.hero-section--easter-egg-glove-off .hero-product-image--warm.is-ready {
+    opacity: 0;
+    filter: brightness(0.84) saturate(0.82);
+}
+
+.hero-section--easter-egg.hero-section--easter-egg-glove-off.hero-section--glove-breathing .hero-product-image--warm.is-ready {
+    opacity: 1;
+    filter: brightness(1.12) saturate(1.08);
+}
+
+@keyframes hero-glove-light-breathe {
+    0%, 100% { opacity: 0.08; filter: brightness(0.84) saturate(0.82); }
+    50% { opacity: 1; filter: brightness(1.12) saturate(1.08); }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .hero-product-image--warm { transition: none; }
+    .hero-section--glove-breathing .hero-product-image--warm.is-ready { animation: none; }
 }
 
 /* Browser chrome can change a portrait phone's visual height during a gesture.
