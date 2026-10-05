@@ -32,6 +32,7 @@ const { locale } = Astro.props as { locale: Locale };
                     <a href={link.href} data-i18n={`legal.${link.key}`}>{t(locale, `legal.${link.key}` as TranslationKey)}</a>
                 ))}
                 <a href="https://brand.felya.com" target="_blank" rel="noopener noreferrer">Brand Guide</a>
+                <a href="https://brand.felya.com/pyra-rebrand/" target="_blank" rel="noopener noreferrer">Pyra Rebrand</a>
             </nav>
             <p class="footer-copyright" data-i18n="footer.copyright">{t(locale, 'footer.copyright')}</p>
         </div>
