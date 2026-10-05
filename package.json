@@ -9,6 +9,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "build:brand-v5": "node scripts/build-v5-brand-assets.mjs",
+    "build:future-sketch-chest-pyra": "node scripts/build-future-sketch-chest-pyra.mjs",
     "generate:system-collision-masks": "node scripts/generate-system-collision-masks.mjs",
     "verify:references": "node scripts/verify-repository.mjs",
     "verify:i18n": "node --experimental-strip-types scripts/verify-localizations.mjs",
