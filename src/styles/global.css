@@ -1808,15 +1808,11 @@ html[data-theme-wipe-direction="rtl"] .hero-section::after {
     overflow: hidden;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 480ms cubic-bezier(.16, .82, .25, 1);
+    transition: opacity 900ms cubic-bezier(.4, 0, .2, 1);
 }
 
 .hero-starfield.is-active {
     opacity: 1;
-}
-
-.hero-starfield.is-active .hero-starfield__streak {
-    animation-timing-function: cubic-bezier(.26, .02, .7, .9);
 }
 
 @media (prefers-reduced-motion: reduce) {

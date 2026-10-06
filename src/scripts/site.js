@@ -1769,8 +1769,8 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
   if (reduceMotion.matches) return; // static/absent starfield, no motion to opt out of
 
   const compact = window.matchMedia('(max-width: 767px)').matches;
-  // Bounded, static DOM: CSS owns every animation frame. The four depth layers share the
-  // globe's medium-blue family; depth controls their brightness instead of any white highlight.
+  // Bounded, static DOM: CSS owns every animation frame. The four depth layers use the same
+  // FELYA accent as the globe; geometry and opacity, rather than colour, create their depth.
   const STREAK_COUNT = compact ? 70 : 128;
   let built = false;
 
@@ -1781,25 +1781,17 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
     for (let i = 0; i < STREAK_COUNT; i += 1) {
       const streak = document.createElement('span');
       const depth = random() < 0.38 ? 'far' : random() < 0.78 ? 'mid' : random() < 0.95 ? 'near' : 'ultra';
-      const rare = random() < 0.07;
-      streak.className = `hero-starfield__streak hero-starfield__streak--${depth}${rare ? ' hero-starfield__streak--rare' : ''}`;
-      const duration = depth === 'far' ? 6.6 + random() * 3.4 : depth === 'ultra' ? 1.7 + random() * 1.2 : depth === 'near' ? 2.5 + random() * 1.9 : 3.8 + random() * 2.7;
+      streak.className = `hero-starfield__streak hero-starfield__streak--${depth}`;
+      const duration = depth === 'far' ? 6 + random() * 3 : depth === 'ultra' ? 2.2 + random() * 1.3 : depth === 'near' ? 3 + random() * 2 : 4 + random() * 3;
       streak.style.setProperty('--x', `${(random() * 100).toFixed(2)}%`);
-      streak.style.setProperty('--len', `${Math.round(depth === 'far' ? 5 + random() * 28 : depth === 'ultra' ? 145 + random() * 125 : depth === 'near' ? 78 + random() * 120 : 30 + random() * 76)}px`);
-      streak.style.setProperty('--width', `${(depth === 'ultra' ? 2 + random() * 1.4 : depth === 'near' ? 1.4 + random() * 1.1 : 0.7 + random() * 1).toFixed(1)}px`);
+      streak.style.setProperty('--len', `${Math.round(depth === 'far' ? 20 + random() * 40 : depth === 'ultra' ? 120 + random() * 90 : depth === 'near' ? 80 + random() * 80 : 50 + random() * 60)}px`);
+      streak.style.setProperty('--width', `${(depth === 'ultra' ? 1.8 + random() * 0.8 : depth === 'near' ? 1.4 + random() * 0.8 : depth === 'far' ? 0.8 + random() * 0.4 : 1 + random() * 0.6).toFixed(1)}px`);
       streak.style.setProperty('--drift', `${Math.round(-38 + random() * 76)}px`);
       streak.style.setProperty('--dur', `${duration.toFixed(2)}s`);
       // Negative delay starts each streak mid-flight instead of every streak launching from the
       // same point in unison the moment the easter egg activates.
       streak.style.setProperty('--delay', `${(-random() * duration).toFixed(2)}s`);
-      const cool = rare
-        ? '#7faeff'
-        : depth === 'far' ? '#4c7ec7'
-          : depth === 'mid' ? '#5d90df'
-            : depth === 'near' ? '#69b2ff'
-              : '#6f8fe8';
-      streak.style.setProperty('--particle-color', cool);
-      streak.style.setProperty('--peak', (depth === 'far' ? 0.16 + random() * 0.18 : depth === 'ultra' ? 0.38 + random() * 0.2 : depth === 'near' ? 0.3 + random() * 0.24 : 0.22 + random() * 0.23).toFixed(2));
+      streak.style.setProperty('--peak', (depth === 'far' ? 0.28 + random() * 0.14 : depth === 'ultra' ? 0.48 + random() * 0.22 : depth === 'near' ? 0.42 + random() * 0.2 : 0.34 + random() * 0.18).toFixed(2));
       fragment.appendChild(streak);
     }
     container.appendChild(fragment);
