@@ -1770,7 +1770,7 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
 
   const compact = window.matchMedia('(max-width: 767px)').matches;
   // Bounded, static DOM: CSS owns every animation frame. The four depth layers share the
-  // established cool blue family so brightness, not a warm accent colour, creates variety.
+  // globe's medium-blue family; depth controls their brightness instead of any white highlight.
   const STREAK_COUNT = compact ? 70 : 128;
   let built = false;
 
@@ -1792,9 +1792,14 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
       // Negative delay starts each streak mid-flight instead of every streak launching from the
       // same point in unison the moment the easter egg activates.
       streak.style.setProperty('--delay', `${(-random() * duration).toFixed(2)}s`);
-      const cool = random() < 0.35 ? '#e8f8ff' : random() < 0.7 ? '#aee9ff' : random() < 0.88 ? '#73c9ff' : '#86aef8';
+      const cool = rare
+        ? '#7faeff'
+        : depth === 'far' ? '#4c7ec7'
+          : depth === 'mid' ? '#5d90df'
+            : depth === 'near' ? '#69b2ff'
+              : '#6f8fe8';
       streak.style.setProperty('--particle-color', cool);
-      streak.style.setProperty('--peak', (depth === 'far' ? 0.2 + random() * 0.22 : depth === 'ultra' ? 0.48 + random() * 0.24 : depth === 'near' ? 0.38 + random() * 0.3 : 0.28 + random() * 0.3).toFixed(2));
+      streak.style.setProperty('--peak', (depth === 'far' ? 0.16 + random() * 0.18 : depth === 'ultra' ? 0.38 + random() * 0.2 : depth === 'near' ? 0.3 + random() * 0.24 : 0.22 + random() * 0.23).toFixed(2));
       fragment.appendChild(streak);
     }
     container.appendChild(fragment);
