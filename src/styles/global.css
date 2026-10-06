@@ -1846,7 +1846,7 @@ html[data-theme="light"] .hero-starfield { --hero-starfield-peak-scale: 0.55; }
     animation: hero-starfield-streak var(--dur, 5s) linear var(--delay, 0s) infinite;
 }
 
-.hero-starfield__streak--rare { --particle-color: #d9f7ff; }
+.hero-starfield__streak--rare { --particle-color: #8abfff; }
 
 @keyframes hero-starfield-streak {
     0% { transform: translate3d(0, 0, 0) scaleY(0.4); opacity: 0; }

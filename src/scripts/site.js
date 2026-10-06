@@ -1769,8 +1769,8 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
   if (reduceMotion.matches) return; // static/absent starfield, no motion to opt out of
 
   const compact = window.matchMedia('(max-width: 767px)').matches;
-  // Bounded, static DOM: CSS owns every animation frame. The four depth layers share one
-  // cool near-white/cyan/ice-blue family so brightness, not a warm accent colour, creates variety.
+  // Bounded, static DOM: CSS owns every animation frame. The four depth layers share the
+  // established cool blue family so brightness, not a warm accent colour, creates variety.
   const STREAK_COUNT = compact ? 70 : 128;
   let built = false;
 
@@ -1792,7 +1792,7 @@ export function initHeroBeyondEarthStarfield({ root = document, random = Math.ra
       // Negative delay starts each streak mid-flight instead of every streak launching from the
       // same point in unison the moment the easter egg activates.
       streak.style.setProperty('--delay', `${(-random() * duration).toFixed(2)}s`);
-      const cool = random() < 0.35 ? '#f4fcff' : random() < 0.7 ? '#d8f6ff' : random() < 0.88 ? '#b3edff' : '#8ed8ff';
+      const cool = random() < 0.35 ? '#e8f8ff' : random() < 0.7 ? '#aee9ff' : random() < 0.88 ? '#73c9ff' : '#86aef8';
       streak.style.setProperty('--particle-color', cool);
       streak.style.setProperty('--peak', (depth === 'far' ? 0.2 + random() * 0.22 : depth === 'ultra' ? 0.48 + random() * 0.24 : depth === 'near' ? 0.38 + random() * 0.3 : 0.28 + random() * 0.3).toFixed(2));
       fragment.appendChild(streak);
