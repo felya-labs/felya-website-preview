@@ -16,6 +16,7 @@ env:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main' && github.repository == 'felya-labs/felya-website-preview'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -23,6 +24,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify Canvas preservation before Pages build
+        run: node .github/workflows/verify-canvas-preservation.mjs
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
