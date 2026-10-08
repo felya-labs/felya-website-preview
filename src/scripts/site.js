@@ -1,3 +1,4 @@
+import { initHeroShowcase } from './cinematic-hero.js';
 import { initPartnerImages, initFutureImages } from './image-loading.js';
 import {
   colorTheme,
@@ -198,7 +199,8 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
   // uninterrupted the entire time; see the CSS for the rest of this.
   const heroSection = root.querySelector('.hero-section');
   const runThemeWipe = (nextTheme, direction) => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || heroSection?.closest('.hero-classic')?.hasAttribute('data-hero-inactive')) {
+      delete document.documentElement.dataset.themeWipeDirection;
       applyTheme(nextTheme);
       return;
     }
@@ -691,6 +693,7 @@ export function initHeroHeadlineLanguages({
     && !mobileHeroLite
     && !reduceMotion.matches
     && !document.hidden
+    && !hero?.closest('.hero-classic')?.hasAttribute('data-hero-inactive')
     && !isIntroActive
     && !isEasterEggActive
     && !isPointerInside
@@ -792,6 +795,7 @@ export function initHeroHeadlineLanguages({
   };
 
   const runThemePreview = async () => {
+    if (hero?.closest('.hero-classic')?.hasAttribute('data-hero-inactive')) return;
     if (mobileHeroLite) return;
     if (isEasterEggActive) return;
 
@@ -856,6 +860,11 @@ export function initHeroHeadlineLanguages({
   };
 
   const scheduleIntro = async () => {
+    if (hero?.closest('.hero-classic')?.hasAttribute('data-hero-inactive')) {
+      hitbox.removeAttribute('data-hero-intro-pending');
+      restoreHeadline();
+      return;
+    }
     if (mobileHeroLite) {
       hitbox.removeAttribute('data-hero-intro-pending');
       restoreHeadline();
@@ -1010,6 +1019,7 @@ export function initHeroHeadlineLanguages({
     runThemePreview();
   };
   const handleDocumentPointerDown = (event) => {
+    if (hero?.closest('.hero-classic')?.hasAttribute('data-hero-inactive')) return;
     if (isEasterEggActive || hitbox.contains(event.target)) return;
 
     if (document.activeElement === hitbox) hitbox.blur();
@@ -1062,6 +1072,11 @@ export function initHeroHeadlineLanguages({
   listen(document, 'felya:activate-beyondearth', activateEasterEgg);
   listen(document, 'pointerdown', handleDocumentPointerDown);
   listen(document, 'visibilitychange', handleVisibilityChange);
+  listen(document, 'felya:herovariantchange', () => {
+    if (hero?.closest('.hero-classic')?.hasAttribute('data-hero-inactive')) {
+      cancelIntro(); cancelIdle(); cancelPreview(); cancelHeadlineTransition();
+    } else { fitHeadline(); scheduleIntro(); }
+  });
   if (gloveToggle) {
     listen(gloveToggle, 'pointerdown', (event) => {
       gloveToggle.setPointerCapture?.(event.pointerId);
@@ -1595,7 +1610,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
     sync();
   });
 
-  const canRun = () => !disposed && visible && pageActive && !frozen && !manualPaused
+  const canRun = () => !container.closest('.hero-classic')?.hasAttribute('data-hero-inactive') && !disposed && visible && pageActive && !frozen && !manualPaused
     && !mobilePerfScrolling && document.visibilityState === 'visible' && !reduceMotion.matches;
 
   const renderPath = (now) => {
@@ -1735,6 +1750,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
     reduceMotion.removeEventListener?.('change', sync);
     compactViewport.removeEventListener?.('change', onViewportChange);
     document.removeEventListener('visibilitychange', sync);
+    document.removeEventListener('felya:herovariantchange', sync);
     document.removeEventListener('freeze', onFreeze);
     document.removeEventListener('resume', onResume);
     document.removeEventListener('felya:mobileperfscroll', onMobilePerfScroll);
@@ -1751,6 +1767,7 @@ export function initHeroEarthRotation({ root = document } = {}) {
   reduceMotion.addEventListener?.('change', sync);
   compactViewport.addEventListener?.('change', onViewportChange);
   document.addEventListener('visibilitychange', sync);
+  document.addEventListener('felya:herovariantchange', sync);
   document.addEventListener('freeze', onFreeze);
   document.addEventListener('resume', onResume);
   document.addEventListener('felya:mobileperfscroll', onMobilePerfScroll);
@@ -2938,6 +2955,7 @@ export function initSite(root = document) {
   initLanguageSelector({ root });
   initTwoLineHeadings({ root });
   initMobileNavigation({ root });
+  initHeroShowcase({ root, translate });
   initHeroHeadlineLanguages({ root });
   initDevelopmentUpdatesForm({ root });
   initPrototypeVideoCover({ root });

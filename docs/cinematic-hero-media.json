@@ -1,0 +1,65 @@
+{
+  "source": "S01 / F01-SH-02 and F01-SH-04",
+  "source_sha256": "c41472d60d4308d128ccf9ea92d69dde4a9119f89423fa837b9bce5a306a0a6a",
+  "source_resolution": [
+    1280,
+    720
+  ],
+  "fps": 30,
+  "frames": 231,
+  "duration": 7.7,
+  "codec": "H.264 High / yuv420p / BT.709 / faststart / no audio",
+  "exports": [
+    {
+      "file": "b2-desktop.mp4",
+      "bytes": 931650,
+      "sha256": "21f4526166ea91dde7d297c4f6cae1445c635661a7f4de13dde619aa02d3865e"
+    },
+    {
+      "file": "b2-mobile.mp4",
+      "bytes": 506827,
+      "sha256": "676ef6b2c46e06aef991fe3914ab2b431b31e666955a00a420c40374cc81d256"
+    },
+    {
+      "file": "b2-poster.jpg",
+      "bytes": 76038,
+      "sha256": "255ec15ac6b17491a0a413193fbea6d6d7d40d5942450dde50a36cae1f2ad49d"
+    }
+  ],
+  "cuts": [
+    {
+      "shot": "C02",
+      "in": 2530,
+      "out_exclusive": 2630,
+      "crop": [
+        280,
+        64,
+        900,
+        656
+      ]
+    },
+    {
+      "shot": "C04",
+      "in": 2886,
+      "out_exclusive": 3017,
+      "crop": [
+        0,
+        0,
+        1280,
+        720
+      ]
+    }
+  ],
+  "output_resolution": {
+    "desktop": [
+      900,
+      656
+    ],
+    "mobile": [
+      630,
+      460
+    ]
+  },
+  "encoding": "libx264 / slow / CRF 20 desktop, 21 mobile / GOP 60; unchanged exports",
+  "poster": "selected C02 sequence frame 55"
+}

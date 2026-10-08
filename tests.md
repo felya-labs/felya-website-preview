@@ -5,6 +5,7 @@
 | Dependency install | `bun install --frozen-lockfile` | Lockfile can restore the project dependencies |
 | Static build | `bun run build` | Astro generates the GitHub Pages output in `dist/` |
 | Repository references | `bun run verify:references` | Runtime assets exist and retired internal names do not return |
+| Cinematic lifecycle simulations | `node scripts/verify-cinematic-hero-lifecycle.mjs` | Explicit pause, visibility, variants, Reduced Motion, one source, autoplay fallback and delayed play |
 | Full verification | `bun run verify` | Repository references and production build both pass |
 | Source hygiene | `git diff --check` | No whitespace errors in the patch |
 | Font asset check | See scan commands below | Local font files and license files ship with the build |
@@ -16,7 +17,7 @@
 | Mobile UX | Browser preview at 390px width | No horizontal overflow; mobile menu opens and closes |
 | Browser initial network check | `bun run preview --host 127.0.0.1 --port 4321`, then hard reload `/` with Network open | Desktop and 390px mobile initial load make no requests to third-party hosts |
 | Development updates submit check | Submit a valid email through `#development-updates-form` and inspect Network | Formspark is requested only after submit; pending and success or error state is real |
-| Local video click check | Hard reload `/` with Network open, then click `[data-video-cover]` | No `/assets/video/` request is made before the click; local video media starts only after the cover click |
+| Local video click check | Hard reload `/` with Network open, then click `[data-video-cover]` | No prototype `/assets/video/` request is made before the click (the separate cinematic hero may autoplay); local video media starts only after the cover click |
 | Legal routes | Browser preview of `/terms/`, `/privacy/`, `/impressum/` | Canonical legal pages render without mobile overflow |
 | Legacy legal redirects | Browser preview of `/terms.html`, `/privacy.html`, `/impressum.html` | Old links redirect to the canonical legal routes |
 | Search discovery | Inspect `/robots.txt` and `/sitemap.xml` after the build | Public localized and legal routes use the configured `SITE_URL` origin |

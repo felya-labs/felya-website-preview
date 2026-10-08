@@ -48,3 +48,5 @@ Ignored local/build output:
 | `.astro/` | Astro tooling |
 
 Static assets that must ship with the site live under `public/assets/` and `public/fonts/`. Astro copies them into `dist/assets/` and `dist/fonts/`. Original sketches, legacy blueprints, masks, and other working files live under `assets-source/` and are deliberately excluded from the production build.
+
+The cinematic homepage hero uses the native browser video element and first-party B2 media. It introduces no dependencies or external endpoints.

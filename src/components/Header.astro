@@ -6,10 +6,11 @@ import type { Locale } from '../i18n/config';
 import { localePath } from '../i18n/config';
 import { t, type TranslationKey } from '../i18n/translations';
 
-const { locale, navigationBase = '', showLanguageSelector = true } = Astro.props as {
+const { locale, navigationBase = '', showLanguageSelector = true, cinematicHero = false } = Astro.props as {
     locale: Locale;
     navigationBase?: string;
     showLanguageSelector?: boolean;
+    cinematicHero?: boolean;
 };
 
 const navigationHref = (href: string) => `${navigationBase}${href}`;
@@ -20,7 +21,7 @@ const navigationHref = (href: string) => `${navigationBase}${href}`;
     <span data-i18n="nav.skip">{t(locale, 'nav.skip')}</span>
 </a>
 
-<header class="site-header fixed left-0 top-0 z-50 w-full px-4 py-4 sm:px-6 md:absolute md:px-12 md:py-5 lg:px-16">
+<header data-cinematic-context={cinematicHero || undefined} class="site-header fixed left-0 top-0 z-50 w-full px-4 py-4 sm:px-6 md:absolute md:px-12 md:py-5 lg:px-16">
     <nav class="site-nav relative mx-auto flex w-full max-w-[104rem] items-center justify-between gap-3 px-5 py-3 md:gap-8 md:px-8" aria-label={t(locale, 'nav.primary')} data-i18n-aria-label="nav.primary">
         <a href={`${localePath(locale)}#main`} class="block shrink-0" aria-label={t(locale, 'brand.home')}>
             <span class="theme-brand-logo" aria-hidden="true">

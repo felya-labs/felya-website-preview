@@ -1,6 +1,6 @@
 Privacy Policy
 
-Last updated: July 2026
+Last updated: October 2026
 
 1. General Information and Controller
 
@@ -45,7 +45,7 @@ Last updated: July 2026
 
 6.1. The video embedded on the Website demonstrating our robotics prototypes is served as a local media file directly through our server infrastructure. When loading, displaying, or playing this video, no connection is established at any time to servers of third-party providers such as YouTube (Google).
 
-6.2. The browser requests the local video data only after the user activates the play control. The legal basis for this visual provision is Art. 6 (1) (f) GDPR (legitimate interest in the clear and technically optimized presentation of our research results).
+6.2. The prototype film is requested after the user activates its play control. The silent cinematic homepage film may load and play automatically while visible; reduced-motion preferences show a still image until the user selects Play. Both films are served by our hosting infrastructure. The legal basis for this visual provision is Art. 6 (1) (f) GDPR (legitimate interest in the clear and technically optimized presentation of our research results).
 
 
 7. Your Statutory Rights under the GDPR
