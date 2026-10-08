@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "base": "/canvas/",
+  "externalAssetRequests": [],
+  "runtimeFiles": [
+    {
+      "path": "asset-paths.js",
+      "sha256": "93d2137356836db8b8bb4b7a62086442d8d820ce27bb1ec814c5a149225d73c3",
+      "bytes": 2294
+    },
+    {
+      "path": "asset-strategies.js",
+      "sha256": "7de0c10f549d209fee04eeef63babd84401330c52156b6299b1076d3619adc08",
+      "bytes": 7000
+    },
+    {
+      "path": "canvas-assets/aperture-fold.svg",
+      "sha256": "3c916301238588073f9437b785930d92b40a54babb24d62896df7769c9381385",
+      "bytes": 4203
+    },
+    {
+      "path": "canvas-assets/contact-contours.svg",
+      "sha256": "6a049483dde76bc38f518727a033853460a3166a61f0cf51d629e20340b101a4",
+      "bytes": 88562
+    },
+    {
+      "path": "canvas-assets/echo-score.svg",
+      "sha256": "db6511fc7bb47254cb3eb3aa6f4c832c47707f538efcfcbf83e9d8cb94b2293f",
+      "bytes": 93743
+    },
+    {
+      "path": "canvas-assets/functional-atlas.svg",
+      "sha256": "08bd76c65a99f909e418b853fdc1368d8f6c1926156d402f58226fc22a3af4da",
+      "bytes": 2272
+    },
+    {
+      "path": "canvas-assets/gesture-atlas.svg",
+      "sha256": "8bd889fee5063334c5ba48b54004881db16b153245a7f11b36da993de27b9a4d",
+      "bytes": 18384
+    },
+    {
+      "path": "canvas-assets/prototype-contact-detail.webp",
+      "sha256": "df337869bf2210bd7adcc3bbe4e736b0f307de993cc8ad2f27cdc6430bd10d7b",
+      "bytes": 35996
+    },
+    {
+      "path": "canvas-assets/prototype-finger-detail.webp",
+      "sha256": "683db3c6e0326112a7164f3a84c66010701573667f5ada3a827f13cd49f40fde",
+      "bytes": 31786
+    },
+    {
+      "path": "canvas-assets/prototype-hand.webp",
+      "sha256": "1d3c2c3984fa890ddce50ef2abf72ef0eec306407733da05348372b9e9719dd5",
+      "bytes": 36094
+    },
+    {
+      "path": "canvas-assets/relay-corridor.svg",
+      "sha256": "0a6ea6ccad055a3b72d642dbf0591002b08922a78862bd974e899364d041447e",
+      "bytes": 5123
+    },
+    {
+      "path": "canvas.css",
+      "sha256": "602fd00cc3f2eee39d7a02731594493eee134ee3ba6fe478de88478c24b5a38c",
+      "bytes": 15416
+    },
+    {
+      "path": "canvas.js",
+      "sha256": "5f630e8cb84a101b98691fc3d74d88677455036e46a571e2d0e39e0e47acea07",
+      "bytes": 18709
+    },
+    {
+      "path": "credits.html",
+      "sha256": "cde9b25c55e28ee1f29dd05e6becee515b820c113137b18938f0ccc0296d6e70",
+      "bytes": 3162
+    },
+    {
+      "path": "directions.js",
+      "sha256": "791b6ab21b51c0e55ae8626a3d4fc7ceb4cb9b17a1db3b97eb36c660cfaa4842",
+      "bytes": 20411
+    },
+    {
+      "path": "earth.js",
+      "sha256": "f8a41c9c5a3374b7be0798c693516ba83cff739c01af3394325378e2adba6426",
+      "bytes": 35320
+    },
+    {
+      "path": "index.html",
+      "sha256": "ef91d3b5a396b33d43613557ab2e6a7aaa553c0bb831d7e56ee5d7386de11fc9",
+      "bytes": 1217
+    },
+    {
+      "path": "review-state.js",
+      "sha256": "243291ce0b57b71a722cf8e59d349a7ddf5516bb6016b7ad6e9f98190e5abfd9",
+      "bytes": 1201
+    },
+    {
+      "path": "scene.html",
+      "sha256": "e61892fdb9c81054f839fd33d27716e028cd9e3df85dc813c0c03e5fbd09d74f",
+      "bytes": 632
+    },
+    {
+      "path": "scenes.css",
+      "sha256": "5e54d26976807172c18f348c598804430f866259f18f27eb8532cb31aa93854c",
+      "bytes": 29823
+    },
+    {
+      "path": "scenes.js",
+      "sha256": "3f0861971ea86e77dc9c6029e195bb011a4932893baddbf93e3025053ab4d07a",
+      "bytes": 14337
+    }
+  ],
+  "sharedAssets": [
+    {
+      "url": "/assets/images/hero/paton-glove/paton-glove-light-premium-v1-1200.webp",
+      "sha256": "b8f3c60e37b61757696642fb3e0a76a2574500f46c2dbbc8820435b4ebda7235",
+      "bytes": 286366
+    },
+    {
+      "url": "/assets/images/brand/felya-logo/felya-logo-horizontal-white.svg",
+      "sha256": "e804e9155b4318d16413afdee3f9498b3af147bf38d04633c49574256b0b334d",
+      "bytes": 2765
+    },
+    {
+      "url": "/assets/images/brand/felya-logo/felya-logo-horizontal-black.svg",
+      "sha256": "86dfc8a719deea9d99df832d2188ad3447ea252161510b7e2906538005990162",
+      "bytes": 2765
+    },
+    {
+      "url": "/assets/images/brand/felya-logo/felya-mark-white.svg",
+      "sha256": "fbfd6fa77d9d85d78d6b23dc11b85b6dd71c64c1fa1079373a212f2c4b3ce55f",
+      "bytes": 1045
+    },
+    {
+      "url": "/assets/images/brand/felya-logo/felya-mark-black.svg",
+      "sha256": "dd049351c6220a3dee28e8f85ec53528baa069123a93a6048a669f60db7fff6b",
+      "bytes": 1045
+    },
+    {
+      "url": "/assets/images/system/operator/paton-operator-long-mask.webp",
+      "sha256": "f02e8eecfc3b7e74b7d4330b0e0c28cb84203fdddf1558116c914b59e3b978fd",
+      "bytes": 237384
+    },
+    {
+      "url": "/assets/images/system/operator/paton-operator-suit-mask.webp",
+      "sha256": "d4e1ec3e8a6425e3569f28010e1b7f1d48b5abfc16d1c3829c59e727f7a31e20",
+      "bytes": 112666
+    },
+    {
+      "url": "/assets/images/system/operator/paton-operator-glove-left-hand-mask.webp",
+      "sha256": "9fe69aa23023716952e50838ec2a9b4daf2b443f0553e9bcd9bfe431e4a222e9",
+      "bytes": 32758
+    },
+    {
+      "url": "/assets/images/system/operator/paton-operator-glove-right-hand-mask.webp",
+      "sha256": "018179b7c7994dd611005aa29b403632ac6eb9add323884318a8628ba8e1eaad",
+      "bytes": 35308
+    },
+    {
+      "url": "/assets/images/system/openarm-system-blueprint-refined.webp",
+      "sha256": "c4f2e3b5cc4579384758531c58afd630899573c5ea23fd03bbd5a25afcebc0d7",
+      "bytes": 171282
+    },
+    {
+      "url": "/assets/images/about/team-portrait/team5-pyra-clean-1535.webp",
+      "sha256": "f5ec1ba59000a026854e920ee9e9a382c41ca0b48dcc9d8b3dc9611a698a8ff5",
+      "bytes": 129368
+    },
+    {
+      "url": "/assets/images/possible-futures/sketches/webp/vr-hydrogen-engine-touch-black.webp",
+      "sha256": "bbdb76adccac639aae04ceca1a4c79a4fa93f34b31fde266c53d94f00684fdc6",
+      "bytes": 753946
+    },
+    {
+      "url": "/assets/images/possible-futures/sketches/webp/humanoid-arms-knipex-pliers-black.webp",
+      "sha256": "db6a946e4b2f68114cece77516596fc7a3910399f86546a05269b45cfa3eefde",
+      "bytes": 135288
+    },
+    {
+      "url": "/assets/images/possible-futures/sketches/webp/humanoid-with-rose-black.webp",
+      "sha256": "11bdb336733d671ff68be2dddfe964f97dff5d89addf664ba6d756a7786e14a7",
+      "bytes": 309616
+    },
+    {
+      "url": "/assets/video/paton-interface/h264/1200.mp4",
+      "sha256": "1b18fd84a18c76950a2be756c49beb089b0a61b31030bcdc8e60dea56221d8b3",
+      "bytes": 21017531
+    },
+    {
+      "url": "/fonts/manrope-variable.ttf",
+      "sha256": "d0639be45d0af36e798172419d7bd173c4bd4f29e2b76cbb69db1d11bf8b0a40",
+      "bytes": 165420
+    },
+    {
+      "url": "/fonts/licenses/manrope-OFL-1.1.txt",
+      "sha256": "e01b637272e0cbdfb240184dd98ea5cc671556d9894dae2668d92ab2c906787c",
+      "bytes": 4384
+    }
+  ],
+  "copiedAssets": [
+    {
+      "url": "./canvas-assets/contact-contours.svg",
+      "sha256": "6a049483dde76bc38f518727a033853460a3166a61f0cf51d629e20340b101a4",
+      "bytes": 88562,
+      "kind": "original task-created vector"
+    },
+    {
+      "url": "./canvas-assets/functional-atlas.svg",
+      "sha256": "08bd76c65a99f909e418b853fdc1368d8f6c1926156d402f58226fc22a3af4da",
+      "bytes": 2272,
+      "kind": "original task-created vector"
+    },
+    {
+      "url": "./canvas-assets/relay-corridor.svg",
+      "sha256": "0a6ea6ccad055a3b72d642dbf0591002b08922a78862bd974e899364d041447e",
+      "bytes": 5123,
+      "kind": "original task-created vector"
+    },
+    {
+      "url": "./canvas-assets/echo-score.svg",
+      "sha256": "db6511fc7bb47254cb3eb3aa6f4c832c47707f538efcfcbf83e9d8cb94b2293f",
+      "bytes": 93743,
+      "kind": "original task-created vector"
+    },
+    {
+      "url": "./canvas-assets/aperture-fold.svg",
+      "sha256": "3c916301238588073f9437b785930d92b40a54babb24d62896df7769c9381385",
+      "bytes": 4203,
+      "kind": "original task-created vector"
+    },
+    {
+      "url": "./canvas-assets/gesture-atlas.svg",
+      "sha256": "8bd889fee5063334c5ba48b54004881db16b153245a7f11b36da993de27b9a4d",
+      "bytes": 18384,
+      "kind": "original task-created vector"
+    },
+    {
+      "url": "./canvas-assets/prototype-hand.webp",
+      "sha256": "1d3c2c3984fa890ddce50ef2abf72ef0eec306407733da05348372b9e9719dd5",
+      "bytes": 36094,
+      "kind": "authentic archive frame"
+    },
+    {
+      "url": "./canvas-assets/prototype-finger-detail.webp",
+      "sha256": "683db3c6e0326112a7164f3a84c66010701573667f5ada3a827f13cd49f40fde",
+      "bytes": 31786,
+      "kind": "authentic archive frame"
+    },
+    {
+      "url": "./canvas-assets/prototype-contact-detail.webp",
+      "sha256": "df337869bf2210bd7adcc3bbe4e736b0f307de993cc8ad2f27cdc6430bd10d7b",
+      "bytes": 35996,
+      "kind": "authentic archive frame"
+    }
+  ],
+  "rights": "FELYA project web derivatives and authorized original Creative Canvas graphics. Manrope OFL 1.1; Natural Earth public-domain data. See credits.html. No original masters or development documents included."
+}
