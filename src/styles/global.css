@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Canvas styles are independent of the website utility scan. */
+@source not "../../public/canvas";
 
 @font-face {
     font-family: 'Manrope';
