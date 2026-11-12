@@ -1,5 +1,6 @@
 import { initHeroShowcase } from './cinematic-hero.js';
 import { initLiquidGlass, revealTheme } from './liquid-glass.js';
+import { initHeroGlass } from './hero-glass.js';
 import { initPartnerImages, initFutureImages } from './image-loading.js';
 import {
   colorTheme,
@@ -2968,6 +2969,7 @@ export function initSite(root = document) {
   initMobileNavigation({ root });
   initHeroShowcase({ root, translate });
   initLiquidGlass({ root });
+  initHeroGlass({ root });
   initHeroHeadlineLanguages({ root });
   initDevelopmentUpdatesForm({ root });
   initPrototypeVideoCover({ root });

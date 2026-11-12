@@ -95,10 +95,6 @@ html:not([data-theme="light"]) .hero-section {
     background-color: var(--lg-page);
 }
 
-/* The film is shot on black; its stage fades into the page colour at the bottom so the seam disappears. */
-.cinematic-hero {
-    background: linear-gradient(180deg, #000 0%, #000 72%, #08090e 100%);
-}
 
 /* ─── The material ───────────────────────────────────────────────────────────────────────────────────── */
 
@@ -170,8 +166,7 @@ html:not([data-theme="light"]) .hero-section {
 
 html:not([data-theme="light"]) .squish::after,
 .site-header[data-cinematic-context] .squish::after,
-.cinematic-hero .squish::after,
-.hero-showcase[data-hero-variant="cinematic"] .hero-variant-controls .squish::after {
+.film-hero__stage .squish::after {
     mix-blend-mode: screen;
 }
 
@@ -383,9 +378,7 @@ html[data-theme-reveal] ::view-transition-new(root) {
     html .site-header[data-cinematic-context] .site-nav,
     .mobile-nav-panel,
     .language-dialog,
-    .video-play-cta,
-    .hero-variant-controls,
-    .cinematic-hero__play {
+    .video-play-cta {
         background: var(--lg-card) !important;
         -webkit-backdrop-filter: none !important;
         backdrop-filter: none !important;
@@ -397,8 +390,9 @@ html[data-theme-reveal] ::view-transition-new(root) {
     .site-nav,
     .mobile-nav-panel,
     .language-dialog,
-    .hero-variant-controls,
-    .cinematic-hero__play {
+    .hero-arrow,
+    .hero-dots,
+    .film-hero__toggle {
         background: var(--lg-page) !important;
         outline: 1px solid var(--glass-ink);
         outline-offset: -1px;

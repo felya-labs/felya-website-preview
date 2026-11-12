@@ -23,7 +23,13 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
   const classic = showcase.querySelector('.hero-classic');
   const header = root.querySelector('.site-header');
   const film = showcase.querySelector('.cinematic-hero__film');
-  const video = film.querySelector('video');
+  // The film is a sequence of clips (B2, then C), crossfaded and looped; `video` is always the current clip.
+  const listed = film.querySelectorAll ? Array.from(film.querySelectorAll('video')) : [];
+  const clips = listed.length ? listed : [film.querySelector('video')];
+  let index = 0;
+  let video = clips[0];
+  const loadedClips = new Set();
+  if (clips.length === 1) video.loop = true;
   const toggle = showcase.querySelector('[data-film-toggle]');
   const selection = showcase.querySelector('[data-hero-selection]');
   const options = { cinematic: showcase.querySelector('[data-hero-option="cinematic"]'), classic: showcase.querySelector('[data-hero-option="classic"]') };
@@ -37,13 +43,10 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
   try { storage = window.localStorage; } catch { storage = null; }
   let active = resolveInitialVariant({ params, policy, storage, connection: globalThis.navigator?.connection }) === 'cinematic';
   let swap = 0;
-  // The header follows the hero that is fully shown: during a crossfade it keeps the outgoing hero's contrast.
-  let shown = active;
   let firstApply = true;
   let inView = false;
   let pageActive = true;
   let intent = !staticMode();
-  let loaded = false;
   let pending = false;
   let generation = 0;
   let frame = null;
@@ -53,34 +56,59 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
     const key = video.paused ? 'hero.play' : 'hero.pause';
     toggle.setAttribute('aria-label', translate(key));
     toggle.querySelector('[data-film-label]').textContent = translate(key);
-    toggle.querySelector('[data-film-icon]').textContent = video.paused ? '▷' : 'Ⅱ';
+    toggle.dataset.playing = String(!video.paused);
     announcement.textContent = translate(active ? 'hero.cinematic' : 'hero.classic');
   };
   const stopFrames = () => {
     if (frame !== null) video.cancelVideoFrameCallback?.(frame);
     frame = null;
   };
-  const shot = (time) => { film.dataset.shot = time >= 100 / 30 ? 'detail' : 'whole'; };
+  // B2's second shot is letterboxed in its export; only that clip carries data-detail-from.
+  const shot = (time) => {
+    const from = Number(video.dataset?.detailFrom);
+    film.dataset.shot = from && time >= from ? 'detail' : 'whole';
+  };
+  // The pause control carries the film's progress as a ring.
+  const progress = (time) => {
+    if (!video.duration || !toggle.style) return;
+    toggle.style.setProperty('--film-progress', (time / video.duration).toFixed(4));
+  };
   const updateFrame = (_, metadata) => {
     frame = null;
     shot(metadata.mediaTime);
+    progress(metadata.mediaTime);
     if (!video.paused && visible()) frame = video.requestVideoFrameCallback(updateFrame);
   };
-  const syncHeader = () => {
-    const bounds = showcase.getBoundingClientRect();
-    const headerBounds = header?.getBoundingClientRect();
-    header?.toggleAttribute('data-cinematic-context', shown && bounds.top < (headerBounds?.bottom ?? 0) && bounds.bottom > (headerBounds?.top ?? 0));
+  // The film hero follows the page theme (Phase 2), so the header keeps its own glass: no dark film context.
+  const syncHeader = () => header?.removeAttribute?.('data-cinematic-context');
+  const load = (clip) => {
+    if (loadedClips.has(clip)) return;
+    loadedClips.add(clip);
+    clip.src = clip.dataset[profile];
+    clip.load();
+  };
+  const showClip = (clip) => {
+    for (const other of clips) other.toggleAttribute?.('data-active', other === clip);
+    film.dataset.clip = clip.dataset?.clip ?? '';
+  };
+  // At the end of a clip the next one starts at its first frame and fades in over the held last frame.
+  const advance = async () => {
+    const from = video;
+    index = (index + 1) % clips.length;
+    video = clips[index];
+    load(video);
+    try { video.currentTime = 0; } catch { /* not seekable yet: starts at 0 anyway */ }
+    showClip(video);
+    shot(0);
+    if (visible() && intent) play();
+    setTimeout(() => { if (from !== video) { from.pause(); try { from.currentTime = 0; } catch { /* ignore */ } } }, 700);
   };
   const pause = () => { generation++; video.pause(); stopFrames(); labels(); };
   const play = async (user = false) => {
     if (!visible() || pending || !intent) return;
     pending = true;
     const token = generation;
-    if (!loaded) {
-      loaded = true;
-      video.src = video.dataset[profile];
-      video.load();
-    }
+    load(video);
     try {
       if (!user && params.get('heroAutoplay') === 'blocked') throw new DOMException('Review simulation', 'NotAllowedError');
       await video.play();
@@ -110,15 +138,20 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
     selection.style.setProperty('--hero-selection-x', `${option.offsetLeft}px`);
     selection.style.setProperty('--hero-selection-w', `${option.offsetWidth}px`);
   };
-  // Materialise: the film layer lies above the globe, so fading only that layer crossfades the two heroes.
+  // Swipe: both heroes move side by side; dir 1 = the next one comes in from the right, -1 = from the left.
+  let direction = 1;
   const fade = (incoming) => {
-    const motion = !staticMode() && typeof cinematic.animate === 'function' && !firstApply;
+    const motion = !staticMode() && typeof cinematic.animate === 'function' && typeof classic.animate === 'function' && !firstApply;
     if (!motion) return null;
-    const frames = incoming
-      ? [{ opacity: 0, filter: 'blur(12px)', transform: 'scale(1.02)' }, { opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' }]
-      : [{ opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' }, { opacity: 0, filter: 'blur(12px)', transform: 'scale(1.02)' }];
-    const animation = cinematic.animate(frames, { duration: 620, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' });
-    return animation.finished.then(() => animation.cancel(), () => {});
+    const timing = { duration: 780, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'both' };
+    const enter = [{ transform: `translate3d(${direction * 100}%, 0, 0)` }, { transform: 'translate3d(0, 0, 0)' }];
+    const leave = [{ transform: 'translate3d(0, 0, 0)' }, { transform: `translate3d(${-direction * 100}%, 0, 0)` }];
+    showcase.setAttribute('data-hero-swiping', '');
+    const film = cinematic.animate(incoming ? enter : leave, timing);
+    const globe = classic.animate(incoming ? leave : enter, timing);
+    return Promise.all([film.finished, globe.finished]).then(() => {
+      film.cancel(); globe.cancel(); showcase.removeAttribute('data-hero-swiping');
+    }, () => {});
   };
   const applyVariant = () => {
     const variant = active ? 'cinematic' : 'classic';
@@ -136,7 +169,6 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
     classic.toggleAttribute('data-hero-inactive', false);
     const settle = () => {
       if (token !== swap) return;
-      shown = active;
       cinematic.hidden = !active;
       classic.toggleAttribute('data-hero-inactive', active);
       document.dispatchEvent(new CustomEvent('felya:herovariantchange', { detail: { variant } }));
@@ -147,8 +179,10 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
     labels();
     if (fading) { fading.then(settle); reconcile(); } else settle();
   };
-  const choose = (variant) => {
+  const choose = (variant, dir) => {
     if ((variant === 'cinematic') === active) return;
+    // Without an explicit direction the film sits "left" of the globe: going to the globe moves forward.
+    direction = dir ?? (variant === 'classic' ? 1 : -1);
     active = variant === 'cinematic';
     if (policy.rememberChoice) { try { storage?.setItem(policy.storageKey, variant); } catch { /* not stored */ } }
     applyVariant();
@@ -164,13 +198,47 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
       options[next]?.focus?.();
     });
   }
+  // Arrows: with two heroes both lead to the other one; the arrow says which way the swipe goes.
+  showcase.querySelectorAll?.('[data-hero-step]').forEach((arrow) => {
+    arrow.addEventListener('click', () => {
+      const dir = Number(arrow.dataset.heroStep) || 1;
+      choose(active ? 'classic' : 'cinematic', dir);
+    });
+  });
+  // The arrows show themselves only while a mouse is over the hero (and on keyboard focus): discovered, not shouted.
+  let idle = 0;
+  const reveal = () => {
+    showcase.setAttribute('data-pointer-over', '');
+    clearTimeout(idle);
+    // Fade out after a quiet moment, unless the pointer rests on an arrow or the dots.
+    idle = setTimeout(() => { if (!showcase.querySelector?.('.hero-arrow:hover, .hero-dots:hover')) showcase.removeAttribute('data-pointer-over'); }, 2400);
+  };
+  showcase.addEventListener?.('pointermove', (event) => { if (event.pointerType === 'mouse') reveal(); }, { passive: true });
+  showcase.addEventListener?.('pointerleave', () => { clearTimeout(idle); showcase.removeAttribute('data-pointer-over'); });
+  // Touch: a horizontal swipe switches; vertical movement stays page scrolling, the globe keeps its own drag.
+  let swipe = null;
+  showcase.addEventListener?.('pointerdown', (event) => {
+    if (event.pointerType !== 'touch' || event.target?.closest?.('[data-hero-earth-drag], .hero-earth, [data-hero-glove-toggle], button, a')) return;
+    swipe = { x: event.clientX, y: event.clientY, id: event.pointerId, t: performance.now() };
+  }, { passive: true });
+  showcase.addEventListener?.('pointerup', (event) => {
+    if (!swipe || swipe.id !== event.pointerId) return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    const fast = performance.now() - swipe.t < 700;
+    swipe = null;
+    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.4 && fast) choose(active ? 'classic' : 'cinematic', dx < 0 ? 1 : -1);
+  });
+  showcase.addEventListener?.('pointercancel', () => { swipe = null; });
   window.addEventListener('resize', placeSelection, { passive: true });
   document.fonts?.ready?.then(placeSelection);
   toggle.addEventListener('click', () => {
     if (!video.paused || pending) { intent = false; pause(); }
     else { intent = true; failed = false; play(true); }
   });
-  video.addEventListener('playing', () => {
+  for (const clip of clips) {
+  clip.addEventListener('playing', () => {
+    if (clip !== video) return;
     if (!visible() || !intent) { pause(); return; }
     failed = false;
     film.dataset.filmState = 'video';
@@ -178,9 +246,23 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
     if (video.requestVideoFrameCallback && frame === null) frame = video.requestVideoFrameCallback(updateFrame);
     labels();
   });
-  video.addEventListener('pause', () => { stopFrames(); labels(); });
-  video.addEventListener('timeupdate', () => { if (!video.requestVideoFrameCallback) shot(video.currentTime); });
-  video.addEventListener('error', () => { failed = true; intent = false; film.dataset.filmState = 'poster'; labels(); });
+  clip.addEventListener('pause', () => {
+    if (clip !== video) return;
+    stopFrames();
+    // A clip that reached its end is handed over to the next one; the label keeps saying "Pause".
+    if (!(clip.ended && clips.length > 1)) labels();
+  });
+  clip.addEventListener('ended', () => { if (clip === video && clips.length > 1) advance(); });
+  clip.addEventListener('timeupdate', () => {
+    if (clip !== video) return;
+    if (!clip.requestVideoFrameCallback) { shot(clip.currentTime); progress(clip.currentTime); }
+    // Fetch the next clip once this one is half way through, so the cut never waits for the network.
+    if (clips.length > 1 && clip.duration && clip.currentTime > clip.duration / 2) load(clips[(index + 1) % clips.length]);
+  });
+  clip.addEventListener('error', () => { if (clip !== video) return; failed = true; intent = false; film.dataset.filmState = 'poster'; labels(); });
+  // Errors and blocked autoplay preserve the same selected static product frame.
+  clip.addEventListener('loadeddata', () => { if (failed) film.dataset.filmState = 'poster'; });
+  }
   const observer = new IntersectionObserver(([entry]) => {
     inView = entry.isIntersecting && entry.intersectionRatio > .15;
     document.dispatchEvent(new CustomEvent('felya:herovisibilitychange', { detail: { visible: inView } }));
@@ -196,7 +278,5 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
   reduced.addEventListener('change', () => {
     if (staticMode()) { intent = false; pause(); film.dataset.filmState = 'poster'; }
   });
-  // Errors and blocked autoplay preserve the same selected static product frame.
-  video.addEventListener('loadeddata', () => { if (failed) film.dataset.filmState = 'poster'; });
   applyVariant();
 }

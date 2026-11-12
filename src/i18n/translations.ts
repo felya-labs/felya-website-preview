@@ -10,6 +10,8 @@ const en = {
   "hero.variants": "Hero view",
   "hero.variantFilm": "Film",
   "hero.variantGlobe": "Globe",
+  "hero.filmClaim": "Feel what the robot touches.",
+  "hero.howItWorks": "How PATON works",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA develops wearable interfaces that transfer human movement, touch and skill into robotic systems.',
@@ -136,6 +138,8 @@ const de: TranslationDictionary = {
   "hero.variants": "Startansicht",
   "hero.variantFilm": "Film",
   "hero.variantGlobe": "Globus",
+  "hero.filmClaim": "Spüre, was der Roboter berührt.",
+  "hero.howItWorks": "So funktioniert PATON",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA',
@@ -197,6 +201,8 @@ const ky: TranslationDictionary = {
   "hero.variants": "Башкы көрүнүш",
   "hero.variantFilm": "Видео",
   "hero.variantGlobe": "Глобус",
+  "hero.filmClaim": "Робот эмнеге тийгенин сезиңиз.",
+  "hero.howItWorks": "PATON кантип иштейт",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA',
@@ -236,6 +242,8 @@ const id: TranslationDictionary = {
   "hero.variants": "Tampilan awal",
   "hero.variantFilm": "Video",
   "hero.variantGlobe": "Bumi",
+  "hero.filmClaim": "Rasakan apa yang disentuh robot.",
+  "hero.howItWorks": "Cara kerja PATON",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA mengembangkan antarmuka wearable yang menyalurkan gerakan, sentuhan, dan keahlian manusia ke sistem robotik.', 'meta.ogDescription': 'Antarmuka yang memperluas kemampuan manusia.', 'meta.imageAlt': 'Sarung tangan haptik PATON dari FELYA dengan pesan Tangan Anda. Di mana pun di dunia.',
@@ -263,6 +271,8 @@ const ko: TranslationDictionary = {
   "hero.variants": "첫 화면 보기",
   "hero.variantFilm": "영상",
   "hero.variantGlobe": "지구본",
+  "hero.filmClaim": "로봇이 닿는 것을 느껴 보세요.",
+  "hero.howItWorks": "PATON 작동 방식",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA는 사람의 움직임과 촉감, 숙련도를 로봇 시스템에 전달하는 웨어러블 인터페이스를 개발합니다.', 'meta.ogDescription': '인간의 역량을 확장하는 인터페이스.', 'meta.imageAlt': '“당신의 두 손. 세계 어디에서나.”라는 문구와 함께 보이는 FELYA의 PATON 햅틱 글러브.',
@@ -289,6 +299,8 @@ const ja: TranslationDictionary = {
   "hero.variants": "トップ表示",
   "hero.variantFilm": "映像",
   "hero.variantGlobe": "地球儀",
+  "hero.filmClaim": "ロボットが触れるものを、感じる。",
+  "hero.howItWorks": "PATONの仕組み",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYAは、人の動き、触覚、技能をロボットシステムへ伝えるウェアラブルインターフェースを開発しています。', 'meta.ogDescription': '人の能力を拡張するインターフェース。', 'meta.imageAlt': '「あなたの手を、世界のどこへでも。」というメッセージとFELYAのPATONハプティックグローブ。',
@@ -315,6 +327,8 @@ const zhCn: TranslationDictionary = {
   "hero.variants": "首屏视图",
   "hero.variantFilm": "影片",
   "hero.variantGlobe": "地球仪",
+  "hero.filmClaim": "感受机器人触碰的一切。",
+  "hero.howItWorks": "PATON 如何运作",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA 开发可穿戴交互界面，将人的动作、触觉与技能传递至机器人系统。', 'meta.ogDescription': '延展人类能力的交互界面。', 'meta.imageAlt': 'FELYA 的 PATON 触觉手套，以及“你的双手。遍及世界。”标语。',
@@ -341,6 +355,8 @@ const zhTw: TranslationDictionary = {
   "hero.variants": "首屏視圖",
   "hero.variantFilm": "影片",
   "hero.variantGlobe": "地球儀",
+  "hero.filmClaim": "感受機器人觸碰的一切。",
+  "hero.howItWorks": "PATON 如何運作",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA 開發穿戴式介面，將人的動作、觸覺與技能帶入機器人系統。', 'meta.ogDescription': '延伸人類能力的介面。', 'meta.imageAlt': 'FELYA 的 PATON 觸覺手套，以及「你的雙手。世界任何角落。」標語。',
@@ -367,6 +383,8 @@ const ru: TranslationDictionary = {
   "hero.variants": "Начальный экран",
   "hero.variantFilm": "Видео",
   "hero.variantGlobe": "Глобус",
+  "hero.filmClaim": "Почувствуйте то, чего касается робот.",
+  "hero.howItWorks": "Как работает PATON",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA разрабатывает носимые интерфейсы, которые передают движения, прикосновения и навыки человека роботизированным системам.',
@@ -490,6 +508,8 @@ const pt: TranslationDictionary = {
   "hero.variants": "Vista inicial",
   "hero.variantFilm": "Vídeo",
   "hero.variantGlobe": "Globo",
+  "hero.filmClaim": "Sinta o que o robô toca.",
+  "hero.howItWorks": "Como o PATON funciona",
 
   'meta.title': 'FELYA',
   'meta.description': 'A FELYA desenvolve interfaces vestíveis que transferem movimento, toque e destreza humana para sistemas robóticos.',
@@ -613,6 +633,8 @@ const fr: TranslationDictionary = {
   "hero.variants": "Vue d’accueil",
   "hero.variantFilm": "Vidéo",
   "hero.variantGlobe": "Globe",
+  "hero.filmClaim": "Ressentez ce que touche le robot.",
+  "hero.howItWorks": "Comment fonctionne PATON",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA développe des interfaces portables qui transmettent les mouvements, le toucher et le savoir-faire humains aux systèmes robotiques.',
@@ -736,6 +758,8 @@ const es: TranslationDictionary = {
   "hero.variants": "Vista inicial",
   "hero.variantFilm": "Vídeo",
   "hero.variantGlobe": "Globo",
+  "hero.filmClaim": "Siente lo que toca el robot.",
+  "hero.howItWorks": "Cómo funciona PATON",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA desarrolla interfaces vestibles que trasladan el movimiento, el tacto y la destreza humana a sistemas robóticos.',
@@ -859,6 +883,8 @@ const it: TranslationDictionary = {
   "hero.variants": "Vista iniziale",
   "hero.variantFilm": "Video",
   "hero.variantGlobe": "Globo",
+  "hero.filmClaim": "Senti ciò che tocca il robot.",
+  "hero.howItWorks": "Come funziona PATON",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA sviluppa interfacce indossabili che trasferiscono movimento, tatto e abilità umane ai sistemi robotici.',

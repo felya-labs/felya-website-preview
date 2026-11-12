@@ -1,65 +1,67 @@
 {
-  "source": "S01 / F01-SH-02 and F01-SH-04",
+  "phase": "2 (Preview)",
+  "source": "S01 public/assets/video/paton-interface/paton-interface-of-craft.mp4",
   "source_sha256": "c41472d60d4308d128ccf9ea92d69dde4a9119f89423fa837b9bce5a306a0a6a",
   "source_resolution": [
     1280,
     720
   ],
   "fps": 30,
-  "frames": 231,
-  "duration": 7.7,
-  "codec": "H.264 High / yuv420p / BT.709 / faststart / no audio",
+  "sequence": "C06 side silhouette \u2192 C03 macro joints \u2192 C02 product presence \u2192 C09 gesture; hard cuts, looped (shot ids from the Cinematic Discovery catalogue, experiment/cinematic-experience-v1)",
+  "shots": [
+    {
+      "id": "C06",
+      "in": 3054,
+      "out_exclusive": 3136,
+      "mobile_crop_centre_x": 500
+    },
+    {
+      "id": "C03",
+      "in": 2777,
+      "out_exclusive": 2846,
+      "mobile_crop_centre_x": 600
+    },
+    {
+      "id": "C02",
+      "in": 2530,
+      "out_exclusive": 2647,
+      "mobile_crop_centre_x": 730
+    },
+    {
+      "id": "C09",
+      "in": 3448,
+      "out_exclusive": 3615,
+      "mobile_crop_centre_x": 620
+    }
+  ],
+  "frames": 435,
+  "duration": 14.5,
+  "poster_frame": 3094,
+  "desktop": "1280x720, full frame, no upscaling",
+  "mobile": "640x640, square crop per shot (mobile_crop_centre_x of 1280), Lanczos",
+  "encoding": "libx264 slow, CRF 22 desktop / 23 mobile, GOP 60, High, yuv420p, BT.709 tags, faststart, no audio",
+  "reproduce": "uv run --no-project --with av --with pillow python -I scripts/export-film-hero-sequence.py <S01> <out-dir>",
   "exports": [
     {
-      "file": "b2-desktop.mp4",
-      "bytes": 931650,
-      "sha256": "21f4526166ea91dde7d297c4f6cae1445c635661a7f4de13dde619aa02d3865e"
+      "file": "craft-desktop.mp4",
+      "bytes": 2274415,
+      "sha256": "e51cc80304c88e45b4f7b8cd73ee8036114662a8578624e279ec72d6de85cc54"
     },
     {
-      "file": "b2-mobile.mp4",
-      "bytes": 506827,
-      "sha256": "676ef6b2c46e06aef991fe3914ab2b431b31e666955a00a420c40374cc81d256"
+      "file": "craft-mobile.mp4",
+      "bytes": 1402943,
+      "sha256": "74866808463b27a488b084c7a9668909b1c1f77bef002f11d2b2e0d3d6f5b1d9"
     },
     {
-      "file": "b2-poster.jpg",
-      "bytes": 76038,
-      "sha256": "255ec15ac6b17491a0a413193fbea6d6d7d40d5942450dde50a36cae1f2ad49d"
+      "file": "craft-poster.jpg",
+      "bytes": 54577,
+      "sha256": "0155dca189fd9d5c7bb0ce0bd9ac82292ffe513644887731d15716a7ff418e97"
+    },
+    {
+      "file": "craft-poster-mobile.jpg",
+      "bytes": 37030,
+      "sha256": "73e6ed1e605574dc2dd443d254941be4693fa5664f7b570346187458a8c2bcdf"
     }
   ],
-  "cuts": [
-    {
-      "shot": "C02",
-      "in": 2530,
-      "out_exclusive": 2630,
-      "crop": [
-        280,
-        64,
-        900,
-        656
-      ]
-    },
-    {
-      "shot": "C04",
-      "in": 2886,
-      "out_exclusive": 3017,
-      "crop": [
-        0,
-        0,
-        1280,
-        720
-      ]
-    }
-  ],
-  "output_resolution": {
-    "desktop": [
-      900,
-      656
-    ],
-    "mobile": [
-      630,
-      460
-    ]
-  },
-  "encoding": "libx264 / slow / CRF 20 desktop, 21 mobile / GOP 60; unchanged exports",
-  "poster": "selected C02 sequence frame 55"
+  "replaced": "B2 (C02+C04) exports of Phase 1 removed from the site"
 }

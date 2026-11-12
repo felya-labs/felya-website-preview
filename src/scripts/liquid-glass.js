@@ -93,7 +93,8 @@ export function bindSquish(el, { grow = 1.08, lift = 1.03 } = {}) {
 
 const squishTargets = [
   ['.site-nav .theme-toggle, .site-nav .language-toggle, .site-nav .mobile-nav-toggle', { grow: 1.12, lift: 1.06 }],
-  ['.cinematic-hero__play, .hero-variant-controls [data-hero-option]', { grow: 1.06, lift: 1.03 }],
+  ['.film-hero__toggle, .hero-arrow', { grow: 1.1, lift: 1.05 }],
+  ['.film-hero__primary', { grow: 1.04, lift: 1.02 }],
   ['.video-play-cta', { grow: 1.08, lift: 1.04 }],
   ['#development-updates-form button[type="submit"]', { grow: 1.04, lift: 1.02 }],
 ];

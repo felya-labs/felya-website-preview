@@ -23,14 +23,16 @@ page records only what the website does differently and where things live. State
 | What | File |
 |---|---|
 | Tokens, material, header, overlays, plates, theme reveal, accessibility | `src/styles/liquid-glass.css` (loaded after `global.css`) |
-| Hero controls (Film \| Globe, Play) | `src/styles/cinematic-hero.css` |
+| Film hero, swipe switch, arrows, dots, pause lens | `src/styles/cinematic-hero.css`, `src/components/HeroShowcase.astro` |
+| Real refraction over the film (WebGL) | `src/scripts/hero-glass.js` |
 | Squish, gliding header selection, compact header, theme disc | `src/scripts/liquid-glass.js` |
 | Hero choice and crossfade | `src/scripts/cinematic-hero.js`, policy in `src/scripts/site-config.js` (`heroShowcase`) |
 
 ## Differences to Studio
 
-- No refraction: Studio refracts its own 3D stage in WebGL. The website uses CSS frost (`backdrop-filter`) with the
-  same tokens. Real refraction over the hero film (we know what lies beneath) is Phase 2.
+- Refraction only where we know what lies beneath: glass over the hero film is refracted in WebGL like Studio's stage
+  glass (squircle rim, Snell n 1.5, frost, one light). Everywhere else CSS frost (`backdrop-filter`) with the same
+  tokens.
 - Theme switch: within the classic hero the existing live wipe stays (it keeps the globe running); everywhere else
   the new theme spreads from the click as a soft disc (View Transitions, 820 ms).
 
