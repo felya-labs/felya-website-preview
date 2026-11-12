@@ -207,9 +207,60 @@ html .site-header[data-cinematic-context] .site-nav {
     transition: background-color 320ms ease, box-shadow 320ms ease;
 }
 
-/* Over the dark film hero the bar tells the theme: frosted white in Light Mode, smoked glass in Dark Mode. */
-html[data-theme="light"] .site-header[data-over-film] .site-nav {
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.12) 40%, transparent 70%), rgb(255 255 255 / 0.86);
+/* Adaptive glass (Apple: small bars flip between light and dark with what lies behind them, their symbols with
+   them). liquid-glass.js sets data-glass-tone from the backgrounds beneath the bar, whatever the page theme. */
+.site-header[data-glass-tone="dark"] {
+    --glass-clear: rgb(28 31 42 / 0.32);
+    --glass-regular: rgb(26 29 40 / 0.5);
+    --glass-strong: rgb(22 25 35 / 0.72);
+    --glass-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.55), 0 22px 50px -18px rgb(0 0 0 / 0.75);
+    --glass-shadow-thick: 0 0 0 0.5px rgb(0 0 0 / 0.6), 0 34px 70px -24px rgb(0 0 0 / 0.85);
+    --glass-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -0.5px 0 rgb(255 255 255 / 0.04);
+    --glass-volume: linear-gradient(180deg, rgb(255 255 255 / 0.07) 0%, rgb(255 255 255 / 0.02) 16%, transparent 45%, transparent 75%, rgb(0 0 0 / 0.12) 100%);
+    --glass-fill: rgb(255 255 255 / 0.08);
+    --glass-fill-hover: rgb(255 255 255 / 0.14);
+    --glass-select: rgb(255 255 255 / 0.13);
+    --glass-ink: #f3f5fa;
+    --glass-ink-soft: #c3c9d6;
+    --glass-lens-tint: rgb(24 27 38 / 0.12);
+    --squish-light: rgb(255 255 255 / 0.35);
+}
+
+.site-header[data-glass-tone="light"] {
+    --glass-clear: rgb(255 255 255 / 0.3);
+    --glass-regular: rgb(255 255 255 / 0.55);
+    --glass-strong: rgb(255 255 255 / 0.72);
+    --glass-shadow: 0 0 0 0.5px rgb(16 28 64 / 0.08), 0 2px 6px -2px rgb(16 28 64 / 0.06), 0 14px 32px -16px rgb(16 28 64 / 0.26);
+    --glass-shadow-thick: 0 0 0 0.5px rgb(16 28 64 / 0.08), 0 4px 12px -4px rgb(16 28 64 / 0.08), 0 30px 60px -28px rgb(16 28 64 / 0.38);
+    --glass-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.85), inset 0 1px 0 rgb(255 255 255 / 1), inset 0 -1px 0 rgb(0 0 0 / 0.035);
+    --glass-volume: linear-gradient(180deg, rgb(255 255 255 / 0.5) 0%, rgb(255 255 255 / 0.14) 14%, rgb(255 255 255 / 0) 45%, rgb(16 28 64 / 0) 75%, rgb(16 28 64 / 0.035) 100%);
+    --glass-fill: rgb(16 28 64 / 0.055);
+    --glass-fill-hover: rgb(16 28 64 / 0.09);
+    --glass-select: rgb(255 255 255 / 0.88);
+    --glass-ink: #10131c;
+    --glass-ink-soft: #3d4454;
+    --glass-lens-tint: rgb(255 255 255 / 0.22);
+    --squish-light: rgb(255 255 255 / 0.9);
+}
+
+.site-header[data-glass-tone="dark"] .theme-brand-logo__asset--white { display: block; }
+.site-header[data-glass-tone="dark"] .theme-brand-logo__asset--black { display: none; }
+.site-header[data-glass-tone="light"] .theme-brand-logo__asset--white { display: none; }
+.site-header[data-glass-tone="light"] .theme-brand-logo__asset--black { display: block; }
+
+/* Over the film the bar is real glass: the hero's WebGL pass refracts the film beneath it (hero-glass.js); the
+   element only keeps a breath of tint, its edge and its content. */
+.site-nav[data-lens],
+html[data-theme="light"] .site-nav[data-lens] {
+    background: var(--glass-volume), var(--glass-lens-tint, rgb(24 27 38 / 0.12));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.site-nav,
+.site-nav .nav-link,
+.site-nav :is(.theme-toggle, .language-toggle, .mobile-nav-toggle) {
+    transition: background-color 320ms ease, color 320ms ease, box-shadow 320ms ease;
 }
 
 .site-nav::before {

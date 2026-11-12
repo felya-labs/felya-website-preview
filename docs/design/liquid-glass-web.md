@@ -33,13 +33,35 @@ page records only what the website does differently and where things live. State
 - One thickness all the time (48 px, like Studio's bars); on scroll it only glides closer to the top edge.
 - Glass is round: `corner-shape: round` on every glass surface. global.css sets `corner-shape: squircle` on them, which
   Chrome applies to the background but not to the rim, shadow or frost — the edge doubled at the bar's ends.
-- Over the dark film hero the bar shows the theme (frosted white / smoked).
+- **Adaptive, not themed** (Apple WWDC25 219: small bars "flip between light and dark" with what lies behind them,
+  their symbols with them). `initAdaptiveTone` in `liquid-glass.js` reads the backgrounds beneath the bar at three
+  points (colours and gradient stops of the elements under it) and sets `data-glass-tone="dark|light"` with
+  hysteresis. Dark glass with light ink over the film hero and dark sections, light glass with dark ink over light
+  sections — in either page theme. Logo, links and toggles flip with it.
+
+## Real refraction over the film (how, and why this way)
+
+Researched 2026-11-12: kube.io "Liquid Glass in the browser", ObaidQatan/liquid-glass-component-library, Apple WWDC25
+219 "Meet Liquid Glass", and PATON Studio's `stage-glass.ts`.
+
+- **SVG displacement in `backdrop-filter: url()`** (kube.io, ObaidQatan's experimental mode) refracts any page content,
+  but only in Chromium, and its displacement maps are static images rebuilt on every size change. ObaidQatan
+  recommends plain frosted glass for production. Not used.
+- **WebGL over content we know** (PATON Studio): where we know what lies beneath, we draw it ourselves under each glass
+  rect, every frame — in every browser, live while the film plays and the page scrolls. Used for the film hero:
+  `hero-glass.js` paints one canvas over the hero; the header bar (while it lies completely over the hero), the
+  switch capsule and the pause lens become lenses (`data-lens`: the element keeps only a breath of tint, its edge
+  and content). Elsewhere: CSS frost with the same tokens.
+- Shader as in Studio: squircle rim, Snell n 1.0 → 1.5 normalised so the peak shift equals the thickness, lens zoom
+  for small glass, frost lighter at the rim, detail layer (thin bars stay crisp), vibrancy, luminosity adjusted to the
+  glass tone, lens shading, colour picked up from just outside the edge, glint and bezel glow from one top-left
+  light, specular saturation. Glass materialises on a spring (lensing, frost and light grow from zero).
+- **Scroll edge effect** (Apple): the film runs up under the bar; the headline dissolves over the last 40 px before
+  the bar and is then under the glass, never shown through it unrefracted.
+- Browsers pause `requestAnimationFrame` in background tabs; until the first frame the bar shows its CSS glass.
 
 ## Differences to Studio
 
-- Refraction only where we know what lies beneath: glass over the hero film is refracted in WebGL like Studio's stage
-  glass (squircle rim, Snell n 1.5, frost, one light). Everywhere else CSS frost (`backdrop-filter`) with the same
-  tokens.
 - Theme switch: within the classic hero the existing live wipe stays (it keeps the globe running); everywhere else
   the new theme spreads from the click as a soft disc (View Transitions, 820 ms).
 

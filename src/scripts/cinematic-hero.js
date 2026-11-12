@@ -79,13 +79,16 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
     progress(metadata.mediaTime);
     if (!video.paused && visible()) frame = video.requestVideoFrameCallback(updateFrame);
   };
-  // While the bar lies over the dark film hero it shows the theme in its glass (liquid-glass.css, data-over-film).
+  // The bar adapts its glass to what lies beneath it on its own (liquid-glass.js, initAdaptiveTone). Here only the
+  // scroll edge effect: the headline dissolves softly as it scrolls up under the bar (--scroll-edge, cinematic-hero.css).
+  const layout = cinematic.querySelector?.('.film-hero__layout');
   const syncHeader = () => {
-    if (!header?.getBoundingClientRect) return;
-    const bounds = showcase.getBoundingClientRect();
-    const bar = header.getBoundingClientRect();
-    header.toggleAttribute('data-over-film', active && bounds.top < bar.bottom && bounds.bottom > bar.top);
+    if (!layout?.style || !header?.getBoundingClientRect) return;
+    const edge = header.querySelector('.site-nav')?.getBoundingClientRect().bottom ?? 0;
+    layout.style.setProperty('--scroll-edge', `${Math.round(edge - layout.getBoundingClientRect().top)}px`);
   };
+  window.addEventListener('scroll', syncHeader, { passive: true });
+  window.addEventListener('resize', syncHeader, { passive: true });
   const load = (clip) => {
     if (loadedClips.has(clip)) return;
     loadedClips.add(clip);
@@ -266,8 +269,6 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
   observer.observe(showcase);
   document.addEventListener('visibilitychange', reconcile);
   document.addEventListener('felya:languagechange', labels);
-  window.addEventListener('scroll', syncHeader, { passive: true });
-  window.addEventListener('resize', syncHeader, { passive: true });
   window.addEventListener('pagehide', () => { pageActive = false; pause(); });
   window.addEventListener('pageshow', () => { pageActive = true; reconcile(); });
   reduced.addEventListener('change', () => {

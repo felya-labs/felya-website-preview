@@ -9,8 +9,9 @@ unchanged). `HeroShowcase.astro` holds both.
 
 - **Style:** the film hero is dark in both themes so the film belongs to the hero: a large film stage on the right
   (full hero height, feathered into the dark towards the headline), the headline in the site's own type on the left.
-  The theme shows in the header: frosted white glass over the film in Light Mode, smoked glass in Dark Mode
-  (`data-over-film`). Phones: headline on top, the film edge to edge below it.
+  The film runs up under the header bar, which is real glass there and refracts it (WebGL); the bar adapts its tone
+  to what lies beneath (dark over the film in both themes), it does not signal the theme. Phones: headline on top,
+  the film edge to edge below it.
 - **Claim:** "Feel what the robot touches." (`hero.filmClaim`, 13 locales). The globe hero keeps "Your hands. Anywhere
   on Earth." — reach vs. touch, no duplicate. Alternatives under review: "The human hand, extended." · "Every
   movement. Every touch." · "Built to be felt." Change the claim in `src/i18n/translations.ts`.

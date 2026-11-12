@@ -109,6 +109,7 @@ export function initGlassHeader({ root = document } = {}) {
   const onScroll = () => header.toggleAttribute('data-scrolled', window.scrollY > 12);
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
+  initAdaptiveTone(header);
 
   if (!links || !indicator) return;
   const anchors = Array.from(links.querySelectorAll('a[data-nav-link]'));
@@ -164,6 +165,52 @@ export function initGlassHeader({ root = document } = {}) {
   }, { passive: true });
   window.addEventListener('resize', () => { placed = false; place(current); }, { passive: true });
   document.fonts?.ready?.then(() => { placed = false; place(current); });
+  update();
+}
+
+/**
+ * Adaptive glass (Apple, WWDC25 219): small bars "flip between light and dark" with what lies behind them, their
+ * symbols with them — so the bar is dark glass with light ink over the dark film hero or a dark section, and light
+ * glass with dark ink over a light page, whatever the theme. The tone is read from the backgrounds under the bar
+ * (colours and gradient stops of the elements beneath, three points across it), with hysteresis so it never flickers.
+ */
+const colourStops = (value) => [...value.matchAll(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+%?))?\s*\)/g)]
+  .map((m) => ({ l: 0.2126 * +m[1] + 0.7152 * +m[2] + 0.0722 * +m[3], a: m[4] === undefined ? 1 : (m[4].endsWith('%') ? parseFloat(m[4]) / 100 : +m[4]) }));
+
+function backdropLuminance(header, x, y) {
+  const stack = document.elementsFromPoint(x, y).filter((el) => !header.contains(el));
+  for (const el of stack) {
+    const style = getComputedStyle(el);
+    const solid = colourStops(style.backgroundColor).filter((c) => c.a > 0.5);
+    if (solid.length) return solid[0].l;
+    const stops = colourStops(style.backgroundImage).filter((c) => c.a > 0.5);
+    if (stops.length) return stops.reduce((sum, c) => sum + c.l, 0) / stops.length;
+  }
+  return document.documentElement.dataset.theme === 'light' ? 245 : 10;
+}
+
+export function initAdaptiveTone(header) {
+  const nav = header.querySelector('.site-nav');
+  if (!nav || typeof document.elementsFromPoint !== 'function') return;
+  let tone = null;
+  const update = () => {
+    const r = nav.getBoundingClientRect();
+    const y = r.top + r.height / 2;
+    const samples = [0.2, 0.5, 0.8].map((f) => backdropLuminance(header, r.left + r.width * f, y));
+    const lum = samples.sort((a, b) => a - b)[1];
+    // Hysteresis: only a clear change flips the glass.
+    const next = lum < 105 ? 'dark' : lum > 150 ? 'light' : tone ?? (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+    if (next !== tone) { tone = next; header.dataset.glassTone = tone; }
+  };
+  let queued = false;
+  const queue = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; update(); });
+  };
+  window.addEventListener('scroll', queue, { passive: true });
+  window.addEventListener('resize', queue, { passive: true });
+  for (const name of ['felya:themechange', 'felya:herovariantchange', 'felya:languagechange']) document.addEventListener(name, queue);
   update();
 }
 
