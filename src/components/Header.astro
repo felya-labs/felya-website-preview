@@ -53,7 +53,8 @@ const navigationHref = (href: string) => `${navigationBase}${href}`;
             </div>
         </details>
         <div class="order-2 hidden shrink-0 items-center gap-6 whitespace-nowrap text-sm font-medium text-gray-400 md:flex">
-            <div class="flex items-center gap-8">
+            <div class="nav-links flex items-center gap-8" data-nav-links>
+                <span class="nav-indicator" data-nav-indicator aria-hidden="true"></span>
                 {navLinks.map((link) => (
                     <a href={navigationHref(link.href)} data-nav-link data-i18n={`nav.${link.key}`} class="nav-link hover:text-white transition-colors duration-300">{t(locale, `nav.${link.key}` as TranslationKey)}</a>
                 ))}

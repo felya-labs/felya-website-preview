@@ -8,7 +8,8 @@ const allowedEnglish = new Set([
   'legal.impressum', 'developmentUpdates.placeholder'
 ]);
 const allowedIdenticalByLocale = {
-  fr: new Set(['nav.prototypes', 'nav.contact']),
+  de: new Set(['hero.variantFilm']),
+  fr: new Set(['nav.prototypes', 'nav.contact', 'hero.variantGlobe']),
 };
 const errors = [];
 const englishKeys = Object.keys(translations.en);

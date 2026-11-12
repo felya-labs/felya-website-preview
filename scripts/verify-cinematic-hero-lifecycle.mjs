@@ -1,6 +1,6 @@
 // Lifecycle simulations complement native browser checks; no external runtime dependencies.
 import assert from 'node:assert/strict';
-import { initHeroShowcase } from '../src/scripts/cinematic-hero.js';
+import { initHeroShowcase, resolveInitialVariant } from '../src/scripts/cinematic-hero.js';
 
 class Element extends EventTarget {
   dataset = {};
@@ -38,13 +38,14 @@ function fixture({ query = '', mobile = false, reduce = false } = {}) {
   let intersection;
   globalThis.IntersectionObserver = class { constructor(callback) { intersection = callback; } observe() {} };
   const showcase = new Element(), classic = new Element(), cinematic = new Element(), header = new Element(), film = new Element(), video = new Video(), toggle = new Element(), previous = new Element(), next = new Element();
+  previous.focus = () => {}; next.focus = () => {};
   video.dataset = { desktop: 'desktop.mp4', mobile: 'mobile.mp4' };
   root.children.set('.hero-showcase', showcase);
   root.children.set('.site-header', header);
-  for (const [selector, element] of Object.entries({ '.hero-classic': classic, '.cinematic-hero': cinematic, '.cinematic-hero__film': film, '[data-film-toggle]': toggle, '[data-hero-previous]': previous, '[data-hero-next]': next, '[data-hero-count]': new Element(), '[data-hero-announcement]': new Element() })) showcase.children.set(selector, element);
+  for (const [selector, element] of Object.entries({ '.hero-classic': classic, '.cinematic-hero': cinematic, '.cinematic-hero__film': film, '[data-film-toggle]': toggle, '[data-hero-option="cinematic"]': previous, '[data-hero-option="classic"]': next, '[data-hero-selection]': new Element(), '[data-hero-announcement]': new Element() })) showcase.children.set(selector, element);
   film.children.set('video', video);
   toggle.children.set('[data-film-label]', new Element()); toggle.children.set('[data-film-icon]', new Element());
-  initHeroShowcase({ root, translate: key => key });
+  initHeroShowcase({ root, translate: key => key, policy: { defaultVariant: 'cinematic', rememberChoice: false, classicWhenSaveData: true, storageKey: 'test' } });
   return { root, win, showcase, classic, cinematic, video, film, toggle, previous, next, reduced, view: visible => intersection([{ isIntersecting: visible, intersectionRatio: visible ? 1 : 0 }]) };
 }
 let f = fixture();
@@ -68,4 +69,15 @@ f = fixture({ query: '?hero=classic' }); f.view(true); await flush(); assert.equ
 f = fixture(); let resolvePlay;
 f.video.play = () => { f.video.plays++; return new Promise(resolve => { resolvePlay = () => { f.video.paused = false; f.video.dispatchEvent(new Event('playing')); resolve(); }; }); };
 f.view(true); f.next.click(); resolvePlay(); await flush(); assert.equal(f.video.paused, true, 'late autoplay completion cannot start an inactive variant');
-console.log('Cinematic lifecycle simulations passed: visibility, pause intent, variants, Reduced Motion, mobile selection, autoplay denial, page lifecycle and late play.');
+
+// Initial hero policy: URL beats the stored choice, the stored choice beats data saving, data saving beats the default.
+const policy = { defaultVariant: 'cinematic', rememberChoice: true, classicWhenSaveData: true, storageKey: 'k' };
+const store = (value) => ({ getItem: () => value });
+assert.equal(resolveInitialVariant({ params: new URLSearchParams('?hero=classic'), policy, storage: store('cinematic') }), 'classic');
+assert.equal(resolveInitialVariant({ params: new URLSearchParams(''), policy, storage: store('classic') }), 'classic');
+assert.equal(resolveInitialVariant({ params: new URLSearchParams(''), policy, storage: store(null), connection: { saveData: true } }), 'classic');
+assert.equal(resolveInitialVariant({ params: new URLSearchParams(''), policy, storage: store('cinematic'), connection: { saveData: true } }), 'cinematic');
+assert.equal(resolveInitialVariant({ params: new URLSearchParams('?hero=bogus'), policy, storage: { getItem() { throw new Error('blocked'); } } }), 'cinematic');
+assert.equal(resolveInitialVariant({ params: new URLSearchParams(''), policy: { ...policy, rememberChoice: false }, storage: store('classic') }), 'cinematic');
+f = fixture(); f.view(true); await flush(); f.previous.click(); assert.equal(f.cinematic.inert, false, 'choosing the active hero changes nothing');
+console.log('Cinematic lifecycle simulations passed: visibility, pause intent, variants, Reduced Motion, mobile selection, autoplay denial, page lifecycle, late play and the initial hero policy.');

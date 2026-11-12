@@ -1,4 +1,5 @@
 import { initHeroShowcase } from './cinematic-hero.js';
+import { initLiquidGlass, revealTheme } from './liquid-glass.js';
 import { initPartnerImages, initFutureImages } from './image-loading.js';
 import {
   colorTheme,
@@ -198,10 +199,16 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
   // is wiping across. Nothing is ever snapshotted or suspended, so the earth keeps rotating
   // uninterrupted the entire time; see the CSS for the rest of this.
   const heroSection = root.querySelector('.hero-section');
-  const runThemeWipe = (nextTheme, direction) => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || heroSection?.closest('.hero-classic')?.hasAttribute('data-hero-inactive')) {
+  const heroWipeVisible = () => {
+    if (!heroSection || heroSection.closest('.hero-classic')?.hasAttribute('data-hero-inactive')) return false;
+    const bounds = heroSection.getBoundingClientRect();
+    return bounds.bottom > window.innerHeight * 0.25 && bounds.top < window.innerHeight;
+  };
+  const runThemeWipe = (nextTheme, direction, origin) => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !heroWipeVisible()) {
       delete document.documentElement.dataset.themeWipeDirection;
-      applyTheme(nextTheme);
+      // Liquid Glass: away from the live hero wipe, the new theme spreads from the click as a soft disc.
+      if (!revealTheme(() => applyTheme(nextTheme), origin)) applyTheme(nextTheme);
       return;
     }
     document.documentElement.dataset.themeWipeDirection = direction;
@@ -224,8 +231,12 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
 
   let themeRequest = 0;
   buttons.forEach((button) => {
-    button.addEventListener('click', async () => {
+    button.addEventListener('click', async (event) => {
       const request = ++themeRequest;
+      const bounds = button.getBoundingClientRect();
+      const origin = event.clientX || event.clientY
+        ? { x: event.clientX, y: event.clientY }
+        : { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
       const nextTheme = button.dataset.themeNext || (document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
       const pending = [];
       document.dispatchEvent(new CustomEvent('felya:beforethemechange', {
@@ -235,7 +246,7 @@ export function initColorTheme({ root = document, config = colorTheme } = {}) {
         await Promise.all(pending);
         if (request === themeRequest) {
           // Preserve the current live Easter-egg wipe while waiting for required assets.
-          runThemeWipe(nextTheme, nextTheme === 'dark' ? 'ltr' : 'rtl');
+          runThemeWipe(nextTheme, nextTheme === 'dark' ? 'ltr' : 'rtl', origin);
         }
       } catch { /* Keep the current theme and its images when a replacement fails. */ }
     });
@@ -2956,6 +2967,7 @@ export function initSite(root = document) {
   initTwoLineHeadings({ root });
   initMobileNavigation({ root });
   initHeroShowcase({ root, translate });
+  initLiquidGlass({ root });
   initHeroHeadlineLanguages({ root });
   initDevelopmentUpdatesForm({ root });
   initPrototypeVideoCover({ root });

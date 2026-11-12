@@ -7,6 +7,9 @@ const en = {
   "hero.play": "Play film",
   "hero.cinematic": "Cinematic hero",
   "hero.classic": "Original hero",
+  "hero.variants": "Hero view",
+  "hero.variantFilm": "Film",
+  "hero.variantGlobe": "Globe",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA develops wearable interfaces that transfer human movement, touch and skill into robotic systems.',
@@ -130,6 +133,9 @@ const de: TranslationDictionary = {
   "hero.play": "Film abspielen",
   "hero.cinematic": "Cinematic Hero",
   "hero.classic": "Bisheriger Hero",
+  "hero.variants": "Startansicht",
+  "hero.variantFilm": "Film",
+  "hero.variantGlobe": "Globus",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA',
@@ -188,6 +194,9 @@ const ky: TranslationDictionary = {
   "hero.play": "Видеону ойнотуу",
   "hero.cinematic": "Кинематографиялык көрүнүш",
   "hero.classic": "Баштапкы көрүнүш",
+  "hero.variants": "Башкы көрүнүш",
+  "hero.variantFilm": "Видео",
+  "hero.variantGlobe": "Глобус",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA',
@@ -224,6 +233,9 @@ const id: TranslationDictionary = {
   "hero.play": "Putar film",
   "hero.cinematic": "Hero sinematik",
   "hero.classic": "Hero asli",
+  "hero.variants": "Tampilan awal",
+  "hero.variantFilm": "Video",
+  "hero.variantGlobe": "Bumi",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA mengembangkan antarmuka wearable yang menyalurkan gerakan, sentuhan, dan keahlian manusia ke sistem robotik.', 'meta.ogDescription': 'Antarmuka yang memperluas kemampuan manusia.', 'meta.imageAlt': 'Sarung tangan haptik PATON dari FELYA dengan pesan Tangan Anda. Di mana pun di dunia.',
@@ -248,6 +260,9 @@ const ko: TranslationDictionary = {
   "hero.play": "영상 재생",
   "hero.cinematic": "시네마틱 히어로",
   "hero.classic": "기존 히어로",
+  "hero.variants": "첫 화면 보기",
+  "hero.variantFilm": "영상",
+  "hero.variantGlobe": "지구본",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA는 사람의 움직임과 촉감, 숙련도를 로봇 시스템에 전달하는 웨어러블 인터페이스를 개발합니다.', 'meta.ogDescription': '인간의 역량을 확장하는 인터페이스.', 'meta.imageAlt': '“당신의 두 손. 세계 어디에서나.”라는 문구와 함께 보이는 FELYA의 PATON 햅틱 글러브.',
@@ -271,6 +286,9 @@ const ja: TranslationDictionary = {
   "hero.play": "動画を再生",
   "hero.cinematic": "シネマティックヒーロー",
   "hero.classic": "従来のヒーロー",
+  "hero.variants": "トップ表示",
+  "hero.variantFilm": "映像",
+  "hero.variantGlobe": "地球儀",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYAは、人の動き、触覚、技能をロボットシステムへ伝えるウェアラブルインターフェースを開発しています。', 'meta.ogDescription': '人の能力を拡張するインターフェース。', 'meta.imageAlt': '「あなたの手を、世界のどこへでも。」というメッセージとFELYAのPATONハプティックグローブ。',
@@ -294,6 +312,9 @@ const zhCn: TranslationDictionary = {
   "hero.play": "播放影片",
   "hero.cinematic": "电影首屏",
   "hero.classic": "原始首屏",
+  "hero.variants": "首屏视图",
+  "hero.variantFilm": "影片",
+  "hero.variantGlobe": "地球仪",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA 开发可穿戴交互界面，将人的动作、触觉与技能传递至机器人系统。', 'meta.ogDescription': '延展人类能力的交互界面。', 'meta.imageAlt': 'FELYA 的 PATON 触觉手套，以及“你的双手。遍及世界。”标语。',
@@ -317,6 +338,9 @@ const zhTw: TranslationDictionary = {
   "hero.play": "播放影片",
   "hero.cinematic": "電影首屏",
   "hero.classic": "原始首屏",
+  "hero.variants": "首屏視圖",
+  "hero.variantFilm": "影片",
+  "hero.variantGlobe": "地球儀",
 
   'meta.ogTitle': 'FELYA', 'nav.paton': 'PATON', 'hero.product': 'PATON', 'system.stage.paton.label': 'PATON', 'footer.copyright': '© 2026 FELYA',
   'meta.title': 'FELYA', 'meta.description': 'FELYA 開發穿戴式介面，將人的動作、觸覺與技能帶入機器人系統。', 'meta.ogDescription': '延伸人類能力的介面。', 'meta.imageAlt': 'FELYA 的 PATON 觸覺手套，以及「你的雙手。世界任何角落。」標語。',
@@ -340,6 +364,9 @@ const ru: TranslationDictionary = {
   "hero.play": "Воспроизвести видео",
   "hero.cinematic": "Кинематографический вариант",
   "hero.classic": "Исходный вариант",
+  "hero.variants": "Начальный экран",
+  "hero.variantFilm": "Видео",
+  "hero.variantGlobe": "Глобус",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA разрабатывает носимые интерфейсы, которые передают движения, прикосновения и навыки человека роботизированным системам.',
@@ -460,6 +487,9 @@ const pt: TranslationDictionary = {
   "hero.play": "Reproduzir filme",
   "hero.cinematic": "Hero cinematográfico",
   "hero.classic": "Hero original",
+  "hero.variants": "Vista inicial",
+  "hero.variantFilm": "Vídeo",
+  "hero.variantGlobe": "Globo",
 
   'meta.title': 'FELYA',
   'meta.description': 'A FELYA desenvolve interfaces vestíveis que transferem movimento, toque e destreza humana para sistemas robóticos.',
@@ -580,6 +610,9 @@ const fr: TranslationDictionary = {
   "hero.play": "Lire le film",
   "hero.cinematic": "Hero cinématique",
   "hero.classic": "Hero original",
+  "hero.variants": "Vue d’accueil",
+  "hero.variantFilm": "Vidéo",
+  "hero.variantGlobe": "Globe",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA développe des interfaces portables qui transmettent les mouvements, le toucher et le savoir-faire humains aux systèmes robotiques.',
@@ -700,6 +733,9 @@ const es: TranslationDictionary = {
   "hero.play": "Reproducir vídeo",
   "hero.cinematic": "Hero cinematográfico",
   "hero.classic": "Hero original",
+  "hero.variants": "Vista inicial",
+  "hero.variantFilm": "Vídeo",
+  "hero.variantGlobe": "Globo",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA desarrolla interfaces vestibles que trasladan el movimiento, el tacto y la destreza humana a sistemas robóticos.',
@@ -820,6 +856,9 @@ const it: TranslationDictionary = {
   "hero.play": "Riproduci filmato",
   "hero.cinematic": "Hero cinematografico",
   "hero.classic": "Hero originale",
+  "hero.variants": "Vista iniziale",
+  "hero.variantFilm": "Video",
+  "hero.variantGlobe": "Globo",
 
   'meta.title': 'FELYA',
   'meta.description': 'FELYA sviluppa interfacce indossabili che trasferiscono movimento, tatto e abilità umane ai sistemi robotici.',

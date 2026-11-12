@@ -18,22 +18,10 @@
 .cinematic-hero__film[data-film-state="video"] video { opacity: 1; }
 .cinematic-hero__film[data-film-state="video"] img { visibility: hidden; }
 .cinematic-hero__film[data-shot="detail"] video { mask-image: linear-gradient(to bottom, transparent 7.2%, #000 11%, #000 90%, transparent 93%); }
-.cinematic-hero__play { position: absolute; left: 5vw; bottom: 28px; min-height: 48px; display: inline-flex; align-items: center; gap: 12px; background: transparent; border: 1px solid #ffffff35; border-radius: 999px; padding: 0 20px; color: #e6e9e6; font: inherit; font-size: 12px; cursor: pointer; }
-.hero-variant-controls { position: absolute; z-index: 5; right: 5vw; bottom: 28px; display: flex; align-items: center; gap: 10px; }
-.hero-variant-controls > span:first-child { font-size: 11px; letter-spacing: .12em; margin-right: 14px; }
-.hero-variant-controls button { width: 48px; height: 48px; display: grid; place-items: center; padding: 0; border: 1px solid currentColor; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
-.hero-showcase[data-hero-variant="cinematic"] .hero-variant-controls { color: #e6e9e6; }
-.hero-showcase[data-hero-variant="classic"] .hero-variant-controls { color: var(--text-strong); }
-.hero-variant-controls button:hover, .cinematic-hero__play:hover { background: #88888822; }
 .hero-variant-controls button:focus-visible, .cinematic-hero :is(button, a):focus-visible { outline: 2px solid #8da8cf; outline-offset: 5px; }
 /* Contextual contrast, including the fixed mobile header. Theme state remains on html. */
-html .site-header[data-cinematic-context] .site-nav { background: rgba(12,12,13,.86); border-color: #ffffff24; box-shadow: 0 1rem 3rem #00000029; }
-html .site-header[data-cinematic-context] :is(.nav-link, .mobile-nav-toggle, .theme-toggle, .language-toggle) { color: #e3e6eb; }
-html .site-header[data-cinematic-context] :is(.theme-toggle, .language-toggle, .mobile-nav-toggle) { background: #ffffff0f; border-color: #ffffff28; }
 html .site-header[data-cinematic-context] .theme-brand-logo__asset--white { display: block; }
 html .site-header[data-cinematic-context] .theme-brand-logo__asset--black { display: none; }
-html .site-header[data-cinematic-context] .mobile-nav-panel { background: #0c0c0df5; border-color: #ffffff24; }
-html .site-header[data-cinematic-context] .mobile-nav-panel a { color: #e3e6eb; }
 @media (max-width: 720px) {
     .cinematic-hero { padding: 114px 24px 96px; align-items: flex-start; }
     .cinematic-hero__composition { display: flex; flex-direction: column; align-items: stretch; margin-block: auto; }
@@ -42,9 +30,11 @@ html .site-header[data-cinematic-context] .mobile-nav-panel a { color: #e3e6eb; 
     .cinematic-hero__lead { font-size: 13px; margin-top: 18px; }
     .cinematic-hero__contact { margin-top: 10px; font-size: 12px; padding: 10px 0; }
     .cinematic-hero__film { width: calc(100% + 32px); margin: 10px -16px 0; }
-    .cinematic-hero__play { left: 24px; bottom: 24px; padding-inline: 14px; }
-    .hero-variant-controls { right: 24px; bottom: 24px; gap: 8px; }
-    .hero-variant-controls > span:first-child { margin-right: 4px; }
+    /* Icon-only on phones: translated labels must never crowd the Film | Globe capsule (>= 8 px between glass groups). */
+    .cinematic-hero__play { left: 24px; bottom: 24px; width: 48px; padding: 0; justify-content: center; }
+    .cinematic-hero__play [data-film-label] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .hero-variant-controls { right: 24px; bottom: 24px; }
+    .hero-variant-controls [data-hero-option] { padding-inline: 12px 14px; }
 }
 @media (max-height: 740px) and (max-width: 720px) {
     .cinematic-hero { padding-top: 104px; }
@@ -52,3 +42,53 @@ html .site-header[data-cinematic-context] .mobile-nav-panel a { color: #e3e6eb; 
     .cinematic-hero__eyebrow { margin-bottom: 12px; }
     .cinematic-hero__film { width: min(calc(100% + 32px), 42svh); align-self: center; }
 }
+
+/* ─── Liquid Glass controls (docs/design/liquid-glass-web.md) ─────────────────────────────────────────── */
+/* Film | Globe: one glass capsule; the options are thin parts of it and the selection glides between them. */
+.hero-variant-controls {
+    position: absolute; z-index: 5; right: 5vw; bottom: 28px;
+    display: flex; align-items: center; gap: 0; padding: 4px;
+    border-radius: 999px; isolation: isolate;
+    background: var(--glass-volume), var(--glass-regular);
+    box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
+    color: var(--glass-ink);
+}
+.hero-variant-controls::before { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; box-shadow: var(--glass-edge); pointer-events: none; }
+.hero-variant-controls [data-hero-option] {
+    position: relative; z-index: 1; min-height: 40px; display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 16px 0 13px; border: 0; border-radius: 999px; background: transparent;
+    color: var(--glass-ink-soft); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer;
+    transition: color 220ms ease;
+}
+.hero-variant-controls [data-hero-option][aria-checked="true"], .hero-variant-controls [data-hero-option]:hover { color: var(--glass-ink); }
+.hero-variant-controls__selection {
+    position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: var(--hero-selection-w, 0px);
+    border-radius: 999px; background: var(--glass-select);
+    box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--glass-ink) 10%, transparent), 0 1px 2px rgb(0 0 0 / 0.1);
+    transform: translateX(var(--hero-selection-x, 0px));
+    transition: transform 460ms var(--spring, ease), width 460ms var(--spring, ease);
+}
+.hero-showcase[data-hero-variant="cinematic"] .hero-variant-controls { color-scheme: dark; }
+/* Over the black film the capsule is dark glass in both themes. */
+.hero-showcase[data-hero-variant="cinematic"] .hero-variant-controls {
+    --glass-regular: rgb(26 29 40 / 0.5);
+    --glass-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.55), 0 22px 50px -18px rgb(0 0 0 / 0.75);
+    --glass-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -0.5px 0 rgb(255 255 255 / 0.04);
+    --glass-volume: linear-gradient(180deg, rgb(255 255 255 / 0.07) 0%, rgb(255 255 255 / 0.02) 16%, transparent 45%, transparent 75%, rgb(0 0 0 / 0.12) 100%);
+    --glass-select: rgb(255 255 255 / 0.14);
+    --glass-ink: #f3f5fa;
+    --glass-ink-soft: #b9bfcd;
+}
+/* Play / Pause over the film: a clear glass capsule. */
+.cinematic-hero__play {
+    position: absolute; left: 5vw; bottom: 28px; min-height: 48px; display: inline-flex; align-items: center; gap: 10px;
+    padding: 0 20px 0 16px; border: 0; border-radius: 999px; isolation: isolate;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02) 40%, rgb(0 0 0 / 0.1)), rgb(28 31 42 / 0.36);
+    box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.55), 0 22px 50px -18px rgb(0 0 0 / 0.75), inset 0 0 0 0.5px rgb(255 255 255 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.2);
+    -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
+    color: #f3f5fa; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer;
+}
+.cinematic-hero__play [data-film-icon] { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgb(255 255 255 / 0.92); color: #10131c; font-size: 11px; line-height: 1; }
+.hero-variant-controls [data-hero-option]:focus-visible, .cinematic-hero :is(button, a):focus-visible { outline: 2px solid #8da8cf; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .hero-variant-controls__selection { transition: none; } }

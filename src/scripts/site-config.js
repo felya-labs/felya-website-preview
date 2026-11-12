@@ -39,3 +39,15 @@ export const developmentUpdatesFormConfig = {
 export const prototypeVideoCover = {
   selectors: { cover: '[data-video-cover]' }
 };
+
+// Which homepage hero a visitor sees first (Preview). Order of precedence:
+// 1. ?hero=cinematic|classic in the URL (campaigns, QR codes, reviews; never stored)
+// 2. the visitor's own choice from the Film | Globe switch (remembered when rememberChoice is true)
+// 3. classicWhenSaveData: browsers that ask to save data start with the globe instead of the film
+// 4. defaultVariant
+export const heroShowcase = {
+  defaultVariant: 'cinematic',
+  rememberChoice: true,
+  classicWhenSaveData: true,
+  storageKey: 'felya-hero-variant'
+};
