@@ -263,8 +263,9 @@ export function initHeroGlass({ root = document } = {}) {
     gl.uniform4f(U.uVidA, ...vids[0].rect); gl.uniform4f(U.uVidB, ...vids[1].rect);
     gl.uniform2f(U.uDetailA, vids[0].detail, 0); gl.uniform2f(U.uDetailB, vids[1].detail, 0);
     gl.uniform4f(U.uFilm, box.x, box.y, box.w, box.h);
-    // The frame is not feathered: the film fills it edge to edge.
-    gl.uniform4f(U.uMask, 0, 0, 0, 0);
+    // Same feathering as the CSS mask of .film-hero__stage (desktop: towards the headline and the edges; phone: top/bottom).
+    const wide = window.matchMedia('(min-width: 721px)').matches;
+    gl.uniform4f(U.uMask, wide ? 0.38 : 0, 0, wide ? 0.06 : 0.14, wide ? 0.14 : 0.16);
 
     const next = new Set();
     for (const surface of surfaces()) {

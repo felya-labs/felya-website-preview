@@ -79,8 +79,13 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
     progress(metadata.mediaTime);
     if (!video.paused && visible()) frame = video.requestVideoFrameCallback(updateFrame);
   };
-  // The film hero follows the page theme (Phase 2), so the header keeps its own glass: no dark film context.
-  const syncHeader = () => header?.removeAttribute?.('data-cinematic-context');
+  // While the bar lies over the dark film hero it shows the theme in its glass (liquid-glass.css, data-over-film).
+  const syncHeader = () => {
+    if (!header?.getBoundingClientRect) return;
+    const bounds = showcase.getBoundingClientRect();
+    const bar = header.getBoundingClientRect();
+    header.toggleAttribute('data-over-film', active && bounds.top < bar.bottom && bounds.bottom > bar.top);
+  };
   const load = (clip) => {
     if (loadedClips.has(clip)) return;
     loadedClips.add(clip);
@@ -198,23 +203,13 @@ export function initHeroShowcase({ root = document, translate, policy = heroPoli
       options[next]?.focus?.();
     });
   }
-  // Arrows: with two heroes both lead to the other one; the arrow says which way the swipe goes.
+  // Arrows in the switch: with two heroes both lead to the other one; the arrow says which way the swipe goes.
   showcase.querySelectorAll?.('[data-hero-step]').forEach((arrow) => {
     arrow.addEventListener('click', () => {
       const dir = Number(arrow.dataset.heroStep) || 1;
       choose(active ? 'classic' : 'cinematic', dir);
     });
   });
-  // The arrows show themselves only while a mouse is over the hero (and on keyboard focus): discovered, not shouted.
-  let idle = 0;
-  const reveal = () => {
-    showcase.setAttribute('data-pointer-over', '');
-    clearTimeout(idle);
-    // Fade out after a quiet moment, unless the pointer rests on an arrow or the dots.
-    idle = setTimeout(() => { if (!showcase.querySelector?.('.hero-arrow:hover, .hero-dots:hover')) showcase.removeAttribute('data-pointer-over'); }, 2400);
-  };
-  showcase.addEventListener?.('pointermove', (event) => { if (event.pointerType === 'mouse') reveal(); }, { passive: true });
-  showcase.addEventListener?.('pointerleave', () => { clearTimeout(idle); showcase.removeAttribute('data-pointer-over'); });
   // Touch: a horizontal swipe switches; vertical movement stays page scrolling, the globe keeps its own drag.
   let swipe = null;
   showcase.addEventListener?.('pointerdown', (event) => {

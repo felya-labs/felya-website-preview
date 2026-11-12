@@ -28,6 +28,13 @@ page records only what the website does differently and where things live. State
 | Squish, gliding header selection, compact header, theme disc | `src/scripts/liquid-glass.js` |
 | Hero choice and crossfade | `src/scripts/cinematic-hero.js`, policy in `src/scripts/site-config.js` (`heroShowcase`) |
 
+## Header
+
+- One thickness all the time (48 px, like Studio's bars); on scroll it only glides closer to the top edge.
+- Glass is round: `corner-shape: round` on every glass surface. global.css sets `corner-shape: squircle` on them, which
+  Chrome applies to the background but not to the rim, shadow or frost — the edge doubled at the bar's ends.
+- Over the dark film hero the bar shows the theme (frosted white / smoked).
+
 ## Differences to Studio
 
 - Refraction only where we know what lies beneath: glass over the hero film is refracted in WebGL like Studio's stage

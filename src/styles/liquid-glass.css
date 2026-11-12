@@ -172,8 +172,9 @@ html:not([data-theme="light"]) .squish::after,
 
 /* ─── Header: one glass capsule, fixed on every width ────────────────────────────────────────────────── */
 
+/* The bar keeps one thickness all the time; on scroll it only glides a little closer to the top edge. */
 .site-header {
-    transition: padding 520ms var(--spring-soft);
+    transition: padding 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (min-width: 768px) {
@@ -181,17 +182,34 @@ html:not([data-theme="light"]) .squish::after,
     .site-header[data-scrolled] { padding-top: 0.75rem; padding-bottom: 0.75rem; }
 }
 
+/* global.css gives these surfaces corner-shape: squircle; glass draws its rim, shadow and frost with round corners,
+   so the shapes must agree or the edge doubles (seen at the bar's right end). Glass is round. */
+.site-nav,
+.mobile-nav-toggle,
+.mobile-nav-panel,
+.language-dialog,
+.video-play-cta {
+    corner-shape: round !important;
+}
+
 .site-nav,
 html[data-theme="light"] .site-nav,
 html .site-header[data-cinematic-context] .site-nav {
     border: 0;
     border-radius: 999px;
+    /* Slim and constant: 48 px like Studio's bars; the round controls at the end sit concentric in the capsule. */
+    padding: 0.375rem 0.375rem 0.375rem 1.4rem;
     background: var(--glass-volume), var(--glass-regular);
     box-shadow: var(--glass-shadow-thick);
     -webkit-backdrop-filter: blur(14px) saturate(180%);
     backdrop-filter: blur(14px) saturate(180%);
     color: var(--glass-ink);
-    transition: background-color 320ms ease, box-shadow 320ms ease, padding 520ms var(--spring-soft);
+    transition: background-color 320ms ease, box-shadow 320ms ease;
+}
+
+/* Over the dark film hero the bar tells the theme: frosted white in Light Mode, smoked glass in Dark Mode. */
+html[data-theme="light"] .site-header[data-over-film] .site-nav {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.12) 40%, transparent 70%), rgb(255 255 255 / 0.86);
 }
 
 .site-nav::before {
@@ -206,8 +224,22 @@ html .site-header[data-cinematic-context] .site-nav {
 
 .site-nav > * { position: relative; z-index: 1; }
 
-@media (min-width: 768px) {
-    .site-header[data-scrolled] .site-nav { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.site-nav :is(.theme-toggle, .language-toggle) {
+    flex-basis: 2.25rem;
+    width: 2.25rem;
+    min-width: 2.25rem;
+    height: 2.25rem;
+}
+
+.site-nav .mobile-nav-toggle {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+
+@media (max-width: 767px) {
+    .site-nav :is(.theme-toggle, .language-toggle) { flex-basis: 2.5rem; width: 2.5rem; min-width: 2.5rem; height: 2.5rem; }
+    .site-nav .mobile-nav-toggle { width: 2.5rem; height: 2.5rem; }
+    .site-nav { padding-left: 1.1rem; }
 }
 
 /* Links: full-contrast ink; the current section carries a glass selection that glides between links. */
@@ -390,8 +422,7 @@ html[data-theme-reveal] ::view-transition-new(root) {
     .site-nav,
     .mobile-nav-panel,
     .language-dialog,
-    .hero-arrow,
-    .hero-dots,
+    .hero-switch,
     .film-hero__toggle {
         background: var(--lg-page) !important;
         outline: 1px solid var(--glass-ink);

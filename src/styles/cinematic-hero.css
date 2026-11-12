@@ -1,7 +1,8 @@
 /*
- * Film hero (Phase 2, Preview) and the switch between film and globe.
- * Style follows the rest of the site: theme background, section kicker, the classic hero's title scale, media in a
- * dark rounded frame like the prototype film. Glass only on controls (docs/design/liquid-glass-web.md).
+ * Film hero (Preview) and the switch between film and globe.
+ * The film hero is dark in both themes so the film belongs to the hero: the film is a large stage on the right,
+ * feathered into the dark, the headline in the site's own type on the left. The theme shows in the header glass
+ * (frosted white in Light Mode, smoked in Dark Mode). Glass only on controls (docs/design/liquid-glass-web.md).
  */
 
 /* ─── Showcase: two heroes side by side while swiping ─────────────────────────────────────────────── */
@@ -12,65 +13,62 @@
 
 /* ─── Film hero ──────────────────────────────────────────────────────────────────────────────────────── */
 .film-hero {
+    /* Dark tokens inside the hero, whatever the page theme. */
+    --text-strong: #f3f5fa;
+    --text-soft: #b9c0cd;
+    --accent-strong: #8aa5f3;
+    --lg-page: #050608;
     position: absolute; inset: 0; z-index: 2;
     display: flex; align-items: center;
-    padding: clamp(6.5rem, 12vh, 8.5rem) clamp(1.5rem, 5vw, 4rem) clamp(4.5rem, 9vh, 6rem);
-    background: var(--lg-page, #08090e);
+    padding: clamp(6.5rem, 12vh, 8.5rem) clamp(1.5rem, 5vw, 4rem) clamp(5rem, 11vh, 7rem);
+    background: #050608;
     color: var(--text-strong);
+    color-scheme: dark;
 }
-html[data-theme="light"] .film-hero {
-    background:
-        radial-gradient(circle at 78% 10%, rgba(74, 109, 168, 0.08), transparent 27rem),
-        radial-gradient(circle at 18% 4%, rgba(255, 255, 255, 0.9), transparent 24rem),
-        linear-gradient(180deg, #fcfdfe 0%, #f4f6fb 60%, #eef2f7 100%);
-}
+html:not([data-theme="light"]) .film-hero { background: linear-gradient(180deg, #050608 0%, #050608 82%, #08090e 100%); }
 .film-hero[hidden] { display: none; }
 
-.film-hero__layout {
-    display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.3fr); align-items: center;
-    gap: clamp(2rem, 4.5vw, 5rem);
-    width: 100%; max-width: 106rem; margin: 0 auto;
-}
-.film-hero__copy { position: relative; z-index: 1; }
+.film-hero__layout { position: relative; z-index: 2; width: 100%; max-width: 106rem; margin: 0 auto; }
+.film-hero__copy { max-width: min(36rem, 42vw); }
 .film-hero__title {
-    max-width: 14ch; margin: 1.05rem 0 0;
+    max-width: 13ch; margin: 1.05rem 0 0;
     color: var(--text-strong);
-    font-size: clamp(2.6rem, min(5vw, 8.4vh), 5.6rem); font-weight: 700; line-height: 1; letter-spacing: -0.02em;
+    font-size: clamp(2.6rem, min(5.2vw, 9vh), 6rem); font-weight: 700; line-height: 1; letter-spacing: -0.02em;
     text-wrap: balance;
 }
 html:is(:lang(ko), :lang(ja), :lang(zh-CN), :lang(zh-TW)) .film-hero__title { line-height: 1.16; max-width: 12em; word-break: keep-all; }
-.film-hero__lead { max-width: 30rem; margin: clamp(1rem, 2.4vh, 1.5rem) 0 0; color: var(--text-soft); font-size: clamp(1.05rem, 1vw + 0.4rem, 1.25rem); font-weight: 520; line-height: 1.6; }
+.film-hero__lead { max-width: 28rem; margin: clamp(1rem, 2.4vh, 1.5rem) 0 0; color: var(--text-soft); font-size: clamp(1.05rem, 1vw + 0.4rem, 1.25rem); font-weight: 520; line-height: 1.6; }
 .film-hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; margin-top: clamp(1.5rem, 3.4vh, 2.25rem); }
 .film-hero__primary {
     display: inline-flex; align-items: center; min-height: 3rem; padding: 0 1.5rem; border-radius: 999px;
-    background: var(--text-strong); color: var(--lg-page, #08090e); font-size: 0.95rem; font-weight: 680;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 12px 28px -14px rgb(16 28 64 / 0.45);
-    transition: background-color 220ms ease, box-shadow 220ms ease;
+    background: #f3f5fa; color: #0b0d12; font-size: 0.95rem; font-weight: 680;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 30px -14px rgb(0 0 0 / 0.8);
+    transition: background-color 220ms ease;
 }
-.film-hero__primary:hover { background: color-mix(in srgb, var(--text-strong) 86%, var(--accent)); }
+.film-hero__primary:hover { background: #ffffff; }
 .film-hero__secondary { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-strong); font-size: 0.95rem; font-weight: 650; }
 .film-hero__secondary svg { transition: transform 320ms var(--spring, ease); }
 .film-hero__secondary:hover svg { transform: translateX(3px); }
 
-/* The film: a dark frame like the prototype film, edge lit from the top. */
+/* The film: a large stage on the right, full hero height, feathered into the dark towards the headline. */
 .film-hero__stage {
-    position: relative; overflow: hidden; isolation: isolate;
-    width: 100%; aspect-ratio: 16 / 10; max-height: calc(100svh - 14rem);
-    border-radius: 2rem; background: #000;
-    box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.12), 0 2px 4px rgb(0 0 0 / 0.08), 0 40px 90px -40px rgb(16 28 64 / 0.55);
+    position: absolute; z-index: 1; top: 0; right: 0; bottom: 0;
+    width: min(74vw, 1500px);
+    overflow: hidden; isolation: isolate; background: #000;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.45) 16%, #000 38%), linear-gradient(to bottom, transparent 0%, #000 6%, #000 86%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.45) 16%, #000 38%), linear-gradient(to bottom, transparent 0%, #000 6%, #000 86%, transparent 100%);
+    -webkit-mask-composite: source-in; mask-composite: intersect;
 }
-html:not([data-theme="light"]) .film-hero__stage { box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.08), 0 40px 100px -40px rgb(0 0 0 / 0.9); }
-.film-hero__stage::after { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.12); }
 .film-hero__stage picture, .film-hero__stage img, .film-hero__stage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
 .film-hero__stage video { opacity: 0; transition: opacity 650ms cubic-bezier(0.22, 1, 0.36, 1); }
 .film-hero__stage[data-film-state="video"] video[data-active] { opacity: 1; }
 .film-hero__stage[data-film-state="video"] picture { visibility: hidden; }
 .cinematic-hero__lens { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; }
 
-/* Pause / play: a small glass lens in the corner with the film's progress as a ring. It shows itself when the
-   pointer is over the film, on focus, when paused, and always on touch screens (no hover there). */
+/* Pause / play: a small glass lens over the film with its progress as a ring. Shows on hover, on focus, while
+   paused, and always on touch screens. Over the film it is refracted in WebGL ([data-lens], hero-glass.js). */
 .film-hero__toggle {
-    position: absolute; z-index: 4; left: 1rem; bottom: 1rem;
+    position: absolute; z-index: 4; right: clamp(1rem, 2.4vw, 2rem); bottom: clamp(5.5rem, 12vh, 7.5rem);
     display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border: 0; border-radius: 50%;
     background: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.03) 45%, rgb(0 0 0 / 0.1)), rgb(28 31 42 / 0.32);
     box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.45), 0 10px 24px -10px rgb(0 0 0 / 0.7), inset 0 0 0 0.5px rgb(255 255 255 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.3);
@@ -79,7 +77,7 @@ html:not([data-theme="light"]) .film-hero__stage { box-shadow: 0 0 0 0.5px rgb(2
     opacity: 0; transition: opacity 320ms ease, background-color 220ms ease;
 }
 .film-hero__toggle[data-lens] { -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02) 45%, rgb(0 0 0 / 0.06)), rgb(24 27 38 / 0.12); }
-.film-hero__stage:hover .film-hero__toggle, .film-hero__toggle:focus-visible, .film-hero__toggle[data-playing="false"] { opacity: 1; }
+.film-hero:hover .film-hero__toggle, .film-hero__toggle:focus-visible, .film-hero__toggle[data-playing="false"] { opacity: 1; }
 @media (hover: none) { .film-hero__toggle { opacity: 0.9; } }
 .film-hero__ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); pointer-events: none; }
 .film-hero__ring circle { fill: none; stroke: rgb(255 255 255 / 0.85); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--film-progress, 0) * 100); }
@@ -89,56 +87,58 @@ html:not([data-theme="light"]) .film-hero__stage { box-shadow: 0 0 0 0.5px rgb(2
 .film-hero__toggle[data-playing="false"] .film-hero__icon-play { display: block; }
 .film-hero__toggle[data-playing="false"] .film-hero__icon-pause { display: none; }
 
-/* ─── Switch: arrows at the edges, dots below ───────────────────────────────────────────────────────── */
-.hero-arrow {
-    position: absolute; z-index: 6; top: 50%;
-    display: grid; place-items: center; width: 3rem; height: 3rem; margin-top: -1.5rem; padding: 0; border: 0; border-radius: 50%;
+/* ─── Switch: one small glass capsule at the bottom centre — ‹ line · dot › ──────────────────────────── */
+.hero-switch {
+    position: absolute; z-index: 6; left: 50%; bottom: clamp(1.25rem, 3vh, 2rem); translate: -50% 0;
+    display: flex; align-items: center; gap: 0; padding: 0.25rem; border-radius: 999px; isolation: isolate;
     background: var(--glass-volume), var(--glass-regular); box-shadow: var(--glass-shadow), var(--glass-edge);
     -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
-    color: var(--glass-ink); cursor: pointer;
-    /* Invisible until discovered, but always there: a click where the arrow sits still works. */
-    opacity: 0;
-    transition: opacity 360ms ease, translate 520ms var(--spring, ease);
+    color: var(--glass-ink);
 }
-.hero-arrow--previous { left: clamp(0.75rem, 1.6vw, 1.5rem); translate: -0.5rem 0; }
-.hero-arrow--next { right: clamp(0.75rem, 1.6vw, 1.5rem); translate: 0.5rem 0; }
-.hero-showcase[data-pointer-over] .hero-arrow, .hero-arrow:hover, .hero-arrow:focus-visible { opacity: 1; translate: 0 0; }
-@media (hover: none) { .hero-arrow { display: none; } }
+/* Over the film it is dark glass in both themes. */
+.hero-showcase[data-hero-variant="cinematic"] .hero-switch {
+    --glass-regular: rgb(26 29 40 / 0.5);
+    --glass-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.55), 0 22px 50px -18px rgb(0 0 0 / 0.75);
+    --glass-edge: inset 0 0 0 0.5px rgb(255 255 255 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -0.5px 0 rgb(255 255 255 / 0.04);
+    --glass-volume: linear-gradient(180deg, rgb(255 255 255 / 0.07) 0%, rgb(255 255 255 / 0.02) 16%, transparent 45%, transparent 75%, rgb(0 0 0 / 0.12) 100%);
+    --glass-ink: #f3f5fa;
+}
+.hero-switch__arrow {
+    display: grid; place-items: center; width: 2rem; height: 2rem; padding: 0; border: 0; border-radius: 50%;
+    background: transparent; color: color-mix(in srgb, var(--glass-ink) 70%, transparent); cursor: pointer;
+    transition: color 200ms ease, background-color 200ms ease;
+}
+.hero-switch__arrow:hover { color: var(--glass-ink); background: color-mix(in srgb, var(--glass-ink) 10%, transparent); }
+.hero-dots { display: flex; align-items: center; }
+.hero-dots button { display: grid; place-items: center; width: 1.6rem; height: 2rem; padding: 0; border: 0; border-radius: 999px; background: transparent; cursor: pointer; }
+.hero-dots span { width: 0.375rem; height: 0.375rem; border-radius: 999px; background: color-mix(in srgb, var(--glass-ink) 38%, transparent); transition: width 460ms var(--spring, ease), background-color 260ms ease; }
+.hero-dots [aria-checked="true"] span { width: 1.15rem; background: var(--glass-ink); }
+.hero-showcase :is(.hero-switch button, .film-hero__toggle):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-.hero-dots {
-    position: absolute; z-index: 6; left: 50%; bottom: clamp(1rem, 2.6vh, 1.75rem); translate: -50% 0;
-    display: flex; gap: 0.125rem; padding: 0.25rem; border-radius: 999px;
-    background: var(--glass-volume), var(--glass-clear); box-shadow: var(--glass-shadow), var(--glass-edge);
-    -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
-    transition: opacity 360ms ease;
-}
-.hero-dots button { display: grid; place-items: center; width: 1.75rem; height: 1.5rem; padding: 0; border: 0; border-radius: 999px; background: transparent; cursor: pointer; }
-.hero-dots span { width: 0.375rem; height: 0.375rem; border-radius: 999px; background: color-mix(in srgb, var(--glass-ink) 35%, transparent); transition: width 460ms var(--spring, ease), background-color 260ms ease; }
-.hero-dots [aria-checked="true"] span { width: 1.1rem; background: var(--glass-ink); }
-@media (hover: hover) and (pointer: fine) {
-    .hero-dots { opacity: 0; }
-    .hero-showcase[data-pointer-over] .hero-dots, .hero-dots:focus-within { opacity: 1; }
-}
-.hero-showcase :is(.hero-arrow, .hero-dots button, .film-hero__toggle):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-/* ─── Phones ─────────────────────────────────────────────────────────────────────────────────────────── */
+/* ─── Phones: headline on top, the film edge to edge below it ─────────────────────────────────────────── */
 @media (max-width: 720px) {
-    .film-hero { align-items: flex-start; padding: 6.5rem 1.5rem 4.5rem; }
-    .film-hero__layout { display: flex; flex-direction: column; align-items: stretch; gap: 1.75rem; margin-block: auto; }
+    .film-hero { flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 6.5rem 0 5rem; }
+    .film-hero__layout { padding-inline: 1.5rem; }
+    .film-hero__copy { max-width: none; }
     .film-hero__title { font-size: clamp(2.3rem, min(10.5vw, 6.2svh), 3.2rem); max-width: 16ch; }
     .film-hero__lead { font-size: 1rem; }
     .film-hero__actions { margin-top: 1.25rem; }
-    .film-hero__stage { aspect-ratio: 1 / 1; width: min(100%, 44svh); max-height: none; align-self: center; border-radius: 1.5rem; }
+    .film-hero__stage {
+        position: relative; top: auto; right: auto; bottom: auto; flex: 1 1 auto;
+        width: 100%; min-height: 0; max-height: 100vw; margin-top: 0.5rem;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 84%, transparent 100%);
+        mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 84%, transparent 100%);
+    }
+    .film-hero__toggle { right: 1rem; bottom: 1.25rem; }
 }
 @media (max-height: 740px) and (max-width: 720px) {
     .film-hero { padding-top: 5.75rem; }
     .film-hero__title { font-size: 2.1rem; }
-    .film-hero__stage { width: min(100%, 36svh); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hero-arrow, .hero-dots, .hero-dots span, .film-hero__toggle, .film-hero__stage video { transition: none; }
+    .hero-dots span, .film-hero__toggle, .film-hero__stage video { transition: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
-    .hero-arrow, .hero-dots, .film-hero__toggle { background: var(--lg-card) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+    .hero-switch, .film-hero__toggle { background: var(--lg-card) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 }
